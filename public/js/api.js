@@ -42,6 +42,7 @@ export const api = {
     searchUsers: (q) => request(`/users/search?q=${encodeURIComponent(q)}`, 'GET'),
     updateProfile: (data) => request('/user/update', 'POST', data),
     updatePushToken: (token) => request('/user/push-token', 'POST', { token }),
+    sendTestNotification: () => request('/user/test-push', 'POST', {}),
     getMe: () => request(`/user/me?_t=${Date.now()}`, 'GET'),
     getMe: () => request(`/user/me?_t=${Date.now()}`, 'GET'),
     batchGetUsers: (ids) => request('/users/batch', 'POST', { ids }),

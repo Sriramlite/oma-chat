@@ -629,6 +629,7 @@ function renderSettingsProfile() {
                     <input type="text" id="settings-bio" value="${state.user?.user.bio || ''}" placeholder="Add a bio">
                 </div>
                 <button class="primary" style="width:100%;margin-top:10px;" onclick="window.saveProfile()">Save Changes</button>
+                <button class="secondary" style="width:100%;margin-top:10px;background:#4f46e5;" onclick="window.testNotification()">🔔 Test Notification</button>
              </div>
         </div>
     `;
@@ -2031,6 +2032,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
     render();
 
+    // Debug Function
+    window.testNotification = async () => {
+        try {
+            await api.sendTestNotification();
+            alert('Test Notification Sent! Check status bar.');
+        } catch (e) {
+            alert('Failed: ' + e.message);
+        }
+    };
+
     // Init Socket if logged in
     if (state.user) {
         initSocket();
@@ -2097,8 +2108,11 @@ async function initPush() {
 
         PushNotifications.addListener('registration', (token) => {
             console.log('Push Registration Token:', token.value);
+            // alert('Debug: Push Token Received!'); // Visual confirmation
             // Send token to backend
-            api.updatePushToken(token.value).catch(err => console.error("Failed to save push token:", err));
+            api.updatePushToken(token.value)
+                .then(() => console.log('Push Token Saved to Server'))
+                .catch(err => console.error("Failed to save push token:", err));
         });
 
         PushNotifications.addListener('registrationError', (error) => {
