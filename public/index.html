@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMA - Online Messaging App</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.18.3/index.js" type="module"></script>
+</head>
+
+<body>
+    <div id="app">
+        <div class="loading-screen">
+            <h1>OMA</h1>
+            <p>Loading...</p>
+        </div>
+    </div>
+    <!-- Socket.io -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script type="module" src="js/app.js?v=2"></script>
+
+    <!-- Video Call Modal -->
+    <div id="video-call-modal" class="hidden">
+        <div class="video-wrapper">
+            <!-- Remote Video -->
+            <video id="remote-video" autoplay playsinline></video>
+
+            <!-- Local Video -->
+            <video id="local-video" autoplay playsinline muted></video>
+
+            <!-- Status Overlay -->
+            <div id="call-status"></div>
+
+            <!-- Audio Call UI (Hidden by default) -->
+            <div id="audio-call-ui">
+                <div class="pulsing-avatar">
+                    <img id="audio-avatar-img" src="https://ui-avatars.com/api/?name=U" alt="User">
+                </div>
+                <!-- Waveform Visualizer -->
+                <div class="voice-waveform">
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                </div>
+                <div id="audio-status-text">Voice Call</div>
+                <div id="call-timer" class="hidden">00:00</div>
+                <!-- Status Indicators -->
+                <div id="audio-status-icons" class="status-icons">
+                    <i id="status-mic-off" class="fas fa-microphone-slash hidden" title="Muted"></i>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="call-controls">
+                <button id="btn-toggle-mute" onclick="window.toggleMute()" class="call-btn"><i
+                        class="fas fa-microphone"></i></button>
+                <button onclick="window.endCall()" class="call-btn end-call"><i class="fas fa-phone-slash"></i></button>
+                <button id="btn-toggle-video" onclick="window.toggleVideo()" class="call-btn"><i
+                        class="fas fa-video"></i></button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Incoming Call Popup -->
+    <div id="incoming-call-popup" class="hidden">
+        <div class="caller-info">
+            <img id="caller-avatar" src="" class="avatar-small">
+            <span id="caller-name">Caller Name</span>
+        </div>
+        <div class="popup-actions">
+            <button onclick="window.answerCall()" class="popup-btn btn-accept"><i class="fas fa-phone"></i></button>
+            <button onclick="window.rejectCall()" class="popup-btn btn-reject"><i
+                    class="fas fa-phone-slash"></i></button>
+        </div>
+    </div>
+</body>
+
+</html>

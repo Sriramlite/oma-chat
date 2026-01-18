@@ -1,0 +1,77 @@
+/* Refined Attachment Menu (WhatsApp Style) */
+.attachment-menu {
+    position: absolute;
+    bottom: 80px;
+    left: 20px;
+    background: var(--sidebar-bg);
+    /* White/Dark */
+    border-radius: 16px;
+    padding: 8px;
+    /* Inner padding */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    /* Softer, deeper shadow */
+    border: none;
+    /* Clean look */
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 100;
+    min-width: 200px;
+    animation: fadeInUp 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Bouncy pop */
+}
+
+.attachment-menu div {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.attachment-menu div:hover {
+    background: var(--bg-color);
+    /* Slight hover bg */
+}
+
+.menu-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.icon-photo {
+    background: linear-gradient(135deg, #AC46F9, #7C3AED);
+    /* Purple/Violet */
+}
+
+/* Match the user reference more closely if they want specific colors */
+/* Reference showed Blue for Photo, Purple for Doc? Let's assume standard intuitive colors or reference */
+/* User pic: Photo/Image is Blue, Doc is Purple */
+
+.icon-photo {
+    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+    /* Blue */
+}
+
+.icon-doc {
+    background: linear-gradient(135deg, #a855f7, #7e22ce);
+    /* Purple */
+}
+
+/* Dark mode adjust */
+body.dark-mode .attachment-menu {
+    background: #1e293b;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}

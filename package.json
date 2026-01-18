@@ -1,0 +1,28 @@
+{
+  "name": "online-messaging-app",
+  "version": "1.0.0",
+  "description": "A modern Online Messaging Application using HTML, CSS, JS and Node.js Serverless Functions.",
+  "main": "api/utils/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "echo 'No build step required'",
+    "start": "node api/utils/server.js",
+    "dev": "node api/utils/server.js"
+  },
+  "keywords": [
+    "messaging",
+    "chat",
+    "serverless",
+    "vercel"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.0",
+    "mongodb": "^7.0.0",
+    "socket.io": "^4.8.3"
+  }
+}

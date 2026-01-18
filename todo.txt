@@ -1,0 +1,91 @@
+Prompt:
+Design and develop a modern Online Messaging Application using HTML, CSS, and JavaScript for the frontend and Node.js serverless functions for the backend, deployed on Vercel.
+
+The application should support secure user authentication, real-time messaging, media sharing, and advanced UI interactions such as predictive feedback animations. The system must be scalable, responsive, and optimized for both web and mobile devices.
+
+The backend should expose RESTful APIs for authentication, messaging, user management, and notifications, while the frontend should provide a clean, intuitive user experience with smooth animations, dark mode, and accessibility support.
+
+The project should demonstrate modern full-stack development practices, cloud deployment, and real-world messaging app features suitable for professional and academic evaluation.
+
+🚀 FEATURE LIST (20+ FEATURES – JOB-READY)
+🔐 Authentication & User
+
+User Signup & Login (JWT based)
+
+Email / Username Authentication
+
+Secure Password Hashing
+
+Logout & Session Handling
+
+User Profile (Name, Photo, Status)
+
+💬 Messaging Core
+
+One-to-One Chat
+
+Group Chat Support
+
+Message Time & Date
+
+Read Receipts (Seen / Delivered)
+
+Typing Indicator
+
+📁 Media & Interaction
+
+Image Sharing
+
+File Sharing (PDF / Docs)
+
+Emoji & Sticker Support
+
+Message Delete (For me / For all)
+
+Message Edit Option
+
+🎨 UI / UX (High Impact)
+
+Predictive Feedback Animations
+
+Smooth Micro-Interactions
+
+Dark Mode / Light Mode
+
+Responsive Mobile-First Design
+
+Chat Search & Filter
+
+🔔 Smart & Advanced
+
+Push / In-App Notifications
+
+Online / Offline Status
+
+Last Seen Privacy Control
+
+Pin / Star Messages
+
+Block & Report Users
+
+⚙️ Admin & System
+
+Admin Dashboard
+
+User Management
+
+Message Moderation
+
+API Rate Limiting
+
+Activity Logs
+
+----- Also give instructions on how to run this project on local machine and on vercel -----
+
+mongodb username password
+sriramlite202179_db_user
+
+bSycnxltby7X0HKw
+
+----- connection string -----
+mongodb+srv://sriramlite202179_db_user:bSycnxltby7X0HKw@aiomsg.d9onlz3.mongodb.net/?appName=aiomsg

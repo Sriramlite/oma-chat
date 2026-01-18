@@ -1,0 +1,9 @@
+/* Snappy Message Animation */
+.message-bubble.animate__fadeInUp {
+    animation-duration: 0.3s !important;
+}
+
+/* Ensure smooth scroll behavior */
+.messages-container {
+    scroll-behavior: smooth;
+}

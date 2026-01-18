@@ -1,0 +1,17 @@
+/* Emoji Picker */
+emoji-picker {
+    position: absolute;
+    bottom: 80px;
+    right: 20px;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    --background: var(--sidebar-bg);
+    --border-color: var(--border-color);
+}
+
+body.dark-mode emoji-picker {
+    --background: #1e293b;
+    --border-color: #334155;
+    --category-emoji-padding: 0.5rem;
+}
