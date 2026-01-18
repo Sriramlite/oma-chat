@@ -43,6 +43,22 @@ module.exports = async (req, res) => {
 
         await messagesCollection.insertOne(message);
 
+        // Send Push Notification
+        if (receiverId !== 'general') {
+            try {
+                const receiver = await usersCollection.findOne({ id: receiverId });
+                if (receiver && receiver.pushToken) {
+                    const { sendPushNotification } = require('../../utils/firebase');
+                    const title = message.senderName;
+                    const body = type === 'image' ? 'Sent an image' : content;
+                    // Don't await, run in bg
+                    sendPushNotification(receiver.pushToken, title, body, { chatId: String(message.senderId) }).catch(e => console.error("Push Error", e));
+                }
+            } catch (notifyErr) {
+                console.error("Notification Logic Error:", notifyErr);
+            }
+        }
+
         res.status(201).json(message);
     } catch (e) {
         console.error("Send Message Error:", e);
