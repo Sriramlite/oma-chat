@@ -2034,6 +2034,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // Init Socket if logged in
     if (state.user) {
         initSocket();
+
+        // Init Push (if native) - Non-blocking
+        if (typeof initPush === 'function') {
+            initPush().catch(e => console.error("Push Init Failed (Non-fatal):", e));
+        }
     }
 });
 
@@ -2055,6 +2060,66 @@ const rtcConfig = {
         { urls: 'stun:global.stun.twilio.com:3478' }
     ]
 };
+
+// Push Notifications (Capacitor)
+// NOTE: Since we are not using a bundler (Webpack/Vite), we cannot use "import ... from ...".
+// We must access plugins from the global Capacitor object.
+const PushNotifications = window.Capacitor ? window.Capacitor.Plugins.PushNotifications : null;
+
+async function initPush() {
+    // Only run on native
+    const isNative = window.Capacitor && window.Capacitor.isNativePlatform();
+    if (!isNative) return;
+
+    if (!PushNotifications) {
+        console.warn("PushNotifications plugin not found in Capacitor.Plugins");
+        return;
+    }
+
+    try {
+        let permStatus = await PushNotifications.checkPermissions();
+
+        if (permStatus.receive === 'prompt') {
+            permStatus = await PushNotifications.requestPermissions();
+        }
+
+        if (permStatus.receive !== 'granted') {
+            console.error('User denied permissions!');
+            return;
+        }
+
+        try {
+            await PushNotifications.register();
+        } catch (regError) {
+            console.warn("Push Registration Failed (Missing google-services.json?):", regError);
+            return; // Exit gracefully, don't crash app
+        }
+
+        PushNotifications.addListener('registration', (token) => {
+            console.log('Push Registration Token:', token.value);
+            // Send token to backend
+            api.updatePushToken(token.value).catch(err => console.error("Failed to save push token:", err));
+        });
+
+        PushNotifications.addListener('registrationError', (error) => {
+            console.error('Error on registration: ', error);
+        });
+
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+            console.log('Push received: ', notification);
+            // Show alert or just let system handle it
+        });
+
+        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+            console.log('Push action performed: ', notification);
+            // Redirect to chat?
+            // window.openChat(notification.notification.data.chatId);
+        });
+
+    } catch (e) {
+        console.error("Push Init Failed", e);
+    }
+}
 
 // Initialize Socket
 function initSocket() {
@@ -2147,6 +2212,16 @@ function initSocket() {
             console.log('Incoming Offer:', data);
             currentCallTargetId = data.callerId;
             soundManager.play('ringtone'); // Start Ringing
+
+            // VIBRATE (Mobile Haptics)
+            if (navigator.vibrate) {
+                // Vibrate pattern: 1s ON, 1s OFF, repeat
+                // Note: Web Vibration API doesn't support "infinite" loops nicely without setInterval,
+                // but for now a long pattern is a good start. 
+                // Or we can assume the Ringtone loop handles the "sound", vibration can be one-shot or long.
+                // Let's do a long burst sequence.
+                navigator.vibrate([1000, 1000, 1000, 1000, 1000, 1000, 1000]);
+            }
 
             const popup = document.getElementById('incoming-call-popup');
             const nameEl = document.getElementById('caller-name');
@@ -2400,6 +2475,8 @@ window.endCall = () => {
 
 function endCallCleanup(isRemote = false) {
     soundManager.stopAll(); // Ensure all sounds stop
+    if (navigator.vibrate) navigator.vibrate(0); // Stop Vibration
+
     const target = currentCallTargetId;
 
     document.getElementById('video-call-modal').classList.add('hidden');
@@ -2410,6 +2487,12 @@ function endCallCleanup(isRemote = false) {
     if (peerConnection) {
         peerConnection.close();
         peerConnection = null;
+    }
+
+    // Stop all media tracks (Camera & Mic)
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
     }
 
     // Clear Video Elements

@@ -41,6 +41,7 @@ export const api = {
     sendMessage: (content, type = 'text', receiverId = 'general') => request('/chat/send', 'POST', { content, type, receiverId }),
     searchUsers: (q) => request(`/users/search?q=${encodeURIComponent(q)}`, 'GET'),
     updateProfile: (data) => request('/user/update', 'POST', data),
+    updatePushToken: (token) => request('/user/push-token', 'POST', { token }),
     getMe: () => request(`/user/me?_t=${Date.now()}`, 'GET'),
     getMe: () => request(`/user/me?_t=${Date.now()}`, 'GET'),
     batchGetUsers: (ids) => request('/users/batch', 'POST', { ids }),
