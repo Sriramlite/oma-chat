@@ -1,4 +1,6 @@
-const API_BASE = '/api';
+// For Android App/Local Dev enabling cross-origin to prod:
+const API_BASE = 'https://oma-chat-app-pho0.onrender.com/api';
+// const API_BASE = '/api'; // Uncomment for strict local-only dev
 
 async function request(endpoint, method = 'GET', data = null) {
     const headers = { 'Content-Type': 'application/json' };

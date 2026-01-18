@@ -75,7 +75,7 @@ async function init() {
     const user = localStorage.getItem('oma_user');
     if (user) {
         state.user = JSON.parse(user);
-        // initSocket(); // Assuming this function exists elsewhere or will be added
+        initSocket(); // Enable Real-time
 
         // Load Chats
         const chats = localStorage.getItem('oma_chats');
@@ -2048,7 +2048,11 @@ let currentCallTargetId = null;
 const rtcConfig = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        { urls: 'stun:global.stun.twilio.com:3478' }
     ]
 };
 
@@ -2075,10 +2079,12 @@ function initSocket() {
 
     try {
         // Connect to Socket.io
-        socket = io({
+        // MUST point to the Render Backend, not localhost!
+        socket = io('https://oma-chat-app-pho0.onrender.com', {
             reconnection: true,
             reconnectionAttempts: 5,
-            reconnectionDelay: 1000
+            reconnectionDelay: 1000,
+            transports: ['websocket'] // Force WebSocket to avoid polling issues
         });
 
         socket.on('connect', () => {

@@ -1,0 +1,8 @@
+{
+  "appId": "com.oma.chat",
+  "appName": "OMA Chat",
+  "webDir": "public",
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -271,8 +271,8 @@ body.dark-mode .bottom-nav {
 
 
 .sidebar-header {
-    padding: 0 20px;
-    height: 64px;
+    padding: env(safe-area-inset-top) 20px 0 20px;
+    height: calc(64px + env(safe-area-inset-top));
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -392,12 +392,12 @@ body.dark-mode .chat-item.active {
 
 
 .chat-header {
-    height: 64px;
+    height: calc(64px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 24px 0 24px;
     background: rgba(255, 255, 255, 0.85);
     /* Glass */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    padding: 0 24px;
     display: flex;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
