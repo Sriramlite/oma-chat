@@ -5,34 +5,44 @@ let initError = null;
 
 function initFirebase() {
     if (isInitialized) return { success: true };
-    // If it failed before, return the same error (don't retry endlessly)
     if (initError) return { success: false, error: initError };
 
     try {
-        const serviceAccountStr = process.env.FIREBASE_SERVICE_ACCOUNT;
+        let serviceAccount;
 
-        if (!serviceAccountStr) {
-            initError = "Configuration Error: FIREBASE_SERVICE_ACCOUNT is missing.";
+        // PRIORITIZE INDIVIDUAL ENV VARS (Matches Render Setup)
+        if (process.env.FIREBASE_PROJECT_ID &&
+            process.env.FIREBASE_CLIENT_EMAIL &&
+            process.env.FIREBASE_PRIVATE_KEY) {
+
+            console.log("Using INDIVIDUAL Firebase Environment Variables");
+
+            const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+
+            serviceAccount = {
+                projectId: process.env.FIREBASE_PROJECT_ID,
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: privateKey
+            };
+
+        } else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+            // FALLBACK TO JSON STRING
+            console.log("Using JSON Firebase Environment Variable");
+            try {
+                serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+                if (serviceAccount.private_key) {
+                    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+                }
+            } catch (parseErr) {
+                initError = "Configuration Error: Invalid JSON in FIREBASE_SERVICE_ACCOUNT.";
+                console.error(parseErr);
+                return { success: false, error: initError };
+            }
+        } else {
+            initError = "Configuration Error: Missing Firebase Credentials (FIREBASE_PRIVATE_KEY etc).";
             console.warn(initError);
             return { success: false, error: initError };
         }
-
-        let serviceAccount;
-        try {
-            serviceAccount = JSON.parse(serviceAccountStr);
-        } catch (parseErr) {
-            initError = "Configuration Error: Invalid JSON in FIREBASE_SERVICE_ACCOUNT. Check quotes or copying.";
-            console.error(parseErr);
-            return { success: false, error: initError };
-        }
-
-        // --- FIX FOR RENDER/ENV VARS ---
-        // Newlines often get mangled as literal "\n" strings.
-        // We must convert them back to real newlines for the Private Key to work.
-        if (serviceAccount.private_key) {
-            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-        }
-        // -------------------------------
 
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
