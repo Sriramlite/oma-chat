@@ -2684,17 +2684,22 @@ async function registerPush() {
         const { PushNotifications } = window.Capacitor.Plugins;
 
         try {
+            alert('Push: Initializing...');
             await PushNotifications.addListener('registration', async ({ value }) => {
+                alert('Push: Token received! ' + value.substring(0, 5) + '...');
                 console.log('Mobile Push Token:', value);
                 try {
                     await api.updatePushToken(value);
+                    alert('Push: Token sent to server success');
                     console.log('Push Token sent to server');
                 } catch (e) {
+                    alert('Push: Failed to send to server: ' + e.message);
                     console.error('Failed to send push token', e);
                 }
             });
 
             await PushNotifications.addListener('registrationError', (error) => {
+                alert('Push: Registration Error: ' + JSON.stringify(error));
                 console.error('Error on registration: ' + JSON.stringify(error));
             });
 
