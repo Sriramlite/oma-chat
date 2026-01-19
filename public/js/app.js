@@ -903,11 +903,14 @@ let lastTimestamp = 0;
 async function setupChatLogic() {
     if (pollingInterval) clearInterval(pollingInterval);
     if (state.settingsView) return;
-    if (!state.activeChatId) return; // Don't setup if no chat selected
 
-    const form = document.getElementById('msg-form');
+    // Start Polling ALWAYS (for Sidebar updates)
     const container = document.getElementById('messages-container');
-    if (!form || !container) return;
+    const form = document.getElementById('msg-form');
+
+    pollingInterval = setInterval(() => pollMessages(container), 3000);
+
+    if (!form || !container) return; // If no chat UI, stop here (don't bind form)
 
     // Render local messages if any (rare since we clear state.messages, but ok)
     state.messages.forEach(msg => appendMessage(msg, container));
@@ -994,7 +997,8 @@ async function setupChatLogic() {
     }
 
     // Start Polling for New Updates (Global)
-    pollingInterval = setInterval(() => pollMessages(container), 3000);
+    // Removed duplicate setInterval here, moved to top of function
+
 
     // Emoji Listener
     const picker = document.querySelector('emoji-picker');
