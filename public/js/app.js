@@ -219,7 +219,7 @@ function render() {
         } else {
             // Default view (list)
             state.mobileView = 'list';
-            // Don't auto-set general, let user pick
+            state.activeChatId = null;
         }
         renderChatLayout(app);
     } else if (hash === '#login') {
@@ -903,6 +903,7 @@ let lastTimestamp = 0;
 async function setupChatLogic() {
     if (pollingInterval) clearInterval(pollingInterval);
     if (state.settingsView) return;
+    if (!state.activeChatId) return; // Don't setup if no chat selected
 
     const form = document.getElementById('msg-form');
     const container = document.getElementById('messages-container');
