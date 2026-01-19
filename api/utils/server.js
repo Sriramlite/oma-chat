@@ -15,47 +15,53 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../../public')));
 
 // Dynamic Route Handler for Vercel-like functions
-app.use('/api', async (req, res) => {
-    try {
-        let relativePath = req.path;
-        if (relativePath.startsWith('/')) {
-            relativePath = relativePath.slice(1);
-        }
-        if (!relativePath) {
-            return res.status(404).json({ error: 'Not Found' });
-        }
-
-        const apiDir = path.join(__dirname, '..');
-        let modulePath = path.join(apiDir, relativePath);
-
-        if (fs.existsSync(modulePath + '.js')) {
-            modulePath = modulePath + '.js';
-        } else if (fs.existsSync(path.join(modulePath, 'index.js'))) {
-            modulePath = path.join(modulePath, 'index.js');
-        } else {
-            console.log(`API Route not found: ${relativePath}`);
-            return res.status(404).json({ error: 'API route not found' });
-        }
-
+console.log('Initializing API routes...');
+try {
+    // Using simple prefix match for /api
+    app.use('/api', async (req, res) => {
         try {
-            const resolvedPath = require.resolve(modulePath);
-            delete require.cache[resolvedPath];
-        } catch (e) { }
+            let relativePath = req.path;
+            if (relativePath.startsWith('/')) {
+                relativePath = relativePath.slice(1);
+            }
+            if (!relativePath) {
+                return res.status(404).json({ error: 'Not Found' });
+            }
 
-        const handler = require(modulePath);
+            const apiDir = path.join(__dirname, '..');
+            let modulePath = path.join(apiDir, relativePath);
 
-        if (typeof handler === 'function') {
-            await handler(req, res);
-        } else {
-            console.error(`Module ${relativePath} does not export a function`);
-            res.status(500).json({ error: 'Invalid API handler' });
+            if (fs.existsSync(modulePath + '.js')) {
+                modulePath = modulePath + '.js';
+            } else if (fs.existsSync(path.join(modulePath, 'index.js'))) {
+                modulePath = path.join(modulePath, 'index.js');
+            } else {
+                console.log(`API Route not found: ${relativePath}`);
+                return res.status(404).json({ error: 'API route not found' });
+            }
+
+            try {
+                const resolvedPath = require.resolve(modulePath);
+                delete require.cache[resolvedPath];
+            } catch (e) { }
+
+            const handler = require(modulePath);
+
+            if (typeof handler === 'function') {
+                await handler(req, res);
+            } else {
+                console.error(`Module ${relativePath} does not export a function`);
+                res.status(500).json({ error: 'Invalid API handler' });
+            }
+
+        } catch (error) {
+            console.error('API Execution Error:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
         }
-
-    } catch (error) {
-        console.error('API Execution Error:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
+    });
+} catch (err) {
+    console.error("Critical Error registering /api route:", err);
+}
 
 const http = require('http');
 const { Server } = require("socket.io");
