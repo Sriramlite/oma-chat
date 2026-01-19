@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
             try {
                 const receiver = await usersCollection.findOne({ id: receiverId });
                 if (receiver && receiver.pushToken) {
-                    const { sendPushNotification } = require('../../utils/firebase');
+                    const { sendPushNotification } = require('../utils/firebase');
                     const title = message.senderName;
                     const body = type === 'image' ? 'Sent an image' : content;
                     // Don't await, run in bg
