@@ -2619,8 +2619,13 @@ function createPeerConnection() {
 // --- Push Notification Logic ---
 
 async function registerPush() {
+    alert("Debug: registerPush() called!");
+    const hasCap = !!window.Capacitor;
+    const isNative = hasCap && window.Capacitor.isNativePlatform();
+    alert(`Debug: Cap=${hasCap}, Native=${isNative}`);
+
     // Only run on mobile (Capacitor)
-    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+    if (isNative) {
         // const { PushNotifications } = window.Capacitor.Plugins; // Removed: using import
 
         try {
