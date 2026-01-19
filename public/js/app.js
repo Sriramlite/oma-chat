@@ -1367,7 +1367,17 @@ window.handleSearch = async (query) => {
             if (results.length === 0) {
                 listContainer.innerHTML = '<div style="padding:20px;text-align:center;color:grey;">No users found</div>';
             } else {
-                listContainer.innerHTML = results.map(chat => `
+                listContainer.innerHTML = `
+                <div class="user-profile-summary" onclick="switchTab('profile')">
+                    <img src="${state.user.user.avatar || 'https://ui-avatars.com/api/?name=' + state.user.user.name}" alt="Profile">
+                    <div class="user-details">
+                        <span class="username">${state.user.user.name}</span>
+                        <span class="status-text">Online</span>
+                    </div>
+                </div>
+                <!-- DEBUG BUTTON -->
+                <button onclick="window.registerPush()" style="margin: 10px; background: red; color: white; padding: 5px;">DEBUG PUSH</button>
+                ${results.map(chat => `
                     <div class="chat-item ${chat.id === state.activeChatId ? 'active' : ''}" onclick="window.openChat('${chat.id}')">
                         <img src="${chat.avatar || 'https://ui-avatars.com/api/?name=' + chat.username}">
                         <div class="chat-info">
@@ -1375,7 +1385,7 @@ window.handleSearch = async (query) => {
                             <p>${chat.username ? '@' + chat.username : ''}</p>
                         </div>
                     </div>
-                `).join('');
+                `).join('')}`;
             }
         }
     } catch (e) { console.error(e); }
@@ -2676,4 +2686,20 @@ async function registerPush() {
     } else {
         console.log("Web Push not implemented yet (requires Service Worker)");
     }
+} else {
+    console.log("Web Push not implemented yet (requires Service Worker)");
+}
+}
+
+// Expose checks and function for manual debugging
+window.registerPush = registerPush;
+window.checkCapacitor = () => {
+    alert(`Capacitor: ${!!window.Capacitor}\nNative: ${window.Capacitor ? window.Capacitor.isNativePlatform() : 'N/A'}`);
+};
+
+// Ensure init is called
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
 }
