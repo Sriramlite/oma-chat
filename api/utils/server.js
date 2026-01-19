@@ -151,6 +151,17 @@ io.on('connection', (socket) => {
                     callerId: data.callerId,
                     callerName: data.callerName,
                     callType: data.type
+                }, {
+                    android: {
+                        priority: 'high',
+                        notification: {
+                            channelId: 'call_channel',
+                            priority: 'max',
+                            defaultSound: true,
+                            defaultVibrateTimings: true,
+                            visibility: 'public'
+                        }
+                    }
                 });
             }
         } catch (e) {

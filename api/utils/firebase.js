@@ -59,7 +59,7 @@ function initFirebase() {
     }
 }
 
-async function sendPushNotification(token, title, body, data = {}) {
+async function sendPushNotification(token, title, body, data = {}, options = {}) {
     const status = initFirebase();
     if (!status.success) {
         throw new Error(status.error || "Firebase not initialized");
@@ -72,7 +72,8 @@ async function sendPushNotification(token, title, body, data = {}) {
                 body: body
             },
             data: data,
-            token: token
+            token: token,
+            ...options // Mix in android/apns specific options
         };
 
         const response = await admin.messaging().send(message);

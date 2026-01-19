@@ -1,5 +1,8 @@
 import { api } from './api.js';
 import { PushNotifications } from './capacitor-push/index.js';
+import { registerPlugin } from './capacitor-core.js';
+
+const App = registerPlugin('App');
 
 const state = {
     user: null,
@@ -92,9 +95,10 @@ async function init() {
     }
 
     // Back Button Handling (Capacitor)
-    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+    // We use the 'App' plugin instance we registered
+    if (App) {
         try {
-            window.Capacitor.Plugins.App.addListener('backButton', async () => {
+            App.addListener('backButton', async () => {
                 // 1. Modals
                 if (!document.getElementById('video-call-modal').classList.contains('hidden')) {
                     // Minify call logic if possible, else do nothing or hangup?
@@ -134,7 +138,7 @@ async function init() {
                 }
 
                 // 5. Root (Tab View) -> Minimize
-                window.Capacitor.Plugins.App.minimizeApp();
+                App.minimizeApp();
             });
         } catch (e) {
             console.warn("Back button setup failed", e);
@@ -2704,6 +2708,17 @@ async function registerPush() {
         // const { PushNotifications } = window.Capacitor.Plugins; // Removed: using import
 
         try {
+            // Create High Priority Channel for Calls (Android)
+            await PushNotifications.createChannel({
+                id: 'call_channel',
+                name: 'Call Notifications',
+                description: 'Incoming Audio/Video Calls',
+                importance: 5, // High/Max
+                visibility: 1, // Public
+                sound: 'calling', // references /android/app/src/main/res/raw/calling.mp3 if exists, else default
+                vibration: true
+            });
+
             // alert('Push: Initializing...'); // Removed Debug Alert
             await PushNotifications.addListener('registration', async ({ value }) => {
                 // alert('Push: Token received!'); // Removed Debug Alert
