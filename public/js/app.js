@@ -2524,7 +2524,12 @@ function endCallCleanup(isRemote = false) {
 
     // Stop all media tracks (Camera & Mic)
     if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
+        try {
+            localStream.getTracks().forEach(track => {
+                track.stop();
+                track.enabled = false; // Double tap
+            });
+        } catch (e) { console.error("Track stop error", e); }
         localStream = null;
     }
 
@@ -2716,6 +2721,16 @@ async function registerPush() {
                 importance: 5, // High/Max
                 visibility: 1, // Public
                 sound: 'calling', // references /android/app/src/main/res/raw/calling.mp3 if exists, else default
+                vibration: true
+            });
+
+            // Create High Priority Channel for Messages (Android) - Enables Banners
+            await PushNotifications.createChannel({
+                id: 'message_channel',
+                name: 'Message Notifications',
+                description: 'Incoming Text Messages',
+                importance: 4, // High (4) or Max (5) for heads-up
+                visibility: 1, // Public
                 vibration: true
             });
 

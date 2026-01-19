@@ -52,7 +52,19 @@ module.exports = async (req, res) => {
                     const title = message.senderName;
                     const body = type === 'image' ? 'Sent an image' : content;
                     // Don't await, run in bg
-                    sendPushNotification(receiver.pushToken, title, body, { chatId: String(message.senderId) }).catch(e => console.error("Push Error", e));
+                    sendPushNotification(receiver.pushToken, title, body,
+                        { chatId: String(message.senderId) },
+                        {
+                            android: {
+                                notification: {
+                                    channelId: 'message_channel',
+                                    priority: 'high',
+                                    defaultSound: true,
+                                    defaultVibrateTimings: true
+                                }
+                            }
+                        }
+                    ).catch(e => console.error("Push Error", e));
                 }
             } catch (notifyErr) {
                 console.error("Notification Logic Error:", notifyErr);
