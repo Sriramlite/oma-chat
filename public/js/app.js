@@ -1005,14 +1005,7 @@ async function setupChatLogic() {
                 }
             }
         });
-        // But don't flood.
-        const now = Date.now();
-        if (!window.lastTypingSent || now - window.lastTypingSent > 2000) {
-            api.sendTyping(state.activeChatId);
-            window.lastTypingSent = now;
-        }
-    }
-});
+
     }
 }
 
