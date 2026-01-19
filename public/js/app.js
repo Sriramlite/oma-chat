@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { PushNotifications } from './capacitor-push/index.js';
 
 const state = {
     user: null,
@@ -2681,7 +2682,7 @@ function createPeerConnection() {
 async function registerPush() {
     // Only run on mobile (Capacitor)
     if (window.Capacitor && window.Capacitor.isNative) {
-        const { PushNotifications } = window.Capacitor.Plugins;
+        // const { PushNotifications } = window.Capacitor.Plugins; // Removed: using import
 
         try {
             alert('Push: Initializing...');
