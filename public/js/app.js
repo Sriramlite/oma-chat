@@ -1001,7 +1001,7 @@ async function setupChatLogic() {
 
                 if (!window.lastTypingEmit || Date.now() - window.lastTypingEmit > 2000) {
                     window.lastTypingEmit = Date.now();
-                    api.typing(state.activeChatId).catch(console.error);
+                    api.sendTyping(state.activeChatId).catch(console.error);
                 }
             }
         });
