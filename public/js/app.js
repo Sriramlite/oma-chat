@@ -140,8 +140,13 @@ async function init() {
                     return;
                 }
 
-                // 5. Root (Tab View) -> Minimize
-                AppPlugin.minimizeApp();
+                // 5. Root (Tab View)
+                // If not on 'messages' tab, switch to it first
+                if (state.activeTab !== 'messages') {
+                    window.switchTab('messages');
+                } else {
+                    AppPlugin.minimizeApp();
+                }
             });
             console.log("Back Button Listener Attached Successfully");
         } catch (e) {
@@ -418,18 +423,30 @@ function renderMessagesView() {
         </div>
         <div class="chat-list" id="chat-list">
              <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
-            ${chatList.map(chat => `
+            ${chatList.map(chat => {
+        const isUnread = chat.unreadCount > 0;
+        return `
                 <div class="chat-item ${chat.id === state.activeChatId ? 'active' : ''}" onclick="window.openChat('${chat.id}')">
                     <div class="avatar-wrapper">
                         <img src="${getAvatarUrl(chat)}">
                         ${state.onlineUsers.has(chat.id) ? '<div class="status-dot"></div>' : ''}
                     </div>
                     <div class="chat-info">
-                        <h4>${chat.name || chat.username}</h4>
-                        <p>${chat.lastMsg || (chat.username ? '@' + chat.username : '')}</p>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <h4 style="${isUnread ? 'font-weight: 800; color: var(--text-primary);' : ''}">${chat.name || chat.username}</h4>
+                            <span style="font-size:0.75rem; color: ${isUnread ? 'var(--primary-color)' : 'var(--text-secondary)'};">
+                               ${chat.time ? timeAgo(chat.time) : ''}
+                            </span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <p style="${isUnread ? 'font-weight: 700; color: var(--text-primary);' : 'color: var(--text-secondary);'}">
+                                ${chat.lastMsg || (chat.username ? '@' + chat.username : '')}
+                            </p>
+                            ${isUnread ? `<div style="background:var(--primary-color);color:white;border-radius:50%;padding:2px 6px;font-size:0.7rem;">${chat.unreadCount}</div>` : ''}
+                        </div>
                     </div>
                 </div>
-            `).join('')}
+            `}).join('')}
              ${state.isSearching && chatList.length === 0 ? '<div style="padding:20px;text-align:center;color:grey;">No users found</div>' : ''}
         </div>
     `;
@@ -1236,14 +1253,16 @@ async function pollMessages(container) {
         }
 
         // 4. Typing Status Poll
-        if (state.activeChatId && state.activeChatId !== 'general') { // Don't poll typing for general for now
+        if (state.activeChatId && state.activeChatId !== 'general') {
             try {
-                const res = await api.getTypingStatus(state.activeChatId);
+                // Poll for *my* ID to see who is typing to *me*
+                const res = await api.getTypingStatus(state.user.user.id);
                 const typingUsers = res.typingUsers || [];
                 const statusEl = document.getElementById('header-status');
 
                 if (statusEl) {
-                    if (typingUsers.length > 0) {
+                    // Check if current partner is typing
+                    if (typingUsers.includes(state.activeChatId)) {
                         statusEl.textContent = "typing...";
                         statusEl.style.color = "var(--primary-color)";
                         statusEl.style.fontWeight = "bold";
@@ -1891,21 +1910,7 @@ window.logout = () => {
     window.location.hash = '#login';
 };
 
-// Override refreshSidebar to handle Tabs
-window.refreshSidebar = () => {
-    // If we are in 'messages' tab, we can do optimized DOM updates (if needed)
-    // But if we are in 'calls' or 'contacts', we should just re-render the view
-    // to ensure new data (like new call logs) appears.
 
-    // Manual Update:
-    // renderSidebarMain returns the HTML string for the sidebar content
-    const sidebarEl = document.querySelector('.sidebar');
-    if (sidebarEl) {
-        // We replace the innerHTML. 
-        // Note: This replaces the header and bottom nav too, which is fine as they are fast to render.
-        sidebarEl.innerHTML = renderSidebarMain();
-    }
-};
 
 window.loginUser = (data) => {
     state.user = data;
