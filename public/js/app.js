@@ -2074,7 +2074,6 @@ const rtcConfig = {
 };
 
 
-}
 
 // Initialize Socket
 function initSocket() {
