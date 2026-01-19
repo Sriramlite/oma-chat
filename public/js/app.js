@@ -998,14 +998,21 @@ async function setupChatLogic() {
                 // Actually we want to throttle sending: Send "I am typing" every 2s
 
                 // Simple approach: Just call it. Backend handles timestamp updates.
-                // But don't flood.
-                const now = Date.now();
-                if (!window.lastTypingSent || now - window.lastTypingSent > 2000) {
-                    api.sendTyping(state.activeChatId);
-                    window.lastTypingSent = now;
+
+                if (!window.lastTypingEmit || Date.now() - window.lastTypingEmit > 2000) {
+                    window.lastTypingEmit = Date.now();
+                    api.typing(state.activeChatId).catch(console.error);
                 }
             }
         });
+        // But don't flood.
+        const now = Date.now();
+        if (!window.lastTypingSent || now - window.lastTypingSent > 2000) {
+            api.sendTyping(state.activeChatId);
+            window.lastTypingSent = now;
+        }
+    }
+});
     }
 }
 
