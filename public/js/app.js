@@ -2073,31 +2073,7 @@ const rtcConfig = {
     ]
 };
 
-// alert('Debug: Push Token Received!'); // Visual confirmation
-// Send token to backend
-api.updatePushToken(token.value)
-    .then(() => console.log('Push Token Saved to Server'))
-    .catch(err => console.error("Failed to save push token:", err));
-        });
 
-PushNotifications.addListener('registrationError', (error) => {
-    console.error('Error on registration: ', error);
-});
-
-PushNotifications.addListener('pushNotificationReceived', (notification) => {
-    console.log('Push received: ', notification);
-    // Show alert or just let system handle it
-});
-
-PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-    console.log('Push action performed: ', notification);
-    // Redirect to chat?
-    // window.openChat(notification.notification.data.chatId);
-});
-
-    } catch (e) {
-    console.error("Push Init Failed", e);
-}
 }
 
 // Initialize Socket
