@@ -128,10 +128,34 @@ io.on('connection', (socket) => {
     });
 
     // Call Initiation
-    socket.on('offer', (data) => {
+    socket.on('offer', async (data) => {
         const { targetId, offer } = data;
         const targetRoom = String(targetId);
         io.to(targetRoom).emit('offer', data);
+
+        // Send Push Notification
+        try {
+            const db = await connectToDatabase();
+            const targetUser = await db.collection('users').findOne({ id: targetId });
+
+            if (targetUser && targetUser.pushToken) {
+                const { sendPushNotification } = require('./firebase');
+                const title = "Incoming Call";
+                const body = `${data.callerName || 'Someone'} is calling you...`;
+
+                // Send High Priority Call Notification
+                // Note: We avoid sending the full SDP 'offer' in data if it's too large, 
+                // but usually it fits. If issues arise, client should fetch offer via socket.
+                await sendPushNotification(targetUser.pushToken, title, body, {
+                    type: 'call_offer',
+                    callerId: data.callerId,
+                    callerName: data.callerName,
+                    callType: data.type
+                });
+            }
+        } catch (e) {
+            console.error("Call Push Error:", e);
+        }
     });
 
     // Answer Call

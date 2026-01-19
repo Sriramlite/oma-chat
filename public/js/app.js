@@ -90,6 +90,56 @@ async function init() {
     } else {
         render(); // Render login/signup if not authenticated
     }
+
+    // Back Button Handling (Capacitor)
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        try {
+            window.Capacitor.Plugins.App.addListener('backButton', async () => {
+                // 1. Modals
+                if (!document.getElementById('video-call-modal').classList.contains('hidden')) {
+                    // Minify call logic if possible, else do nothing or hangup?
+                    // User said "back closes app", checking for hangup might be accidental.
+                    // Let's just return to prevent closing app.
+                    return;
+                }
+                if (!document.getElementById('incoming-call-popup').classList.contains('hidden')) {
+                    window.rejectCall();
+                    return;
+                }
+                if (document.getElementById('group-modal-container')) {
+                    window.closeGroupModal();
+                    return;
+                }
+
+                // 2. Attachment/Emoji
+                if (!document.getElementById('attachment-menu').classList.contains('hidden')) {
+                    window.toggleAttachmentMenu();
+                    return;
+                }
+                if (!document.getElementById('emoji-picker').classList.contains('hidden')) {
+                    window.toggleEmojiPicker();
+                    return;
+                }
+
+                // 3. Settings
+                if (state.settingsView) {
+                    window.closeSettings();
+                    return;
+                }
+
+                // 4. Chat View (Mobile)
+                if (state.mobileView === 'chat' && state.activeChatId) {
+                    window.closeChat();
+                    return;
+                }
+
+                // 5. Root (Tab View) -> Minimize
+                window.Capacitor.Plugins.App.minimizeApp();
+            });
+        } catch (e) {
+            console.warn("Back button setup failed", e);
+        }
+    }
 }
 
 // --- Navigation Logic ---
@@ -864,16 +914,31 @@ async function setupChatLogic() {
 
         try {
             const realMsg = await api.sendMessage(content, 'text', state.activeChatId);
-            state.messages.push(realMsg);
-            if (realMsg.timestamp > lastTimestamp) lastTimestamp = realMsg.timestamp;
 
-            // Fix Duplication: Update the DOM element ID from Temp to Real
-            const tempEl = document.getElementById(`msg-${tempId}`);
-            if (tempEl) {
-                tempEl.id = `msg-${realMsg.id}`;
-                // Update tick to single tick immediately
-                const tick = tempEl.querySelector('.tick-icon');
-                if (tick) tick.innerHTML = '<i class="fas fa-check" style="color:rgba(255,255,255,0.5);"></i>';
+            // FIX: Check if poller already added this message to prevent duplicates
+            const alreadyInDom = document.getElementById(`msg-${realMsg.id}`);
+
+            if (alreadyInDom) {
+                // Poller beat us. Remove our temp bubble.
+                const tempEl = document.getElementById(`msg-${tempId}`);
+                if (tempEl) tempEl.remove();
+
+                // Ensure state is consistent
+                if (!state.messages.find(m => m.id === realMsg.id)) {
+                    state.messages.push(realMsg);
+                }
+            } else {
+                state.messages.push(realMsg);
+                if (realMsg.timestamp > lastTimestamp) lastTimestamp = realMsg.timestamp;
+
+                // Fix Duplication: Update the DOM element ID from Temp to Real
+                const tempEl = document.getElementById(`msg-${tempId}`);
+                if (tempEl) {
+                    tempEl.id = `msg-${realMsg.id}`;
+                    // Update tick to single tick immediately
+                    const tick = tempEl.querySelector('.tick-icon');
+                    if (tick) tick.innerHTML = '<i class="fas fa-check" style="color:rgba(255,255,255,0.5);"></i>';
+                }
             }
         } catch (e) {
             console.error("Send failed", e);
@@ -2629,26 +2694,24 @@ function createPeerConnection() {
 // --- Push Notification Logic ---
 
 async function registerPush() {
-    alert("Debug: registerPush() called!");
+    // alert("Debug: registerPush() called!"); // Removed Debug Alert
     const hasCap = !!window.Capacitor;
     const isNative = hasCap && window.Capacitor.isNativePlatform();
-    alert(`Debug: Cap=${hasCap}, Native=${isNative}`);
+    // alert(`Debug: Cap=${hasCap}, Native=${isNative}`); // Removed Debug Alert
 
     // Only run on mobile (Capacitor)
     if (isNative) {
         // const { PushNotifications } = window.Capacitor.Plugins; // Removed: using import
 
         try {
-            alert('Push: Initializing...');
+            // alert('Push: Initializing...'); // Removed Debug Alert
             await PushNotifications.addListener('registration', async ({ value }) => {
-                alert('Push: Token received! ' + value.substring(0, 5) + '...');
+                // alert('Push: Token received!'); // Removed Debug Alert
                 console.log('Mobile Push Token:', value);
                 try {
                     await api.updatePushToken(value);
-                    alert('Push: Token sent to server success');
                     console.log('Push Token sent to server');
                 } catch (e) {
-                    alert('Push: Failed to send to server: ' + e.message);
                     console.error('Failed to send push token', e);
                 }
             });
