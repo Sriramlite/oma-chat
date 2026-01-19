@@ -1,5 +1,5 @@
 const { connectToDatabase } = require('../utils/db');
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('../utils/auth');
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -10,7 +10,8 @@ module.exports = async (req, res) => {
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+        const decoded = verifyToken(token);
+        if (!decoded) return res.status(401).json({ error: 'Invalid token' });
         const userId = decoded.id;
         const pushToken = req.body.token;
 
