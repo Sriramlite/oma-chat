@@ -95,10 +95,13 @@ async function init() {
     }
 
     // Back Button Handling (Capacitor)
-    // We use the 'App' plugin instance we registered
-    if (App) {
+    // Try imported App first, then fallback to global
+    // Note: If using a bundler, 'App' should work. If script tag, 'window.Capacitor.Plugins.App'
+    const AppPlugin = App || (window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.App : null);
+
+    if (AppPlugin) {
         try {
-            App.addListener('backButton', async () => {
+            AppPlugin.addListener('backButton', async () => {
                 // 1. Modals
                 if (!document.getElementById('video-call-modal').classList.contains('hidden')) {
                     // Minify call logic if possible, else do nothing or hangup?
@@ -138,8 +141,9 @@ async function init() {
                 }
 
                 // 5. Root (Tab View) -> Minimize
-                App.minimizeApp();
+                AppPlugin.minimizeApp();
             });
+            console.log("Back Button Listener Attached Successfully");
         } catch (e) {
             console.warn("Back button setup failed", e);
         }
@@ -1136,6 +1140,11 @@ async function pollMessages(container) {
                             state.chats[chatIndex].lastMsg = (msg.type === 'text' || msg.type === 'call_log') ? msg.content : (msg.type === 'image' ? 'Image' : 'New Message');
                             changed = true;
 
+                            // Increment Unread Count if not active
+                            if (state.activeChatId !== partnerId) {
+                                state.chats[chatIndex].unreadCount = (state.chats[chatIndex].unreadCount || 0) + 1;
+                            }
+
                             // Play Sound for Incoming Message (if not mine and not active chat focused? Or just play it)
                             if (msg.senderId !== state.user.user.id) {
                                 soundManager.play('message');
@@ -1227,7 +1236,7 @@ async function pollMessages(container) {
         }
 
         // 4. Typing Status Poll
-        if (state.activeChatId) {
+        if (state.activeChatId && state.activeChatId !== 'general') { // Don't poll typing for general for now
             try {
                 const res = await api.getTypingStatus(state.activeChatId);
                 const typingUsers = res.typingUsers || [];
@@ -1235,21 +1244,16 @@ async function pollMessages(container) {
 
                 if (statusEl) {
                     if (typingUsers.length > 0) {
-                        // Resolve names if possible, else "Typing..."
-                        // Simple check: activeChat name if 1:1, or generic
                         statusEl.textContent = "typing...";
                         statusEl.style.color = "var(--primary-color)";
                         statusEl.style.fontWeight = "bold";
                         statusEl.classList.add('animate__animated', 'animate__pulse', 'animate__infinite');
                     } else {
-                        // Revert to correct status
+                        // Revert
                         const chat = state.chats.find(c => c.id === state.activeChatId) || { id: state.activeChatId };
-                        // Reset styles set by typing indicator
                         statusEl.style.color = "var(--text-secondary)";
                         statusEl.style.fontWeight = "normal";
                         statusEl.classList.remove('animate__animated', 'animate__pulse', 'animate__infinite');
-
-                        // Restore actual status text
                         statusEl.innerHTML = getHeaderStatusText(chat);
                     }
                 }
@@ -1286,15 +1290,39 @@ window.refreshSidebar = () => {
 
     const html = `
         <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
-        ${chatList.map(chat => `
+        ${chatList.map(chat => {
+        // Calculate Unread (Basic: if bold logic needed, we need 'unread' property.
+        // For now, let's assume 'lastMsg' being BOLD implies unread if we successfully tracked it.
+        // Or we just style it. User asked for "like Instagram".
+        // Bold text + Dot.
+        // We don't have 'unreadCount' in state.chats yet. We need to key it off something.
+        // For now, let's just make the Time/LastMsg bold if it was updated recently?
+        // No, true read state requires backend support.
+        // Let's apply a visual style if it looks "new" (e.g. bold always for now as requested? No that's bad).
+        // Let's checking if we have 'unread' flag. If not, we'll just implement the style CLASS and toggle it later.
+
+        // Actually, Phase 1 just asked for "Bold texts".
+        const isUnread = chat.unreadCount > 0; // We need to populate this
+
+        return `
             <div class="chat-item ${chat.id === state.activeChatId ? 'active' : ''}" onclick="window.openChat('${chat.id}')">
                 <img src="${chat.avatar || 'https://ui-avatars.com/api/?name=' + chat.username}">
                 <div class="chat-info">
-                    <h4>${chat.name || chat.username}</h4>
-                    <p>${chat.lastMsg || (chat.username ? '@' + chat.username : '')}</p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <h4 style="${isUnread ? 'font-weight: 800; color: var(--text-primary);' : ''}">${chat.name || chat.username}</h4>
+                        <span style="font-size:0.75rem; color: ${isUnread ? 'var(--primary-color)' : 'var(--text-secondary)'};">
+                           ${chat.time ? timeAgo(chat.time) : ''}
+                        </span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <p style="${isUnread ? 'font-weight: 700; color: var(--text-primary);' : 'color: var(--text-secondary);'}">
+                            ${chat.lastMsg || (chat.username ? '@' + chat.username : '')}
+                        </p>
+                        ${isUnread ? `<div style="background:var(--primary-color);color:white;border-radius:50%;padding:2px 6px;font-size:0.7rem;">${chat.unreadCount}</div>` : ''}
+                    </div>
                 </div>
             </div>
-        `).join('')}
+        `}).join('')}
         ${state.isSearching && chatList.length === 0 ? '<div style="padding:20px;text-align:center;color:grey;">No users found</div>' : ''}
     `;
 
@@ -1817,7 +1845,14 @@ window.openChat = async (chatId) => {
     // Just update hash, let render() handle state
     window.location.hash = '#chat/' + chatId;
 
-    // Mark as Read
+    // Mark as Read in State
+    const chatIndex = state.chats.findIndex(c => c.id === chatId);
+    if (chatIndex !== -1) {
+        state.chats[chatIndex].unreadCount = 0;
+        localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+    }
+
+    // Mark as Read in Backend
     if (chatId !== 'general') {
         try {
             await api.markAsRead(chatId);
