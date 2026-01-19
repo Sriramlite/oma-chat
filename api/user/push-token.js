@@ -1,4 +1,4 @@
-const { connectToDatabase } = require('../../utils/db');
+const { connectToDatabase } = require('../utils/db');
 const jwt = require('jsonwebtoken');
 
 module.exports = async (req, res) => {

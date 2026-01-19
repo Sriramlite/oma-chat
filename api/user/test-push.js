@@ -1,6 +1,6 @@
-const { connectToDatabase } = require('../../utils/db');
-const { verifyToken } = require('../../utils/auth');
-const { sendPushNotification } = require('../../utils/firebase');
+const { connectToDatabase } = require('../utils/db');
+const { verifyToken } = require('../utils/auth');
+const { sendPushNotification } = require('../utils/firebase');
 
 module.exports = async (req, res) => {
     // CORS
