@@ -85,7 +85,7 @@ async function init() {
         // refreshSidebar(); // Assuming this function exists elsewhere or will be added
 
         // Register Push (Mobile)
-        // registerPush();
+        registerPush();
     } else {
         render(); // Render login/signup if not authenticated
     }
@@ -2676,3 +2676,54 @@ function createPeerConnection() {
 // Hook into Login
 // Hook into Login
 // (Combined into main loginUser function above)
+// --- Push Notification Logic ---
+
+async function registerPush() {
+    // Only run on mobile (Capacitor)
+    if (window.Capacitor && window.Capacitor.isNative) {
+        const { PushNotifications } = window.Capacitor.Plugins;
+
+        try {
+            await PushNotifications.addListener('registration', async ({ value }) => {
+                console.log('Mobile Push Token:', value);
+                try {
+                    await api.updatePushToken(value);
+                    console.log('Push Token sent to server');
+                } catch (e) {
+                    console.error('Failed to send push token', e);
+                }
+            });
+
+            await PushNotifications.addListener('registrationError', (error) => {
+                console.error('Error on registration: ' + JSON.stringify(error));
+            });
+
+            await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+                console.log('Push received: ', notification);
+                // Show a toast or update UI?
+                // For now just log
+            });
+
+            await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+                const data = notification.notification.data;
+                console.log('Push action performed:', data);
+                if (data.chatId) {
+                    window.openChat(data.chatId);
+                }
+            });
+
+            // Request permission
+            const permStatus = await PushNotifications.checkPermissions();
+            if (permStatus.receive === 'prompt') {
+                const newPerm = await PushNotifications.requestPermissions();
+            }
+            if (permStatus.receive !== 'denied') {
+                await PushNotifications.register();
+            }
+        } catch (e) {
+            console.error("Push registration failed", e);
+        }
+    } else {
+        console.log("Web Push not implemented yet (requires Service Worker)");
+    }
+}
