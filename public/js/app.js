@@ -2686,20 +2686,17 @@ async function registerPush() {
     } else {
         console.log("Web Push not implemented yet (requires Service Worker)");
     }
-} else {
-    console.log("Web Push not implemented yet (requires Service Worker)");
-}
-}
 
-// Expose checks and function for manual debugging
-window.registerPush = registerPush;
-window.checkCapacitor = () => {
-    alert(`Capacitor: ${!!window.Capacitor}\nNative: ${window.Capacitor ? window.Capacitor.isNativePlatform() : 'N/A'}`);
-};
 
-// Ensure init is called
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+    // Expose checks and function for manual debugging
+    window.registerPush = registerPush;
+    window.checkCapacitor = () => {
+        alert(`Capacitor: ${!!window.Capacitor}\nNative: ${window.Capacitor ? window.Capacitor.isNativePlatform() : 'N/A'}`);
+    };
+
+    // Ensure init is called
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
