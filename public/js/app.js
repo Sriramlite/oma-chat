@@ -2620,7 +2620,7 @@ function createPeerConnection() {
 
 async function registerPush() {
     // Only run on mobile (Capacitor)
-    if (window.Capacitor && window.Capacitor.isNative) {
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         // const { PushNotifications } = window.Capacitor.Plugins; // Removed: using import
 
         try {
