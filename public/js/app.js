@@ -883,6 +883,18 @@ function renderMainChatArea() {
             </div>
         </div>
 
+        <!-- Reply Preview Area -->
+        <div id="reply-preview" class="reply-preview hidden">
+            <div class="reply-content-box">
+                 <div class="reply-line"></div>
+                 <div class="reply-text-col">
+                    <span id="reply-to-name" class="reply-sender">Sender Name</span>
+                    <span id="reply-to-text" class="reply-text">Message Text</span>
+                 </div>
+            </div>
+            <button onclick="window.cancelReply()" class="icon-btn close-reply"><i class="fas fa-times"></i></button>
+        </div>
+
         <div class="input-area">
             <input type="file" id="input-media" style="display:none;" accept="image/*,video/*" onchange="window.handleMedia(this)">
             <input type="file" id="input-file" style="display:none;" accept="*" onchange="window.handleMedia(this)">
@@ -932,7 +944,13 @@ async function setupChatLogic() {
             content: content,
             type: 'text',
             timestamp: Date.now(),
-            status: 'sending'
+            status: 'sending',
+            replyTo: state.replyingTo ? {
+                id: state.replyingTo.id,
+                senderName: state.replyingTo.senderName,
+                content: state.replyingTo.content,
+                type: state.replyingTo.type
+            } : null
         };
         appendMessage(tempMsg, container);
         scrollToBottom(container);
@@ -942,7 +960,11 @@ async function setupChatLogic() {
         if (btn) btn.disabled = true;
 
         try {
-            const realMsg = await api.sendMessage(content, 'text', state.activeChatId);
+            const replyToId = state.replyingTo ? state.replyingTo.id : null;
+            const realMsg = await api.sendMessage(content, 'text', state.activeChatId, replyToId);
+
+            // Clear Reply State
+            if (state.replyingTo) window.cancelReply();
 
             // FIX: Check if poller already added this message to prevent duplicates
             const alreadyInDom = document.getElementById(`msg-${realMsg.id}`);
@@ -1090,7 +1112,37 @@ async function pollMessages(container) {
                     }
                 });
 
-                if (activeContainer) scrollToBottom(activeContainer);
+                if (activeContainer) {
+                    // Only scroll if we added new messages
+                    // Wait... we iterate updates.
+                    // Let's rely on logic: if `activeUpdates.length > 0` AND we filtered them.
+                    // But we might have just updated status.
+                    // Let's check if the container scroll height changed significantly or if we appended.
+                    // Better: `appendMessage` appends.
+                    // Let's pass a flag to appendMessage? No.
+
+                    // Simple fix: If we are already near bottom, scroll to bottom. 
+                    // OR check if we actually added a new DOM element.
+                    const lastMsg = activeUpdates[activeUpdates.length - 1];
+                    // If the last message in updates is NEW to our state, we essentially scroll.
+                    // But `state.messages` was already updated in the loop.
+
+                    // Let's just check if we are near bottom before update, and stay there?
+                    // The user says "automatically scroll down" when they "scroll up".
+                    // This implies unconditional scrollToBottom() is checking in.
+
+                    // FIX: Only scroll if the last message is NOT visible or we are already at bottom?
+                    // No, standard chat behavior:
+                    // 1. If I am at the bottom, stay at bottom.
+                    // 2. If I receive a NEW message, scroll to bottom.
+                    // 3. If I am scrolled up viewing history, DO NOT scroll to bottom (unless I sent it).
+
+                    const isAtBottom = activeContainer.scrollHeight - activeContainer.scrollTop <= activeContainer.clientHeight + 100;
+
+                    if (isAtBottom) {
+                        scrollToBottom(activeContainer);
+                    }
+                }
 
                 if (needsReadAck) {
                     api.markAsRead(state.activeChatId).catch(console.error);
@@ -1220,7 +1272,11 @@ async function pollMessages(container) {
                 window.refreshSidebar();
             }
             const activeContainer = document.getElementById('messages-container');
-            if (activeContainer) scrollToBottom(activeContainer);
+            // FIX: Only scroll if we are already at the bottom
+            if (activeContainer) {
+                const isAtBottom = activeContainer.scrollHeight - activeContainer.scrollTop <= activeContainer.clientHeight + 100;
+                if (isAtBottom) scrollToBottom(activeContainer);
+            }
 
             // Send Delivery Acknowledgement
             if (toDeliverIds.length > 0) {
@@ -1440,18 +1496,88 @@ function appendMessage(msg, container) {
     const showSenderName = !isMe && isGroupContext;
 
     div.innerHTML = `
-        <div style="display:flex;align-items:flex-end;gap:8px;">
-           <!-- Profile Pic Removed as per request -->
-           <div style="width:100%;${isMe ? 'margin-left:auto;' : ''}">
+            <div style="width:100%;${isMe ? 'margin-left:auto;' : ''}">
                ${showSenderName ? `<div class="sender-name" style="font-size:0.75rem;color:${getColorForName(msg.senderName)};margin-bottom:2px;font-weight:700;">${msg.senderName}</div>` : ''}
+               
+               <!-- Reply Context -->
+               ${msg.replyTo ? `
+                   <div class="reply-context" onclick="window.scrollToMessage('${msg.replyTo.id}')">
+                       <div class="reply-bar"></div>
+                       <div class="reply-info">
+                           <span class="reply-sender">${msg.replyTo.senderName}</span>
+                           <span class="reply-content">${(msg.replyTo.type === 'image') ? '📷 Photo' : (msg.replyTo.type === 'video') ? '🎥 Video' : msg.replyTo.content}</span>
+                       </div>
+                   </div>
+               ` : ''}
+
                ${contentHtml}
+               
                <span class="msg-time" style="display:flex;align-items:center;justify-content:flex-end;gap:4px;">
-                    ${time} 
+                    ${msg.isStarred ? '<i class="fas fa-star" style="font-size:0.7rem;color:#f59e0b;"></i>' : ''}
+                    ${msg.isPinned ? '<i class="fas fa-thumbtack" style="font-size:0.7rem;color:#f59e0b;"></i>' : ''}
+                    ${time}
+                    ${msg.isEdited ? '<span class="edited-tag" style="font-size:0.7em;opacity:0.6;">(edited)</span>' : ''}
                     <span class="tick-icon" style="font-size:0.75rem; min-width:14px; text-align:right;">${tickHtml}</span>
                </span>
            </div>
-        </div>
     `;
+
+    // Long Press / Context Menu Logic
+    // Swipe to Reply Logic
+    let touchStartX = 0;
+    let touchMoveX = 0;
+    let isSwiping = false;
+    let pressTimer;
+
+    div.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        // Long Press Logic
+        pressTimer = setTimeout(() => {
+            if (!isSwiping) window.handleMessageLongPress(msg.id);
+        }, 600);
+    }, { passive: true });
+
+    div.addEventListener('touchmove', (e) => {
+        touchMoveX = e.touches[0].clientX;
+        const diff = touchMoveX - touchStartX;
+
+        if (!isSwiping && diff > 15) {
+            isSwiping = true;
+            clearTimeout(pressTimer);
+            div.style.transition = 'none';
+        }
+
+        if (isSwiping && diff > 0) {
+            if (e.cancelable) e.preventDefault();
+            const drag = Math.min(diff, 100);
+            div.style.transform = `translateX(${drag}px)`;
+        }
+    }, { passive: false });
+
+    div.addEventListener('touchend', (e) => {
+        clearTimeout(pressTimer);
+        const diff = touchMoveX - touchStartX;
+
+        div.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        div.style.transform = 'translateX(0)';
+
+        if (isSwiping && diff > 60) {
+            if (navigator.vibrate) navigator.vibrate(50);
+            window.replyToMessage(msg.id);
+        }
+
+        setTimeout(() => {
+            isSwiping = false;
+        }, 300);
+        touchStartX = 0;
+        touchMoveX = 0;
+    });
+
+    // Desktop Right Click
+    div.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        window.handleMessageLongPress(msg.id);
+    });
 
     container.appendChild(div);
 }
@@ -1459,6 +1585,240 @@ function appendMessage(msg, container) {
 function scrollToBottom(container) {
     if (container) container.scrollTop = container.scrollHeight;
 }
+
+// --- Message Options Modal Logic ---
+window.selectedMessageId = null;
+
+window.handleMessageLongPress = (msgId) => {
+    // Vibrate
+    if (navigator.vibrate) navigator.vibrate(50);
+
+    window.selectedMessageId = msgId;
+    const modal = document.getElementById('message-options-modal');
+    const msg = state.messages.find(m => m.id == msgId);
+    const deleteBtn = document.getElementById('btn-delete-msg');
+
+    // Show Delete/Edit only if I am the sender
+    if (msg && msg.senderId === state.user.user.id) {
+        deleteBtn.style.display = 'flex';
+        const editBtn = document.getElementById('btn-edit-msg');
+        if (editBtn) editBtn.style.display = 'flex';
+    } else {
+        deleteBtn.style.display = 'none';
+        const editBtn = document.getElementById('btn-edit-msg');
+        if (editBtn) editBtn.style.display = 'none';
+    }
+
+    // Toggle Pin/Star Text
+    const starBtn = document.getElementById('btn-star-msg');
+    const pinBtn = document.getElementById('btn-pin-msg');
+    if (starBtn) {
+        starBtn.innerHTML = msg.isStarred ? '<i class="fas fa-star"></i> Unstar Message' : '<i class="fas fa-star"></i> Star Message';
+    }
+    if (pinBtn) {
+        pinBtn.innerHTML = msg.isPinned ? '<i class="fas fa-thumbtack"></i> Unpin Message' : '<i class="fas fa-thumbtack"></i> Pin Message';
+    }
+
+    if (modal) {
+        modal.style.display = 'flex';
+        // Small delay to allow display:flex to apply before opacity transition
+        requestAnimationFrame(() => {
+            modal.classList.remove('hidden');
+        });
+    }
+};
+
+window.closeMessageOptions = () => {
+    window.selectedMessageId = null;
+    const modal = document.getElementById('message-options-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 200);
+    }
+};
+
+window.copySelectedMessage = () => {
+    if (!window.selectedMessageId) return;
+    const msg = state.messages.find(m => m.id == window.selectedMessageId);
+    if (msg && msg.content) {
+        navigator.clipboard.writeText(msg.content).then(() => {
+            alert('Copied to clipboard');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    }
+    window.closeMessageOptions();
+};
+
+window.deleteSelectedMessage = async () => {
+    if (!window.selectedMessageId) return;
+    if (!confirm('Delete this message?')) return;
+
+    try {
+        // Optimistic UI Removal
+        const msgId = window.selectedMessageId;
+        const msgEl = document.getElementById(`msg-${msgId}`);
+        if (msgEl) {
+            msgEl.classList.remove('animate__fadeInUp');
+            msgEl.classList.add('animate__fadeOut');
+            setTimeout(() => msgEl.remove(), 300);
+        }
+
+        // Remove from state
+        state.messages = state.messages.filter(m => m.id != msgId);
+
+        // Call API
+        await api.deleteMessage(msgId, 'everyone');
+
+    } catch (e) {
+        alert('Failed to delete');
+        // Reload messages on failure?
+    }
+    window.closeMessageOptions();
+};
+
+// --- New Action Handlers ---
+
+window.scrollToMessage = (msgId) => {
+    const el = document.getElementById(`msg-${msgId}`);
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('highlight-message');
+        setTimeout(() => el.classList.remove('highlight-message'), 2000);
+    } else {
+        // Message might not be loaded if we are using pagination (future proofing)
+        alert("messsage not loaded");
+    }
+};
+
+window.replyToMessage = (msgId) => {
+    // If msgId not passed (from menu), use selected
+    const id = msgId || window.selectedMessageId;
+    if (!id) return;
+
+    window.closeMessageOptions();
+
+    const msg = state.messages.find(m => m.id == id);
+    if (!msg) return;
+
+    state.replyingTo = msg; // Store in state
+
+    // Show Preview
+    const preview = document.getElementById('reply-preview');
+    const nameEl = document.getElementById('reply-to-name');
+    const textEl = document.getElementById('reply-to-text');
+    const input = document.getElementById('msg-input');
+
+    if (preview && nameEl && textEl) {
+        nameEl.innerText = msg.senderName || 'User';
+        nameEl.style.color = getColorForName(msg.senderName);
+
+        textEl.innerText = (msg.type === 'image') ? '📷 Photo' :
+            (msg.type === 'video') ? '🎥 Video' :
+                (msg.type === 'file') ? '📄 Document' : msg.content;
+
+        preview.classList.remove('hidden');
+        preview.classList.add('animate__animated', 'animate__fadeInUp');
+        input.focus();
+    }
+};
+
+window.cancelReply = () => {
+    state.replyingTo = null;
+    const preview = document.getElementById('reply-preview');
+    if (preview) {
+        preview.classList.add('hidden');
+        preview.classList.remove('animate__animated', 'animate__fadeInUp');
+    }
+};
+
+window.editSelectedMessage = async () => {
+    if (!window.selectedMessageId) return;
+    const msg = state.messages.find(m => m.id == window.selectedMessageId);
+    window.closeMessageOptions();
+
+    const newContent = prompt("Edit message:", msg.content);
+    if (newContent && newContent !== msg.content) {
+        try {
+            await api.editMessage(msg.id, newContent);
+            // Optimistic Update
+            msg.content = newContent;
+            msg.isEdited = true; // Add flag
+            // Re-render item?
+            // Ideally re-poll or just update DOM text
+            const msgEl = document.getElementById(`msg-${msg.id}`);
+            if (msgEl) {
+                const contentEl = msgEl.querySelector('.msg-content');
+                if (contentEl) contentEl.innerText = newContent;
+                // Add (edited) tag if not present
+                const timeEl = msgEl.querySelector('.msg-time');
+                if (timeEl && !msgEl.querySelector('.edited-tag')) {
+                    const editTag = document.createElement('span');
+                    editTag.className = 'edited-tag';
+                    editTag.innerText = ' (edited)';
+                    editTag.style.fontSize = '0.7em';
+                    editTag.style.opacity = '0.6';
+                    timeEl.prepend(editTag);
+                }
+            }
+        } catch (e) { alert("Failed to edit"); }
+    }
+};
+
+window.pinSelectedMessage = async () => {
+    if (!window.selectedMessageId) return;
+    const msgId = window.selectedMessageId;
+    const msg = state.messages.find(m => m.id === msgId);
+    window.closeMessageOptions();
+    try {
+        await api.pinMessage(msgId);
+        if (msg) msg.isPinned = !msg.isPinned;
+        const msgEl = document.getElementById(`msg-${msgId}`);
+        if (msgEl) {
+            const timeEl = msgEl.querySelector('.msg-time');
+            if (timeEl) {
+                const existing = timeEl.querySelector('.fa-thumbtack');
+                if (msg.isPinned && !existing) {
+                    const pinIcon = document.createElement('i');
+                    pinIcon.className = 'fas fa-thumbtack';
+                    pinIcon.style.cssText = 'font-size:0.7rem; color:#f59e0b; margin-right:4px;';
+                    timeEl.prepend(pinIcon);
+                } else if (!msg.isPinned && existing) {
+                    existing.remove();
+                }
+            }
+        }
+    } catch (e) { alert("Failed to pin"); }
+};
+
+window.starSelectedMessage = async () => {
+    if (!window.selectedMessageId) return;
+    const msgId = window.selectedMessageId;
+    const msg = state.messages.find(m => m.id === msgId);
+    window.closeMessageOptions();
+    try {
+        await api.starMessage(msgId);
+        if (msg) msg.isStarred = !msg.isStarred;
+        const msgEl = document.getElementById(`msg-${msgId}`);
+        if (msgEl) {
+            const timeEl = msgEl.querySelector('.msg-time');
+            if (timeEl) {
+                const existing = timeEl.querySelector('.fa-star');
+                if (msg.isStarred && !existing) {
+                    const starIcon = document.createElement('i');
+                    starIcon.className = 'fas fa-star';
+                    starIcon.style.cssText = 'font-size:0.7rem; color:#f59e0b; margin-right:4px;';
+                    timeEl.prepend(starIcon);
+                } else if (!msg.isStarred && existing) {
+                    existing.remove();
+                }
+            }
+        }
+    } catch (e) { alert("Failed to star"); }
+};
+
 
 window.handleSearch = async (query) => {
     state.isSearching = query.length >= 2;
@@ -2434,9 +2794,11 @@ function getHeaderStatusText(chat) {
     if (state.onlineUsers.has(chat.id)) return '<span style="color:#22c55e;font-weight:600;">Online</span>';
 
     const status = state.userStatuses[chat.id];
-    if (status && status.lastSeen) {
-        if (status.lastSeen === 'Recently') return 'Last seen recently';
-        return 'Last seen ' + timeAgo(status.lastSeen);
+    const lastSeen = (status && status.lastSeen) || chat.lastSeen;
+
+    if (lastSeen) {
+        if (lastSeen === 'Recently') return 'Last seen recently';
+        return 'Last seen ' + timeAgo(lastSeen);
     }
 
     return 'Offline';

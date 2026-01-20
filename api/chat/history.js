@@ -79,17 +79,40 @@ module.exports = async (req, res) => {
         // Limit if no 'since' provided? (Previous code limited to last 50)
         // MongoDB implementation: if no since, we probably want the *latest* 50.
         // So we might need to sort desc, limit 50, then reverse.
+        // Limit if no 'since' provided? (Previous code limited to last 50)
+        // MongoDB implementation: if no since, we probably want the *latest* 50.
+        // So we might need to sort desc, limit 50, then reverse.
+        let messages = [];
         if (!since) {
             const count = await messagesCollection.countDocuments(query);
             if (count > 50) {
-                cursor = messagesCollection.find(query).sort({ timestamp: -1 }).limit(50);
-                // We will need to reverse the result array later to keep chronological order
-                const results = await cursor.toArray();
-                return res.status(200).json(results.reverse());
+                messages = await messagesCollection.find(query).sort({ timestamp: -1 }).limit(50).toArray();
+                messages.reverse(); // Standard chronological order
+            } else {
+                messages = await messagesCollection.find(query).sort({ timestamp: 1 }).toArray();
             }
+        } else {
+            messages = await messagesCollection.find(query).sort({ timestamp: 1 }).toArray();
         }
 
-        const messages = await cursor.toArray();
+        // Population Logic for Replies
+        const replyIds = [...new Set(messages.filter(m => m.replyToId && !m.replyTo).map(m => m.replyToId))];
+        const replyMap = {};
+
+        if (replyIds.length > 0) {
+            const replies = await messagesCollection.find({ id: { $in: replyIds } })
+                .project({ id: 1, senderName: 1, content: 1, type: 1 }).toArray();
+            replies.forEach(r => replyMap[r.id] = r);
+        }
+
+        messages.forEach(m => {
+            if (m.replyToId && !m.replyTo && replyMap[m.replyToId]) {
+                m.replyTo = replyMap[m.replyToId];
+            }
+            // Calculate Starred for this user
+            m.isStarred = m.starredBy && m.starredBy.includes(user.id);
+        });
+
         res.status(200).json(messages);
 
     } catch (e) {

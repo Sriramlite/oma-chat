@@ -12,6 +12,7 @@
     --border-color: #e5e7eb;
 
     --primary-color: #4f46e5;
+    --primary-color-rgb: 79, 70, 229;
     /* Indigo-600 - Very Modern */
     --primary-gradient: linear-gradient(135deg, #6366f1, #4f46e5);
 
@@ -44,6 +45,7 @@ body.dark-mode {
     --border-color: #334155;
 
     --primary-color: #818cf8;
+    --primary-color-rgb: 129, 140, 248;
     /* Indigo-400 */
     --primary-gradient: linear-gradient(135deg, #818cf8, #6366f1);
 
@@ -1953,5 +1955,250 @@ emoji-picker {
         to {
             transform: translateY(0);
         }
+    }
+}
+
+/* Message Options Modal */
+.message-options-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    opacity: 1;
+    transition: opacity 0.2s;
+}
+
+.message-options-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+    display: none;
+}
+
+/* Modal Overlay to catch clicks */
+.modal-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.modal-content {
+    background: var(--sidebar-bg);
+    border-radius: 16px;
+    width: 80%;
+    max-width: 300px;
+    z-index: 1001;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    transform: scale(1);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+}
+
+.message-options-modal.hidden .modal-content {
+    transform: scale(0.9);
+}
+
+.modal-content button {
+    background: none;
+    border: none;
+    width: 100%;
+    padding: 16px;
+    text-align: left;
+    font-size: 1rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.2s;
+}
+
+.modal-content button:last-child {
+    border-bottom: none;
+}
+
+.modal-content button:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.modal-content button i {
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+#btn-delete-msg {
+    color: #ef4444;
+}
+
+#btn-delete-msg i {
+    color: #ef4444;
+}
+
+body.dark-mode .modal-content button:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+
+/* Disable text selection for long press */
+.message-bubble {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+
+/* --- Reply Preview & Actions --- */
+.reply-preview {
+    background: var(--bg-color);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    animation: fadeInUp 0.3s ease;
+}
+
+.reply-content-box {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    background: rgba(128, 128, 128, 0.1);
+    padding: 8px;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.reply-text-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.reply-sender {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.reply-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+}
+
+.close-reply {
+    margin-left: 10px;
+    color: var(--text-secondary);
+}
+
+/* Edit & Star Tags */
+.edited-tag {
+    margin-left: 4px;
+    font-style: italic;
+}
+
+/* Modal Icons alignment */
+.message-options-modal .modal-content button i {
+    width: 20px;
+    text-align: center;
+    margin-right: 10px;
+}
+
+/* Ensure bubbles handle transform */
+.message-bubble {
+    transition: transform 0.1s linear;
+    /* Fast response for drag */
+    touch-action: pan-y;
+    /* Allow vertical scroll but capture horizontal */
+}
+
+
+/* --- Reply Context in Bubble --- */
+.reply-context {
+    background: rgba(var(--primary-color-rgb), 0.1);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    overflow: hidden;
+    max-width: 100%;
+    border-left: none;
+    /* Removed in favor of reply-bar */
+}
+
+.message-sent .reply-context {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.reply-bar {
+    min-width: 4px;
+    max-width: 4px;
+    background: var(--primary-color);
+}
+
+.message-sent .reply-bar {
+    background: #fff;
+}
+
+.reply-info {
+    padding: 6px 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 1;
+}
+
+.reply-sender {
+    font-weight: 800;
+    color: var(--primary-color);
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+}
+
+.message-sent .reply-sender {
+    color: #fff;
+}
+
+.reply-content {
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    font-size: 0.8rem;
+}
+
+.message-sent .reply-content {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Highlight Animation */
+.highlight-message {
+    animation: highlightPulse 2s ease-out;
+}
+
+@keyframes highlightPulse {
+    0% {
+        background-color: rgba(var(--primary-color-rgb), 0.4);
+    }
+
+    100% {
+        background-color: transparent;
     }
 }

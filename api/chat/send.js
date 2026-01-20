@@ -35,12 +35,25 @@ module.exports = async (req, res) => {
             senderName: fullUser ? fullUser.name : user.username,
             avatar: fullUser ? fullUser.avatar : '',
             content,
-            type: type || 'text', // text, image, video
-            replyToId: req.body.replyToId || null, // New: Reply Support
-            receiverId: receiverId || 'general', // Default to general group
-            status: 'sent', // sent, delivered, seen
+            type: type || 'text',
+            replyToId: req.body.replyToId || null,
+            receiverId: receiverId || 'general',
+            status: 'sent',
             timestamp: Date.now()
         };
+
+        // Populate Reply Context BEFORE saving
+        if (message.replyToId) {
+            const replyMsg = await messagesCollection.findOne({ id: message.replyToId });
+            if (replyMsg) {
+                message.replyTo = {
+                    id: replyMsg.id,
+                    senderName: replyMsg.senderName,
+                    content: replyMsg.content,
+                    type: replyMsg.type
+                };
+            }
+        }
 
         await messagesCollection.insertOne(message);
 
@@ -71,6 +84,8 @@ module.exports = async (req, res) => {
                 console.error("Notification Logic Error:", notifyErr);
             }
         }
+
+        message.isStarred = false; // New message is never starred yet
 
         res.status(201).json(message);
     } catch (e) {

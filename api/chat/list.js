@@ -79,7 +79,8 @@ module.exports = async (req, res) => {
                     name: u.name,
                     username: u.username,
                     avatar: u.avatar,
-                    status: u.status
+                    status: u.status,
+                    lastSeen: u.lastSeen
                 });
             }
         }

@@ -36,7 +36,8 @@ module.exports = async (req, res) => {
                 username: 1,
                 name: 1,
                 avatar: 1,
-                status: 1
+                status: 1,
+                lastSeen: 1
             })
             .toArray();
 

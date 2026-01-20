@@ -111,6 +111,8 @@ io.on('connection', (socket) => {
             // Broadcast Status: ONLINE
             if (onlineUsers.get(String(userId)).size === 1) {
                 console.log(`[Server] User ${userName} is now ONLINE`);
+                // Update DB to ensure lastSeen is at least "Now" if we crash
+                await db.collection('users').updateOne({ id: userId }, { $set: { lastSeen: Date.now() } });
                 socket.broadcast.emit('user_status', { userId: userId, online: true });
             }
 

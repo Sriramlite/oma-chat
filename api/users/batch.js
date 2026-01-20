@@ -29,7 +29,8 @@ module.exports = async (req, res) => {
                 id: 1,
                 name: 1,
                 username: 1,
-                avatar: 1
+                avatar: 1,
+                lastSeen: 1
             })
             .toArray();
 
