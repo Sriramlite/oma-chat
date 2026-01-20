@@ -86,4 +86,4 @@ async function sendPushNotification(token, title, body, data = {}, options = {})
     }
 }
 
-module.exports = { sendPushNotification };
+module.exports = { sendPushNotification, initFirebase };
