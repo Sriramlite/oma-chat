@@ -240,13 +240,133 @@ function renderLogin(container) {
                     <input type="text" id="username" placeholder="Username" required>
                     <input type="password" id="password" placeholder="Password" required>
                     <button type="submit">Log In</button>
-                    <a href="#signup">Create Account</a>
+                    <div style="text-align:center; margin: 15px 0; color: grey; font-size: 0.8rem;">OR</div>
+                    <button type="button" class="secondary" onclick="window.switchPhoneLogin()" style="background: rgba(var(--primary-color-rgb), 0.1); color: var(--primary-color); border: 1px solid var(--primary-color);">Login with Phone</button>
+                    <a href="#signup" style="display:block; margin-top:15px;">Create Account</a>
                     <div id="error-msg" class="error-msg"></div>
                 </form>
             </div>
         </div>
     `;
     document.getElementById('login-form').onsubmit = handleLogin;
+    document.getElementById('login-form').onsubmit = handleLogin;
+}
+
+// --- Phone Auth (SMS OTP) ---
+
+window.switchPhoneLogin = () => {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <div class="centered-view">
+            <div class="auth-box animate__animated animate__fadeIn">
+                <h2>Login with Phone</h2>
+                <p style="color: grey; font-size: 0.85rem; margin-bottom: 20px;">Enter your phone number with country code (e.g. +1...)</p>
+                <form id="phone-login-form">
+                    <input type="tel" id="phoneNumber" placeholder="+1..." required>
+                    <button type="submit" id="btn-send-otp">Send OTP</button>
+                    <a href="#login" onclick="window.renderLogin(document.getElementById('app'))">Back to Login</a>
+                    <div id="error-msg" class="error-msg"></div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.getElementById('phone-login-form').onsubmit = handleSendOTP;
+};
+
+window.renderOTPVerify = () => {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <div class="centered-view">
+            <div class="auth-box animate__animated animate__fadeIn">
+                <h2>Verify OTP</h2>
+                <p style="color: grey; font-size: 0.85rem; margin-bottom: 20px;">Enter the 6-digit code sent to your phone</p>
+                <form id="otp-verify-form">
+                    <input type="number" id="otpCode" placeholder="Enter 6-digit code" required maxlength="6">
+                    <button type="submit">Verify & Login</button>
+                    <button type="button" class="secondary" onclick="window.switchPhoneLogin()" style="margin-top:10px;">Change Number</button>
+                    <div id="error-msg" class="error-msg"></div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.getElementById('otp-verify-form').onsubmit = handleVerifyOTP;
+};
+
+// Global for Firebase confirmation
+let confirmationResult = null;
+
+async function initFirebaseClient() {
+    if (window.firebase && firebase.apps.length > 0) return;
+
+    // IMPORTANT: For Web/PWA, these keys are public and required.
+    // In a production app, these should be securely managed or injected during build.
+    // If you are testing locally, these can be found in your Firebase Console Project Settings (Web App).
+    const config = {
+        apiKey: "AIzaSyDFUVWEfVEDdaT0iDA7_6EqqU6X3377fIE", // User must replace this in Firebase Console
+        authDomain: "oma-chat-a1b8e.firebaseapp.com",
+        projectId: "oma-chat-a1b8e",
+        storageBucket: "oma-chat-a1b8e.firebasestorage.app",
+        messagingSenderId: "836902266336",
+        appId: "1:836902266336:web:60cd4bb9fbb170c3ed7785"
+    };
+
+    if (config.apiKey !== "YOUR_FIREBASE_API_KEY") {
+        firebase.initializeApp(config);
+    } else {
+        console.warn("Firebase Web Config not found. Phone Auth might fail on Web. Please update apiKey in initFirebaseClient().");
+    }
+}
+
+async function handleSendOTP(e) {
+    e.preventDefault();
+    await initFirebaseClient();
+
+    const phone = document.getElementById('phoneNumber').value;
+    const errorMsg = document.getElementById('error-msg');
+    const btn = document.getElementById('btn-send-otp');
+
+    btn.disabled = true;
+    btn.innerText = 'Sending...';
+
+    try {
+        // Initialize reCAPTCHA
+        if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                'size': 'invisible'
+            });
+        }
+
+        confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
+        window.renderOTPVerify();
+    } catch (error) {
+        console.error("SMS Send Error:", error);
+        errorMsg.innerText = error.message;
+        btn.disabled = false;
+        btn.innerText = 'Send OTP';
+    }
+}
+
+async function handleVerifyOTP(e) {
+    e.preventDefault();
+    const code = document.getElementById('otpCode').value;
+    const errorMsg = document.getElementById('error-msg');
+
+    try {
+        const result = await confirmationResult.confirm(code);
+        const idToken = await result.user.getIdToken();
+
+        // Send to backend for JWT
+        const res = await api.verifyPhone(idToken);
+
+        localStorage.setItem('oma_user', JSON.stringify(res));
+        state.user = res;
+        initSocket();
+        window.location.hash = '#chat';
+        render();
+    } catch (error) {
+        console.error("OTP Verification Error:", error);
+        errorMsg.innerText = 'Invalid verification code';
+    }
 }
 
 function renderSignup(container) {
