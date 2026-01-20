@@ -36,6 +36,7 @@ module.exports = async (req, res) => {
             avatar: fullUser ? fullUser.avatar : '',
             content,
             type: type || 'text', // text, image, video
+            replyToId: req.body.replyToId || null, // New: Reply Support
             receiverId: receiverId || 'general', // Default to general group
             status: 'sent', // sent, delivered, seen
             timestamp: Date.now()

@@ -1,0 +1,33 @@
+i will add the features/adjustment in the app
+
+1.The message sends as double (Eg: if i send a message "hello" it sends "hello" two times)
+2.The videocall ui is not proper, the call durations wont show
+3.in Voice call the video button is not working replace it with Speaker button/ear piece button
+4.The notifications for call is not working , its sends the log as message (Eg: "declined" sends as a message to the user) 
+5.Remove the debug logs from the app also the alerts 
+6.When pressed back it closes the app not navigate to home screen etc..
+7.The selfie camera is not mirrored, also a option required to switch between front and back camera
+8.Make the animations smoother and proper
+9.When a new message received it wont show the chat first in (Recent chats), also i want it like instagram(Blod Texts) (Eg: 1 new message,sent a photo,etc..)
+10.Instead of OMA loading screen add a splash screen/animation.
+11.When the page is opened it shows just login page , i want to home page like whats it about (professional looking home page)
+12.The ringtone for incoming call is not working in mobile
+13. The search ,Block and report must be in the three dots menu 
+14.Typing indicator is not working
+15.when long pressed on the message it must shows the options to copy,forward,etc..  
+16.when long pressed on a (Recent) chat it must shows the options to delete 
+17.a option to add new members in existing group chat also to leave the group.
+18.when clicked on a user profile picture in chat it must show the profile page also in recent chats
+19.the profile picture can viewed full screen when clicked on it
+20.the images sent in the chat can be viewed full screen when clicked on it also the video can be played in full screen
+21.implement a option to delete the messages in both sides
+22.implement a option to delete the chat in both sides
+23.implement a option to pin the messages in both sides
+24.implement a option to star the messages in both sides
+25.implement a option to copy the messages in both sides
+26.implement a option to reply the messages in both sides
+27.implement a option to edit the messages in both sides
+
+
+
+

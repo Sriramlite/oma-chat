@@ -38,7 +38,7 @@ export const api = {
         queryParams.append('_t', Date.now()); // Cache Buster
         return request(`/chat/history?${queryParams.toString()}`, 'GET');
     },
-    sendMessage: (content, type = 'text', receiverId = 'general') => request('/chat/send', 'POST', { content, type, receiverId }),
+    sendMessage: (content, type = 'text', receiverId = 'general', replyToId = null) => request('/chat/send', 'POST', { content, type, receiverId, replyToId }),
     searchUsers: (q) => request(`/users/search?q=${encodeURIComponent(q)}`, 'GET'),
     updateProfile: (data) => request('/user/update', 'POST', data),
     updatePushToken: (token) => request('/user/push-token', 'POST', { token }),
@@ -57,5 +57,11 @@ export const api = {
     getGroups: () => request('/groups/list', 'GET'),
     getRecentChats: () => request('/chat/list', 'GET'),
     changePassword: (oldPassword, newPassword) => request('/auth/change-password', 'POST', { oldPassword, newPassword }),
-    deleteAccount: (password) => request('/auth/delete-account', 'POST', { password })
+    deleteAccount: (password) => request('/auth/delete-account', 'POST', { password }),
+
+    // Message Actions
+    deleteMessage: (messageId, mode) => request('/chat/actions', 'POST', { action: 'delete', messageId, mode }),
+    editMessage: (messageId, newContent) => request('/chat/actions', 'POST', { action: 'edit', messageId, newContent }),
+    starMessage: (messageId) => request('/chat/actions', 'POST', { action: 'star', messageId }),
+    pinMessage: (messageId) => request('/chat/actions', 'POST', { action: 'pin', messageId })
 };
