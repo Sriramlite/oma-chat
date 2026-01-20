@@ -67,7 +67,11 @@ module.exports = async (req, res) => {
         });
 
     } catch (e) {
-        console.error("Phone Auth Error:", e);
-        res.status(401).json({ error: 'Invalid or expired token' });
+        console.error("Phone Auth Verification Error:", e);
+        res.status(401).json({
+            error: 'Verification failed',
+            details: e.message,
+            code: e.code
+        });
     }
 };

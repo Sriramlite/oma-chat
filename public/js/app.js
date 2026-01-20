@@ -365,7 +365,11 @@ async function handleVerifyOTP(e) {
         render();
     } catch (error) {
         console.error("OTP Verification Error:", error);
-        errorMsg.innerText = 'Invalid verification code';
+        let displayMsg = error.message || 'Verification failed';
+        if (error.response?.data?.details) {
+            displayMsg += `: ${error.response.data.details}`;
+        }
+        errorMsg.innerText = displayMsg;
     }
 }
 
