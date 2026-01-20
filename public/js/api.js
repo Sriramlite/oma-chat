@@ -19,7 +19,11 @@ async function request(endpoint, method = 'GET', data = null) {
     try {
         const res = await fetch(`${API_BASE}${endpoint}`, config);
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || 'Request failed');
+        if (!res.ok) {
+            const err = new Error(json.error || 'Request failed');
+            err.response = { data: json };
+            throw err;
+        }
         return json;
     } catch (e) {
         console.error("API Error:", e);
@@ -30,6 +34,7 @@ async function request(endpoint, method = 'GET', data = null) {
 export const api = {
     login: (username, password) => request('/auth/login', 'POST', { username, password }),
     signup: (username, password, name) => request('/auth/signup', 'POST', { username, password, name }),
+    verifyPhone: (idToken) => request('/auth/phone', 'POST', { idToken }),
     getHistory: (since, chatId, type) => {
         const queryParams = new URLSearchParams();
         if (since) queryParams.append('since', since);

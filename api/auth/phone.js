@@ -69,7 +69,7 @@ module.exports = async (req, res) => {
     } catch (e) {
         console.error("Phone Auth Verification Error:", e);
         res.status(401).json({
-            error: 'Verification failed',
+            error: `Verification failed: ${e.message}`,
             details: e.message,
             code: e.code
         });
