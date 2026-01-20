@@ -302,7 +302,7 @@ async function initFirebaseClient() {
     // In a production app, these should be securely managed or injected during build.
     // If you are testing locally, these can be found in your Firebase Console Project Settings (Web App).
     const config = {
-        apiKey: "AIzaSyDFUVWEfVEDdaT0iDA7_6EqqU6X3377fIE", // User must replace this in Firebase Console
+        apiKey: "AIzaSyCayOHaR17jUU2dcKXzq89awvC7avWy06k", // Updated to match Android key
         authDomain: "oma-chat-a1b8e.firebaseapp.com",
         projectId: "oma-chat-a1b8e",
         storageBucket: "oma-chat-a1b8e.firebasestorage.app",
@@ -361,8 +361,13 @@ async function handleVerifyOTP(e) {
         localStorage.setItem('oma_user', JSON.stringify(res));
         state.user = res;
         initSocket();
-        window.location.hash = '#chat';
-        render();
+
+        if (res.isNew) {
+            window.renderNameSetup();
+        } else {
+            window.location.hash = '#chat';
+            render();
+        }
     } catch (error) {
         console.error("OTP Verification Error:", error);
         let displayMsg = error.message || 'Verification failed';
@@ -372,6 +377,40 @@ async function handleVerifyOTP(e) {
         errorMsg.innerText = displayMsg;
     }
 }
+
+window.renderNameSetup = () => {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <div class="centered-view">
+            <div class="auth-box animate__animated animate__zoomIn">
+                <h2>Welcome!</h2>
+                <p>Welcome to OMA. Let's finish setting up your profile.</p>
+                <form id="name-setup-form" style="margin-top: 20px;">
+                    <input type="text" id="displayName" placeholder="What's your name?" required>
+                    <button type="submit">Start Chatting</button>
+                    <div id="setup-error" class="error-msg"></div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.getElementById('name-setup-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('displayName').value;
+        const btn = e.target.querySelector('button');
+        btn.disabled = true;
+
+        try {
+            await api.updateProfile({ name });
+            state.user.user.name = name;
+            localStorage.setItem('oma_user', JSON.stringify(state.user));
+            window.location.hash = '#chat';
+            render();
+        } catch (err) {
+            document.getElementById('setup-error').innerText = err.message;
+            btn.disabled = false;
+        }
+    };
+};
 
 function renderSignup(container) {
     container.innerHTML = `
@@ -2115,6 +2154,9 @@ window.reportCurrentUser = async (userId) => {
 };
 
 function renderSettingsAccount() {
+    const userPhone = state.user?.user?.phone;
+    const isLinked = !!userPhone;
+
     return `
         <div class="sidebar-header">
              <button class="icon-btn" onclick="window.openSettings('main')"><i class="fas fa-arrow-left"></i></button>
@@ -2123,7 +2165,33 @@ function renderSettingsAccount() {
         <div class="settings-content settings-slide-in">
              <div class="settings-inner-content">
                 
-                <h4 style="margin-top:0; margin-bottom: 20px;">Change Password</h4>
+                <h4 style="margin-top:0; margin-bottom: 20px;">Phone Number</h4>
+                <div id="phone-link-container">
+                    ${isLinked ? `
+                        <div class="settings-item" style="padding:0; border:none; margin-bottom:20px;">
+                            <div class="settings-text">
+                                <p style="margin:0; color:var(--text-secondary);">Linked Number</p>
+                                <h4 style="margin:0; font-size:1.1rem;">${userPhone}</h4>
+                            </div>
+                            <i class="fas fa-check-circle" style="color:#10b981;"></i>
+                        </div>
+                    ` : `
+                        <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:15px;">Link your phone number to secure your account and allow login via SMS.</p>
+                        <div class="input-group" id="link-phone-input-group">
+                            <input type="tel" id="linkPhoneNumber" placeholder="+1234567890" style="padding:12px; border-radius:8px;">
+                            <button class="primary" style="width:100%; margin-top:10px;" onclick="window.handleSendLinkOTP()" id="btn-send-link-otp">Link Phone</button>
+                        </div>
+                        <div id="link-otp-group" style="display:none; margin-top:15px;">
+                            <input type="text" id="linkOtpCode" placeholder="Enter 6-digit OTP" style="padding:12px; border-radius:8px;">
+                            <button class="primary" style="width:100%; margin-top:10px;" onclick="window.handleVerifyLinkOTP()">Verify & Link</button>
+                        </div>
+                        <div id="link-error" class="error-msg" style="margin-top:10px;"></div>
+                    `}
+                </div>
+
+                <hr style="border:0; border-top:1px solid var(--border-color); margin:30px 0;">
+
+                <h4 style="margin-bottom: 20px;">Change Password</h4>
                 
                 <div class="input-group">
                     <label>Current Password</label>
@@ -2141,6 +2209,60 @@ function renderSettingsAccount() {
         </div>
     `;
 }
+
+window.handleSendLinkOTP = async () => {
+    const phone = document.getElementById('linkPhoneNumber').value;
+    const errorMsg = document.getElementById('link-error');
+    const btn = document.getElementById('btn-send-link-otp');
+
+    if (!phone) return alert("Please enter a phone number");
+
+    btn.disabled = true;
+    btn.innerText = 'Sending...';
+
+    try {
+        await initFirebaseClient();
+        if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                'size': 'invisible'
+            });
+        }
+
+        window.linkConfirmationResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
+
+        document.getElementById('link-phone-input-group').style.display = 'none';
+        document.getElementById('link-otp-group').style.display = 'block';
+        errorMsg.innerText = '';
+    } catch (error) {
+        console.error("Link SMS Send Error:", error);
+        errorMsg.innerText = error.message;
+        btn.disabled = false;
+        btn.innerText = 'Link Phone';
+    }
+};
+
+window.handleVerifyLinkOTP = async () => {
+    const code = document.getElementById('linkOtpCode').value;
+    const errorMsg = document.getElementById('link-error');
+
+    try {
+        const result = await window.linkConfirmationResult.confirm(code);
+        const idToken = await result.user.getIdToken();
+
+        const res = await api.linkPhone(idToken);
+
+        // Update local state
+        state.user.user.phone = res.phoneNumber;
+        state.user.user.settings.phoneLinked = true;
+        localStorage.setItem('oma_user', JSON.stringify(state.user));
+
+        alert("Phone number linked successfully!");
+        render();
+    } catch (error) {
+        console.error("Link OTP Verification Error:", error);
+        errorMsg.innerText = error.message || 'Verification failed';
+    }
+};
 
 window.changePassword = async () => {
     const oldPass = document.getElementById('old-pass').value;

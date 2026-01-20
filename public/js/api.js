@@ -35,6 +35,7 @@ export const api = {
     login: (username, password) => request('/auth/login', 'POST', { username, password }),
     signup: (username, password, name) => request('/auth/signup', 'POST', { username, password, name }),
     verifyPhone: (idToken) => request('/auth/phone', 'POST', { idToken }),
+    linkPhone: (idToken) => request('/user/link-phone', 'POST', { idToken }),
     getHistory: (since, chatId, type) => {
         const queryParams = new URLSearchParams();
         if (since) queryParams.append('since', since);

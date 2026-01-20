@@ -35,13 +35,15 @@ module.exports = async (req, res) => {
 
         // Check if user exists by phone
         let user = await usersCollection.findOne({ username: phoneNumber });
+        let isNew = false;
 
         if (!user) {
+            isNew = true;
             // Register new user with phone as username
             user = {
                 id: crypto.randomUUID(),
                 username: phoneNumber,
-                name: phoneNumber, // Can be updated later
+                name: "New User", // Placeholder to be updated via prompt
                 avatar: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
                 status: 'online',
                 joinedAt: new Date().toISOString(),
@@ -58,6 +60,7 @@ module.exports = async (req, res) => {
         const token = generateToken(user);
         res.status(200).json({
             token,
+            isNew,
             user: {
                 id: user.id,
                 username: user.username,
