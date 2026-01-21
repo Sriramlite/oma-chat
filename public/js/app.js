@@ -355,19 +355,25 @@ async function handleSendOTP(e) {
 
                 await FirebaseAuthentication.addListener('phoneVerificationCompleted', async (event) => {
                     console.log("Native phoneVerificationCompleted (Auto-verify):", event);
-                    // If result contains the user/idToken already, we can skip manual entry!
-                    if (event.user && event.user.idToken) {
-                        try {
-                            const res = await api.verifyPhone(event.user.idToken);
+                    try {
+                        // Explicitly fetch the ID token
+                        const tokenResult = await FirebaseAuthentication.getIdToken();
+                        const idToken = tokenResult.token;
+
+                        if (idToken) {
+                            const res = await api.verifyPhone(idToken);
                             localStorage.setItem('oma_user', JSON.stringify(res));
                             state.user = res;
                             initSocket();
                             if (res.isNew) window.renderNameSetup();
                             else { window.location.hash = '#chat'; render(); }
-                        } catch (e) {
-                            console.error("Auto-verify backend error:", e);
-                            window.renderOTPVerify(); // Fallback to manual
+                        } else {
+                            console.warn("Auto-verify: No ID token found");
+                            window.renderOTPVerify();
                         }
+                    } catch (e) {
+                        console.error("Auto-verify backend error:", e);
+                        window.renderOTPVerify(); // Fallback to manual
                     }
                 });
 
@@ -422,11 +428,13 @@ async function handleVerifyOTP(e) {
 
         if (Capacitor.isNativePlatform()) {
             console.log("Verifying Native OTP...");
-            const result = await FirebaseAuthentication.confirmVerificationCode({
+            await FirebaseAuthentication.confirmVerificationCode({
                 verificationId: window.nativeVerificationId,
                 verificationCode: code
             });
-            idToken = result.user.idToken;
+            // Fetch ID token after successful code confirmation
+            const tokenResult = await FirebaseAuthentication.getIdToken();
+            idToken = tokenResult.token;
         } else {
             console.log("Verifying Web OTP...");
             const result = await confirmationResult.confirm(code);
@@ -2328,17 +2336,20 @@ window.handleSendLinkOTP = async () => {
 
                 await FirebaseAuthentication.addListener('phoneVerificationCompleted', async (event) => {
                     console.log("Native Link phoneVerificationCompleted (Auto-verify):", event);
-                    if (event.user && event.user.idToken) {
-                        try {
-                            const res = await api.linkPhone(event.user.idToken);
+                    try {
+                        const tokenResult = await FirebaseAuthentication.getIdToken();
+                        const idToken = tokenResult.token;
+
+                        if (idToken) {
+                            const res = await api.linkPhone(idToken);
                             state.user.user.phone = res.phoneNumber;
                             state.user.user.settings.phoneLinked = true;
                             localStorage.setItem('oma_user', JSON.stringify(state.user));
                             alert("Phone number linked automatically!");
                             render();
-                        } catch (e) {
-                            console.error("Auto-link backend error:", e);
                         }
+                    } catch (e) {
+                        console.error("Auto-link backend error:", e);
                     }
                 });
 
@@ -2384,11 +2395,12 @@ window.handleVerifyLinkOTP = async () => {
 
         if (Capacitor.isNativePlatform()) {
             console.log("Verifying Native Link OTP...");
-            const result = await FirebaseAuthentication.confirmVerificationCode({
+            await FirebaseAuthentication.confirmVerificationCode({
                 verificationId: window.nativeLinkVerificationId,
                 verificationCode: code
             });
-            idToken = result.user.idToken;
+            const tokenResult = await FirebaseAuthentication.getIdToken();
+            idToken = tokenResult.token;
         } else {
             console.log("Verifying Web Link OTP...");
             const result = await window.linkConfirmationResult.confirm(code);
