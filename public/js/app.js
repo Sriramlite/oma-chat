@@ -330,8 +330,16 @@ async function handleSendOTP(e) {
     btn.innerText = 'Sending...';
 
     try {
+        // Fix for auth/argument-error: Clear previous verifier instance if it exists
+        if (window.recaptchaVerifier) {
+            try { window.recaptchaVerifier.clear(); } catch (e) { }
+            window.recaptchaVerifier = null;
+        }
+
+        const container = document.getElementById('recaptcha-container');
+        if (container) container.innerHTML = ''; // Ensure DOM is clean
+
         // Initialize reCAPTCHA (Visible mode inside the form)
-        // We always re-initialize if the element exists to be safe
         window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
             'size': 'normal',
             'callback': (response) => {
