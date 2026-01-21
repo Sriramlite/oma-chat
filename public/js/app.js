@@ -668,38 +668,46 @@ function renderMessagesView() {
         <div class="sidebar-search">
              <div class="search-wrapper">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" id="user-search" placeholder="Search chats..." oninput="window.handleSearch(this.value)">
+                <input type="text" id="user-search" placeholder="Search chats..." oninput="window.handleSearch(this.value)" value="${state.lastSearchQuery || ''}">
              </div>
         </div>
         <div class="chat-list" id="chat-list">
              <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
-            ${chatList.map(chat => {
-        const isUnread = chat.unreadCount > 0;
-        return `
-                <div class="chat-item ${chat.id === state.activeChatId ? 'active' : ''}" onclick="window.openChat('${chat.id}')">
-                    <div class="avatar-wrapper">
-                        <img src="${getAvatarUrl(chat)}">
-                        ${state.onlineUsers.has(chat.id) ? '<div class="status-dot"></div>' : ''}
-                    </div>
-                    <div class="chat-info">
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <h4 style="${isUnread ? 'font-weight: 800; color: var(--text-primary);' : ''}">${chat.name || chat.username}</h4>
-                            <span style="font-size:0.75rem; color: ${isUnread ? 'var(--primary-color)' : 'var(--text-secondary)'};">
-                               ${chat.time ? timeAgo(chat.time) : ''}
-                            </span>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <p style="${isUnread ? 'font-weight: 700; color: var(--text-primary);' : 'color: var(--text-secondary);'}">
-                                ${chat.lastMsg || (chat.username ? '@' + chat.username : '')}
-                            </p>
-                            ${isUnread ? `<div style="background:var(--primary-color);color:white;border-radius:50%;padding:2px 6px;font-size:0.7rem;">${chat.unreadCount}</div>` : ''}
-                        </div>
-                    </div>
-                </div>
-            `}).join('')}
-             ${state.isSearching && chatList.length === 0 ? '<div style="padding:20px;text-align:center;color:grey;">No users found</div>' : ''}
+            ${renderChatListContent(chatList)}
         </div>
     `;
+}
+
+function renderChatListContent(chatList) {
+    if (state.isSearching && chatList.length === 0) {
+        return '<div style="padding:20px;text-align:center;color:grey;">No users found</div>';
+    }
+
+    return chatList.map(chat => {
+        const isUnread = chat.unreadCount > 0;
+        return `
+            <div class="chat-item ${chat.id === state.activeChatId ? 'active' : ''}" onclick="window.openChat('${chat.id}')">
+                <div class="avatar-wrapper">
+                    <img src="${getAvatarUrl(chat)}">
+                    ${state.onlineUsers.has(chat.id) ? '<div class="status-dot"></div>' : ''}
+                </div>
+                <div class="chat-info">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <h4 style="${isUnread ? 'font-weight: 800; color: var(--text-primary);' : ''}">${chat.name || chat.username}</h4>
+                        <span style="font-size:0.75rem; color: ${isUnread ? 'var(--primary-color)' : 'var(--text-secondary)'};">
+                           ${chat.time ? timeAgo(chat.time) : ''}
+                        </span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <p style="${isUnread ? 'font-weight: 700; color: var(--text-primary);' : 'color: var(--text-secondary);'}">
+                            ${chat.lastMsg || (chat.username ? '@' + chat.username : '')}
+                        </p>
+                        ${isUnread ? `<div style="background:var(--primary-color);color:white;border-radius:50%;padding:2px 6px;font-size:0.7rem;">${chat.unreadCount}</div>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function renderCallsView() {
@@ -2071,21 +2079,18 @@ window.starSelectedMessage = async () => {
 
 
 window.handleSearch = async (query) => {
+    state.lastSearchQuery = query;
     state.isSearching = query.length >= 2;
-    const listContainer = document.querySelector('.chat-list');
+    const listContainer = document.getElementById('chat-list');
 
     if (!state.isSearching) {
         state.searchResults = [];
         if (listContainer) {
-            const defaultChat = { id: 'general', name: 'General Group', lastMsg: 'Tap to chat', avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random' };
+            const general = { id: 'general', name: 'General Group', lastMsg: 'Tap to chat', avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', time: '' };
+            const chatList = [general, ...state.chats];
             listContainer.innerHTML = `
-                <div class="chat-item ${state.activeChatId === 'general' ? 'active' : ''}" onclick="window.openChat('general')">
-                    <img src="${defaultChat.avatar}">
-                    <div class="chat-info">
-                        <h4>${defaultChat.name}</h4>
-                        <p>${defaultChat.lastMsg}</p>
-                    </div>
-                </div>
+                <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
+                ${renderChatListContent(chatList)}
             `;
         }
         return;
@@ -2095,31 +2100,14 @@ window.handleSearch = async (query) => {
         const results = await api.searchUsers(query);
         state.searchResults = results;
         if (listContainer) {
-            if (results.length === 0) {
-                listContainer.innerHTML = '<div style="padding:20px;text-align:center;color:grey;">No users found</div>';
-            } else {
-                listContainer.innerHTML = `
-                <div class="user-profile-summary" onclick="switchTab('profile')">
-                    <img src="${state.user.user.avatar || 'https://ui-avatars.com/api/?name=' + state.user.user.name}" alt="Profile">
-                    <div class="user-details">
-                        <span class="username">${state.user.user.name}</span>
-                        <span class="status-text">Online</span>
-                    </div>
-                </div>
-                <!-- DEBUG BUTTON -->
-                <button onclick="window.registerPush()" style="margin: 10px; background: red; color: white; padding: 5px;">DEBUG PUSH</button>
-                ${results.map(chat => `
-                    <div class="chat-item ${chat.id === state.activeChatId ? 'active' : ''}" onclick="window.openChat('${chat.id}')">
-                        <img src="${chat.avatar || 'https://ui-avatars.com/api/?name=' + chat.username}">
-                        <div class="chat-info">
-                            <h4>${chat.name || chat.username}</h4>
-                            <p>${chat.username ? '@' + chat.username : ''}</p>
-                        </div>
-                    </div>
-                `).join('')}`;
-            }
+            listContainer.innerHTML = `
+                <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
+                ${renderChatListContent(results)}
+            `;
         }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error(e);
+    }
 };
 
 window.openSettings = (view = 'main') => {
