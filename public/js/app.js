@@ -302,7 +302,7 @@ async function initFirebaseClient() {
     // In a production app, these should be securely managed or injected during build.
     // If you are testing locally, these can be found in your Firebase Console Project Settings (Web App).
     const config = {
-        apiKey: "AIzaSyCayOHaR17jUU2dcKXzq89awvC7avWy06k", // Updated to match Android key
+        apiKey: "AIzaSyDFUVWEfVEDdaT0iDA7_6EqqU6X3377fIE", // Restored original Web Key
         authDomain: "oma-chat-a1b8e.firebaseapp.com",
         projectId: "oma-chat-a1b8e",
         storageBucket: "oma-chat-a1b8e.firebasestorage.app",
