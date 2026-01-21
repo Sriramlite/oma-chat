@@ -343,7 +343,11 @@ async function handleSendOTP(e) {
         window.renderOTPVerify();
     } catch (error) {
         console.error("SMS Send Error:", error);
-        errorMsg.innerText = error.message;
+        // Show full error details for debugging
+        errorMsg.innerText = `Error: ${error.code} - ${error.message} (Origin: ${window.location.origin})`;
+        if (error.customData) {
+            console.log("Error details:", error.customData);
+        }
         btn.disabled = false;
         btn.innerText = 'Send OTP';
     }
@@ -374,6 +378,7 @@ async function handleVerifyOTP(e) {
     } catch (error) {
         console.error("OTP Verification Error:", error);
         let displayMsg = error.message || 'Verification failed';
+        if (error.code) displayMsg = `[${error.code}] ${displayMsg}`;
         if (error.response?.data?.details) {
             displayMsg += `: ${error.response.data.details}`;
         }
