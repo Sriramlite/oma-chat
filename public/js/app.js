@@ -2240,6 +2240,14 @@ window.handleSendLinkOTP = async () => {
     try {
         await initFirebaseClient();
 
+        // Fix for auth/argument-error: Clear previous verifier instance
+        if (window.recaptchaVerifier) {
+            try { window.recaptchaVerifier.clear(); } catch (e) { }
+            window.recaptchaVerifier = null;
+        }
+        const container = document.getElementById('recaptcha-container');
+        if (container) container.innerHTML = '';
+
         window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
             'size': 'normal'
         });
@@ -2251,7 +2259,7 @@ window.handleSendLinkOTP = async () => {
         errorMsg.innerText = '';
     } catch (error) {
         console.error("Link SMS Send Error:", error);
-        errorMsg.innerText = error.message;
+        errorMsg.innerText = `Error: ${error.code} - ${error.message} (Origin: ${window.location.origin})`;
         btn.disabled = false;
         btn.innerText = 'Link Phone';
     }
