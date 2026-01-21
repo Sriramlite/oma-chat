@@ -329,10 +329,13 @@ async function handleSendOTP(e) {
     btn.innerText = 'Sending...';
 
     try {
-        // Initialize reCAPTCHA
+        // Initialize reCAPTCHA (Visible mode is more reliable for Android WebView)
         if (!window.recaptchaVerifier) {
             window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                'size': 'invisible'
+                'size': 'normal',
+                'callback': (response) => {
+                    console.log("reCAPTCHA solved:", response);
+                }
             });
         }
 
@@ -2224,7 +2227,7 @@ window.handleSendLinkOTP = async () => {
         await initFirebaseClient();
         if (!window.recaptchaVerifier) {
             window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                'size': 'invisible'
+                'size': 'normal'
             });
         }
 
