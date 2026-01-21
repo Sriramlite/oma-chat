@@ -1,6 +1,7 @@
 import { api } from './api.js';
 import { PushNotifications } from './capacitor-push/index.js';
-import { registerPlugin } from './capacitor-core.js';
+import { registerPlugin, Capacitor } from './capacitor-core.js';
+import { FirebaseAuthentication } from './capacitor-firebase-auth/index.js';
 
 const App = registerPlugin('App');
 
@@ -330,6 +331,16 @@ async function handleSendOTP(e) {
     btn.innerText = 'Sending...';
 
     try {
+        // --- NATIVE FLOW (Android) ---
+        if (Capacitor.isNativePlatform()) {
+            console.log("Starting Native Phone Auth flow...");
+            const result = await FirebaseAuthentication.getPhoneNumberVerificationId({ phoneNumber: phone });
+            window.nativeVerificationId = result.verificationId;
+            window.renderOTPVerify();
+            return;
+        }
+
+        // --- WEB FLOW (Browser) ---
         // Fix for auth/argument-error: Clear previous verifier instance if it exists
         if (window.recaptchaVerifier) {
             try { window.recaptchaVerifier.clear(); } catch (e) { }
@@ -367,8 +378,20 @@ async function handleVerifyOTP(e) {
     const errorMsg = document.getElementById('error-msg');
 
     try {
-        const result = await confirmationResult.confirm(code);
-        const idToken = await result.user.getIdToken();
+        let idToken;
+
+        if (Capacitor.isNativePlatform()) {
+            console.log("Verifying Native OTP...");
+            const result = await FirebaseAuthentication.signInWithPhoneNumber({
+                verificationId: window.nativeVerificationId,
+                verificationCode: code
+            });
+            idToken = result.user.idToken;
+        } else {
+            console.log("Verifying Web OTP...");
+            const result = await confirmationResult.confirm(code);
+            idToken = await result.user.getIdToken();
+        }
 
         // Send to backend for JWT
         const res = await api.verifyPhone(idToken);
@@ -2240,6 +2263,18 @@ window.handleSendLinkOTP = async () => {
     try {
         await initFirebaseClient();
 
+        // --- NATIVE FLOW ---
+        if (Capacitor.isNativePlatform()) {
+            console.log("Starting Native Link flow...");
+            const result = await FirebaseAuthentication.getPhoneNumberVerificationId({ phoneNumber: phone });
+            window.nativeLinkVerificationId = result.verificationId;
+            document.getElementById('link-phone-input-group').style.display = 'none';
+            document.getElementById('link-otp-group').style.display = 'block';
+            errorMsg.innerText = '';
+            return;
+        }
+
+        // --- WEB FLOW ---
         // Fix for auth/argument-error: Clear previous verifier instance
         if (window.recaptchaVerifier) {
             try { window.recaptchaVerifier.clear(); } catch (e) { }
@@ -2270,8 +2305,20 @@ window.handleVerifyLinkOTP = async () => {
     const errorMsg = document.getElementById('link-error');
 
     try {
-        const result = await window.linkConfirmationResult.confirm(code);
-        const idToken = await result.user.getIdToken();
+        let idToken;
+
+        if (Capacitor.isNativePlatform()) {
+            console.log("Verifying Native Link OTP...");
+            const result = await FirebaseAuthentication.signInWithPhoneNumber({
+                verificationId: window.nativeLinkVerificationId,
+                verificationCode: code
+            });
+            idToken = result.user.idToken;
+        } else {
+            console.log("Verifying Web Link OTP...");
+            const result = await window.linkConfirmationResult.confirm(code);
+            idToken = await result.user.getIdToken();
+        }
 
         const res = await api.linkPhone(idToken);
 

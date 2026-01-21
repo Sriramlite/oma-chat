@@ -1,0 +1,130 @@
+
+⚠️ Important Reality (Very important)
+
+Firebase Phone OTP works DIFFERENTLY in:
+
+Web browser 🌐
+
+Android native app 📱
+
+Capacitor / WebView hybrid ⚠️
+
+You are currently mixing WEB reCAPTCHA flow with a NATIVE Android app.
+
+✅ CORRECT FIX (Based on your setup)
+
+You are using:
+
+Capacitor Android
+
+Firebase
+
+Phone OTP
+
+👉 So you must use Firebase PHONE AUTH FOR ANDROID,
+NOT Web reCAPTCHA.
+
+✅ STEP 1: Do NOT use reCAPTCHA in Android app
+
+In Capacitor Android, Firebase does NOT need visible reCAPTCHA.
+
+Firebase uses:
+
+SafetyNet / Play Integrity
+
+Device verification internally
+
+So this is ❌ WRONG for Android:
+
+new firebase.auth.RecaptchaVerifier(...)
+
+✅ STEP 2: Detect platform correctly
+
+In your JS:
+
+import { Capacitor } from "@capacitor/core";
+
+const isNative = Capacitor.isNativePlatform();
+
+✅ STEP 3: Use correct OTP flow
+🔹 For ANDROID (Capacitor)
+
+Use Firebase Native SDK via plugin
+Example (recommended plugin):
+
+@capacitor-firebase/authentication
+
+
+This avoids reCAPTCHA completely.
+
+🔹 For WEB (Browser only)
+
+Use reCAPTCHA:
+
+new RecaptchaVerifier("recaptcha-container", {...})
+
+✅ STEP 4: Firebase Console fixes (MANDATORY)
+1️⃣ Enable Phone Auth
+
+Firebase Console →
+Authentication → Sign-in method → Phone → Enable
+
+2️⃣ Add your Android app properly
+
+Firebase Console →
+Project settings → Your apps → Android
+
+Make sure:
+
+Package name matches Capacitor app ID
+
+google-services.json is added
+
+App is registered
+
+3️⃣ SHA-1 & SHA-256 added
+
+Firebase Console →
+Project settings → Android app → Add SHA-1 & SHA-256
+
+Get them using:
+
+cd android
+./gradlew signingReport
+
+
+⚠️ Missing SHA keys = OTP FAILS silently or throws this error
+
+✅ STEP 5: For testing (VERY IMPORTANT)
+
+Add test numbers to avoid OTP limits:
+
+Firebase Console →
+Authentication → Sign-in method → Phone → Test phone numbers
+
+Example:
+
++916381798212 → 123456
+
+
+This bypasses reCAPTCHA completely.
+
+🧠 Why it shows (Origin: https://localhost)
+
+Because:
+
+Capacitor WebView runs as localhost
+
+Firebase thinks it’s a web app
+
+reCAPTCHA fails → invalid token
+
+This is expected behavior if wrong flow is used.
+
+🏆 Correct Architecture for OMA / Antigravity
+Platform	OTP Method
+Android (Capacitor)	✅ Firebase Native Phone Auth
+Web browser	✅ Firebase Web + reCAPTCHA
+Desktop Chrome	✅ Firebase Web + reCAPTCHA
+
+👉 Do NOT reuse the same OTP logic everywhere

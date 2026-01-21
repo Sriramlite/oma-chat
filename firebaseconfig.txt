@@ -1,0 +1,17 @@
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDFUVWEfVEDdaT0iDA7_6EqqU6X3377fIE",
+  authDomain: "oma-chat-a1b8e.firebaseapp.com",
+  projectId: "oma-chat-a1b8e",
+  storageBucket: "oma-chat-a1b8e.firebasestorage.app",
+  messagingSenderId: "836902266336",
+  appId: "1:836902266336:web:60cd4bb9fbb170c3ed7785"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
