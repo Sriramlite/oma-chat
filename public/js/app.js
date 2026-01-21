@@ -263,6 +263,7 @@ window.switchPhoneLogin = () => {
                 <p style="color: grey; font-size: 0.85rem; margin-bottom: 20px;">Enter your phone number with country code (e.g. +1...)</p>
                 <form id="phone-login-form">
                     <input type="tel" id="phoneNumber" placeholder="+1..." required>
+                    <div id="recaptcha-container" style="margin: 15px 0; display: flex; justify-content: center;"></div>
                     <button type="submit" id="btn-send-otp">Send OTP</button>
                     <a href="#login" onclick="window.renderLogin(document.getElementById('app'))">Back to Login</a>
                     <div id="error-msg" class="error-msg"></div>
@@ -329,15 +330,14 @@ async function handleSendOTP(e) {
     btn.innerText = 'Sending...';
 
     try {
-        // Initialize reCAPTCHA (Visible mode is more reliable for Android WebView)
-        if (!window.recaptchaVerifier) {
-            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                'size': 'normal',
-                'callback': (response) => {
-                    console.log("reCAPTCHA solved:", response);
-                }
-            });
-        }
+        // Initialize reCAPTCHA (Visible mode inside the form)
+        // We always re-initialize if the element exists to be safe
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            'size': 'normal',
+            'callback': (response) => {
+                console.log("reCAPTCHA solved:", response);
+            }
+        });
 
         confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
         window.renderOTPVerify();
@@ -2182,6 +2182,7 @@ function renderSettingsAccount() {
                         <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:15px;">Link your phone number to secure your account and allow login via SMS.</p>
                         <div class="input-group" id="link-phone-input-group">
                             <input type="tel" id="linkPhoneNumber" placeholder="+1234567890" style="padding:12px; border-radius:8px;">
+                            <div id="recaptcha-container" style="margin: 15px 0; display: flex; justify-content: center;"></div>
                             <button class="primary" style="width:100%; margin-top:10px;" onclick="window.handleSendLinkOTP()" id="btn-send-link-otp">Link Phone</button>
                         </div>
                         <div id="link-otp-group" style="display:none; margin-top:15px;">
@@ -2225,11 +2226,10 @@ window.handleSendLinkOTP = async () => {
 
     try {
         await initFirebaseClient();
-        if (!window.recaptchaVerifier) {
-            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                'size': 'normal'
-            });
-        }
+
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            'size': 'normal'
+        });
 
         window.linkConfirmationResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
 
