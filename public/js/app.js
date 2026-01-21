@@ -353,6 +353,24 @@ async function handleSendOTP(e) {
                     }
                 });
 
+                await FirebaseAuthentication.addListener('phoneVerificationCompleted', async (event) => {
+                    console.log("Native phoneVerificationCompleted (Auto-verify):", event);
+                    // If result contains the user/idToken already, we can skip manual entry!
+                    if (event.user && event.user.idToken) {
+                        try {
+                            const res = await api.verifyPhone(event.user.idToken);
+                            localStorage.setItem('oma_user', JSON.stringify(res));
+                            state.user = res;
+                            initSocket();
+                            if (res.isNew) window.renderNameSetup();
+                            else { window.location.hash = '#chat'; render(); }
+                        } catch (e) {
+                            console.error("Auto-verify backend error:", e);
+                            window.renderOTPVerify(); // Fallback to manual
+                        }
+                    }
+                });
+
                 window.phoneAuthListenersInitialized = true;
             }
 
@@ -2305,6 +2323,22 @@ window.handleSendLinkOTP = async () => {
                     if (btn) {
                         btn.disabled = false;
                         btn.innerText = 'Link Phone';
+                    }
+                });
+
+                await FirebaseAuthentication.addListener('phoneVerificationCompleted', async (event) => {
+                    console.log("Native Link phoneVerificationCompleted (Auto-verify):", event);
+                    if (event.user && event.user.idToken) {
+                        try {
+                            const res = await api.linkPhone(event.user.idToken);
+                            state.user.user.phone = res.phoneNumber;
+                            state.user.user.settings.phoneLinked = true;
+                            localStorage.setItem('oma_user', JSON.stringify(state.user));
+                            alert("Phone number linked automatically!");
+                            render();
+                        } catch (e) {
+                            console.error("Auto-link backend error:", e);
+                        }
                     }
                 });
 
