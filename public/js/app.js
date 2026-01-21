@@ -334,9 +334,31 @@ async function handleSendOTP(e) {
         // --- NATIVE FLOW (Android) ---
         if (Capacitor.isNativePlatform()) {
             console.log("Starting Native Phone Auth flow...");
-            const result = await FirebaseAuthentication.getPhoneNumberVerificationId({ phoneNumber: phone });
-            window.nativeVerificationId = result.verificationId;
-            window.renderOTPVerify();
+
+            // 1. Add listeners BEFORE calling the sign-in method
+            if (!window.phoneAuthListenersInitialized) {
+                await FirebaseAuthentication.addListener('phoneCodeSent', (event) => {
+                    console.log("Native phoneCodeSent event:", event);
+                    window.nativeVerificationId = event.verificationId;
+                    window.renderOTPVerify();
+                });
+
+                await FirebaseAuthentication.addListener('phoneVerificationFailed', (event) => {
+                    console.error("Native phoneVerificationFailed:", event);
+                    document.getElementById('error-msg').innerText = `Native Error: ${event.message}`;
+                    const btn = document.getElementById('btn-send-otp');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerText = 'Send OTP';
+                    }
+                });
+
+                window.phoneAuthListenersInitialized = true;
+            }
+
+            // 2. Trigger the SMS
+            await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: phone });
+            // The listener above will handle the UI transition
             return;
         }
 
@@ -382,7 +404,7 @@ async function handleVerifyOTP(e) {
 
         if (Capacitor.isNativePlatform()) {
             console.log("Verifying Native OTP...");
-            const result = await FirebaseAuthentication.signInWithPhoneNumber({
+            const result = await FirebaseAuthentication.confirmVerificationCode({
                 verificationId: window.nativeVerificationId,
                 verificationCode: code
             });
@@ -2266,11 +2288,30 @@ window.handleSendLinkOTP = async () => {
         // --- NATIVE FLOW ---
         if (Capacitor.isNativePlatform()) {
             console.log("Starting Native Link flow...");
-            const result = await FirebaseAuthentication.getPhoneNumberVerificationId({ phoneNumber: phone });
-            window.nativeLinkVerificationId = result.verificationId;
-            document.getElementById('link-phone-input-group').style.display = 'none';
-            document.getElementById('link-otp-group').style.display = 'block';
-            errorMsg.innerText = '';
+
+            if (!window.linkAuthListenersInitialized) {
+                await FirebaseAuthentication.addListener('phoneCodeSent', (event) => {
+                    console.log("Native Link phoneCodeSent:", event);
+                    window.nativeLinkVerificationId = event.verificationId;
+                    document.getElementById('link-phone-input-group').style.display = 'none';
+                    document.getElementById('link-otp-group').style.display = 'block';
+                    document.getElementById('link-error').innerText = '';
+                });
+
+                await FirebaseAuthentication.addListener('phoneVerificationFailed', (event) => {
+                    console.error("Native Link phoneVerificationFailed:", event);
+                    document.getElementById('link-error').innerText = `Native Link Error: ${event.message}`;
+                    const btn = document.getElementById('btn-send-link-otp');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerText = 'Link Phone';
+                    }
+                });
+
+                window.linkAuthListenersInitialized = true;
+            }
+
+            await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: phone });
             return;
         }
 
@@ -2309,7 +2350,7 @@ window.handleVerifyLinkOTP = async () => {
 
         if (Capacitor.isNativePlatform()) {
             console.log("Verifying Native Link OTP...");
-            const result = await FirebaseAuthentication.signInWithPhoneNumber({
+            const result = await FirebaseAuthentication.confirmVerificationCode({
                 verificationId: window.nativeLinkVerificationId,
                 verificationCode: code
             });
