@@ -261,7 +261,8 @@ body.global-wallpaper-active .chat-main {
 }
 
 /* Base class for all wallpapers to ensure full screen coverage */
-[class*="wallpaper-"] {
+/* Base class for all wallpapers to ensure full screen coverage */
+[class*="wallpaper-"]:not(.wallpaper-btn) {
     width: 100%;
     height: 100%;
     min-height: 100vh;
@@ -271,7 +272,7 @@ body.global-wallpaper-active .chat-main {
     pointer-events: none !important;
 }
 
-[class*="wallpaper-"]>* {
+[class*="wallpaper-"]:not(.wallpaper-btn)>* {
     pointer-events: none !important;
 }
 
