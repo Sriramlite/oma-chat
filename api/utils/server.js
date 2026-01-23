@@ -254,8 +254,31 @@ io.on('connection', (socket) => {
     });
 });
 
-// Start DB before server if possible to ensure connection?
-// No, lazy connect in handlers is fine, but let's try to connect once.
+// Graceful Shutdown: Persist lastSeen for online users
+const gracefulShutdown = async (signal) => {
+    console.log(`\n[Server] Received ${signal}. Shutting down gracefully...`);
+    try {
+        const db = await connectToDatabase();
+        if (db) {
+            const now = Date.now();
+            const activeIds = Array.from(onlineUsers.keys());
+            if (activeIds.length > 0) {
+                console.log(`[Server] Persisting lastSeen for ${activeIds.length} online users...`);
+                await db.collection('users').updateMany(
+                    { id: { $in: activeIds } },
+                    { $set: { lastSeen: now } }
+                );
+            }
+        }
+    } catch (e) {
+        console.error("[Server] Error during shutdown persistence:", e);
+    }
+    process.exit(0);
+};
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
 connectToDatabase().then(() => {
     server.listen(PORT, () => {
         console.log(`\nLocal Development Server Running!`);

@@ -5,6 +5,33 @@ import { FirebaseAuthentication } from './capacitor-firebase-auth/index.js';
 
 const App = registerPlugin('App');
 
+window.showCustomAlert = function (msg, type = 'error') {
+    const existing = document.querySelector('.custom-alert');
+    if (existing) existing.remove();
+
+    const alertEl = document.createElement('div');
+    alertEl.className = 'custom-alert animate__animated animate__fadeInDown';
+    alertEl.innerHTML = `
+        <div class="custom-alert__icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" height="24" fill="none"><path fill="#fff" d="m13 13h-2v-6h2zm0 4h-2v-2h2zm-1-15c-1.3132 0-2.61358.25866-3.82683.7612-1.21326.50255-2.31565 1.23915-3.24424 2.16773-1.87536 1.87537-2.92893 4.41891-2.92893 7.07107 0 2.6522 1.05357 5.1957 2.92893 7.0711.92859.9286 2.03098 1.6651 3.24424 2.1677 1.21325.5025 2.51363.7612 3.82683.7612 2.6522 0 5.1957-1.0536 7.0711-2.9289 1.8753-1.8754 2.9289-4.4189 2.9289-7.0711 0-1.3132-.2587-2.61358-.7612-3.82683-.5026-1.21326-1.2391-2.31565-2.1677-3.24424-.9286-.92858-2.031-1.66518-3.2443-2.16773-1.2132-.50254-2.5136-.7612-3.8268-.7612z"></path></svg>
+        </div>
+        <div class="custom-alert__title">${msg}</div>
+        <div class="custom-alert__close" onclick="this.parentElement.remove()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" viewBox="0 0 20 20" height="20"><path fill="#fff" d="m15.8333 5.34166-1.175-1.175-4.6583 4.65834-4.65833-4.65834-1.175 1.175 4.65833 4.65834-4.65833 4.6583 1.175 1.175 4.65833-4.6583 4.6583 4.6583 1.175-1.175-4.6583-4.6583z"></path></svg>
+        </div>
+    `;
+    document.body.appendChild(alertEl);
+    setTimeout(() => {
+        if (alertEl.parentElement) {
+            alertEl.classList.replace('animate__fadeInDown', 'animate__fadeOutUp');
+            setTimeout(() => alertEl.remove(), 500);
+        }
+    }, 4000);
+};
+
+// Override default alert
+window.alert = (msg) => window.showCustomAlert(msg);
+
 const state = {
     user: null,
     chats: [],
@@ -89,6 +116,9 @@ async function init() {
         render(); // Initial Render
         // refreshSidebar(); // Assuming this function exists elsewhere or will be added
 
+        // Sync Profile Data
+        syncProfile();
+
         // Register Push (Mobile)
         registerPush();
     } else {
@@ -156,22 +186,29 @@ async function init() {
     }
 }
 
-// --- Navigation Logic ---
-
-window.switchTab = (tab) => {
-    if (tab === 'profile') {
-        window.openSettings('profile'); // Reuse existing settings view for profile
-        return;
-        // Or actually switch tab if we want it to be a main view? 
-        // User asked for "Profile" tab. Usually this means a profile view.
-        // Let's make it a distinct tab view or just open settings. 
-        // If I make it a tab, I need to handle "Settings" separately.
-        // Let's treat 'profile' tab as a shortcut to the Profile Settings for now, keeping 'messages' active in bg?
-        // No, visual tab matching is better.
+async function syncProfile() {
+    try {
+        const userData = await api.getMe();
+        if (userData && userData.user) {
+            state.user.user = { ...state.user.user, ...userData.user };
+            localStorage.setItem('oma_user', JSON.stringify(state.user));
+            if (state.activeTab === 'profile' || state.settingsView === 'profile') {
+                render();
+            }
+        }
+    } catch (e) {
+        console.error("Profile sync failed", e);
     }
+}
+
+// --- Navigation Logic ---
+window.switchTab = async (tab) => {
     state.activeTab = tab;
     state.settingsView = null; // Close settings if open
     render();
+    if (tab === 'profile') {
+        syncProfile();
+    }
 };
 
 function renderBottomNav() {
@@ -565,6 +602,7 @@ function renderChatLayout(container) {
         </div>
     `;
 
+
     setupChatLogic();
     setupPullToRefresh();
 }
@@ -666,10 +704,29 @@ function renderMessagesView() {
             </div>
         </div>
         <div class="sidebar-search">
-             <div class="search-wrapper">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="user-search" placeholder="Search chats..." oninput="window.handleSearch(this.value)" value="${state.lastSearchQuery || ''}">
-             </div>
+             <div id="poda">
+                <div class="glow"></div>
+                <div class="darkBorderBg"></div>
+                <div class="white"></div>
+                <div class="border"></div>
+                <div id="main">
+                    <input placeholder="Search chats..." type="text" class="input" id="user-search" oninput="window.handleSearch(this.value)" value="${state.lastSearchQuery || ''}">
+                    <div id="input-mask"></div>
+                    <div id="pink-mask"></div>
+                    <div id="search-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" height="18" width="18">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </div>
+                    <div id="filter-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" height="16" width="16">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                        </svg>
+                    </div>
+                    <div class="filterBorder"></div>
+                </div>
+            </div>
         </div>
         <div class="chat-list" id="chat-list">
              <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
@@ -844,26 +901,133 @@ function renderContactsView() {
 
 // Reuse the Profile Content logic from Settings
 function renderProfileContent() {
+    const u = state.user?.user || {};
     return `
-        <div class="profile-section">
-            <div style="position:relative;cursor:pointer;" onclick="document.getElementById('avatar-input').click()">
-                <img src="${getAvatarUrl(state.user?.user || {})}" class="profile-avatar-large">
-                <div style="position:absolute;bottom:0;right:0;background:var(--primary-color);color:white;padding:8px;border-radius:50%;">
-                    <i class="fas fa-camera"></i>
+        <div class="profile-card animate__animated animate__fadeIn">
+            <div class="profile-card__img">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                    <rect fill="#ffffff" width="540" height="450"></rect>
+                    <defs>
+                        <linearGradient id="a" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="0" y2="100%" gradientTransform="rotate(222,648,379)">
+                            <stop offset="0" stop-color="#ffffff"></stop>
+                            <stop offset="1" stop-color="#FC726E"></stop>
+                        </linearGradient>
+                        <pattern patternUnits="userSpaceOnUse" id="b" width="300" height="250" x="0" y="0" viewBox="0 0 1080 900">
+                            <g fill-opacity="0.5">
+                                <polygon fill="#444" points="90 150 0 300 180 300"></polygon>
+                                <polygon points="90 150 180 0 0 0"></polygon>
+                                <polygon fill="#AAA" points="270 150 360 0 180 0"></polygon>
+                                <polygon fill="#DDD" points="450 150 360 300 540 300"></polygon>
+                                <polygon fill="#999" points="450 150 540 0 360 0"></polygon>
+                                <polygon points="630 150 540 300 720 300"></polygon>
+                                <polygon fill="#DDD" points="630 150 720 0 540 0"></polygon>
+                                <polygon fill="#444" points="810 150 720 300 900 300"></polygon>
+                                <polygon fill="#FFF" points="810 150 900 0 720 0"></polygon>
+                                <polygon fill="#DDD" points="990 150 900 300 1080 300"></polygon>
+                                <polygon fill="#444" points="990 150 1080 0 900 0"></polygon>
+                                <polygon fill="#DDD" points="90 450 0 600 180 600"></polygon>
+                                <polygon points="90 450 180 300 0 300"></polygon>
+                                <polygon fill="#666" points="270 450 180 600 360 600"></polygon>
+                                <polygon fill="#AAA" points="270 450 360 300 180 300"></polygon>
+                                <polygon fill="#DDD" points="450 450 360 600 540 600"></polygon>
+                                <polygon fill="#999" points="450 450 540 300 360 300"></polygon>
+                                <polygon fill="#999" points="630 450 540 600 720 600"></polygon>
+                                <polygon fill="#FFF" points="630 450 720 300 540 300"></polygon>
+                                <polygon points="810 450 720 600 900 600"></polygon>
+                                <polygon fill="#DDD" points="810 450 900 300 720 300"></polygon>
+                                <polygon fill="#AAA" points="990 450 900 600 1080 600"></polygon>
+                                <polygon fill="#444" points="990 450 1080 300 900 300"></polygon>
+                                <polygon fill="#222" points="90 750 0 900 180 900"></polygon>
+                                <polygon points="270 750 180 900 360 900"></polygon>
+                                <polygon fill="#DDD" points="270 750 360 600 180 600"></polygon>
+                                <polygon points="450 750 540 600 360 600"></polygon>
+                                <polygon points="630 750 540 900 720 900"></polygon>
+                                <polygon fill="#444" points="630 750 720 600 540 600"></polygon>
+                                <polygon fill="#AAA" points="810 750 720 900 900 900"></polygon>
+                                <polygon fill="#666" points="810 750 900 600 720 600"></polygon>
+                                <polygon fill="#999" points="990 750 900 900 1080 900"></polygon>
+                                <polygon fill="#999" points="180 0 90 150 270 150"></polygon>
+                                <polygon fill="#444" points="360 0 270 150 450 150"></polygon>
+                                <polygon fill="#FFF" points="540 0 450 150 630 150"></polygon>
+                                <polygon points="900 0 810 150 990 150"></polygon>
+                                <polygon fill="#222" points="0 300 -90 450 90 450"></polygon>
+                                <polygon fill="#FFF" points="0 300 90 150 -90 150"></polygon>
+                                <polygon fill="#FFF" points="180 300 90 450 270 450"></polygon>
+                                <polygon fill="#666" points="180 300 270 150 90 150"></polygon>
+                                <polygon fill="#222" points="360 300 270 450 450 450"></polygon>
+                                <polygon fill="#FFF" points="360 300 450 150 270 150"></polygon>
+                                <polygon fill="#444" points="540 300 450 450 630 450"></polygon>
+                                <polygon fill="#222" points="540 300 630 150 450 150"></polygon>
+                                <polygon fill="#AAA" points="720 300 630 450 810 450"></polygon>
+                                <polygon fill="#666" points="720 300 810 150 630 150"></polygon>
+                                <polygon fill="#FFF" points="900 300 810 450 990 450"></polygon>
+                                <polygon fill="#999" points="900 300 990 150 810 150"></polygon>
+                                <polygon points="0 600 -90 750 90 750"></polygon>
+                                <polygon fill="#666" points="0 600 90 450 -90 450"></polygon>
+                                <polygon fill="#AAA" points="180 600 90 750 270 750"></polygon>
+                                <polygon fill="#444" points="180 600 270 450 90 450"></polygon>
+                                <polygon fill="#444" points="360 600 270 750 450 750"></polygon>
+                                <polygon fill="#999" points="360 600 450 450 270 450"></polygon>
+                                <polygon fill="#666" points="540 600 630 450 450 450"></polygon>
+                                <polygon fill="#222" points="720 600 630 750 810 750"></polygon>
+                                <polygon fill="#FFF" points="900 600 810 750 990 750"></polygon>
+                                <polygon fill="#222" points="900 600 990 450 810 450"></polygon>
+                                <polygon fill="#DDD" points="0 900 90 750 -90 750"></polygon>
+                                <polygon fill="#444" points="180 900 270 750 90 750"></polygon>
+                                <polygon fill="#FFF" points="360 900 450 750 270 750"></polygon>
+                                <polygon fill="#AAA" points="540 900 630 750 450 750"></polygon>
+                                <polygon fill="#FFF" points="720 900 810 750 630 750"></polygon>
+                                <polygon fill="#222" points="900 900 990 750 810 750"></polygon>
+                                <polygon fill="#222" points="1080 300 990 450 1170 450"></polygon>
+                                <polygon fill="#FFF" points="1080 300 1170 150 990 150"></polygon>
+                                <polygon points="1080 600 990 750 1170 750"></polygon>
+                                <polygon fill="#666" points="1080 600 1170 450 990 450"></polygon>
+                                <polygon fill="#DDD" points="1080 900 1170 750 990 750"></polygon>
+                            </g>
+                        </pattern>
+                    </defs>
+                    <rect x="0" y="0" fill="url(#a)" width="100%" height="100%"></rect>
+                    <rect x="0" y="0" fill="url(#b)" width="100%" height="100%"></rect>
+                </svg>
+            </div>
+            <div class="profile-card__avatar">
+                <img src="${getAvatarUrl(u)}" alt="Avatar">
+            </div>
+            
+            <div class="profile-card__title">${u.name || 'Anonymous'}</div>
+            <div class="profile-card__subtitle">@${u.username || 'user'}</div>
+            
+            <div class="profile-info-container">
+                <div class="profile-info-item">
+                    <i class="fas fa-info-circle"></i>
+                    <span>${u.bio || 'Available'}</span>
+                </div>
+                <div class="profile-info-item">
+                    <i class="fas fa-phone"></i>
+                    <span>${u.phone || 'No phone linked'}</span>
+                </div>
+                <div style="text-align:center; padding-top: 10px;">
+                    <div class="app-version-badge">v2.8.5</div>
                 </div>
             </div>
-            <input type="file" id="avatar-input" style="display:none;" accept="image/*" onchange="window.updateAvatar(this)">
-            
-            <div class="input-group">
-                <label>Name</label>
-                <input type="text" id="settings-name" value="${state.user?.user.name}">
+
+            <div id="profile-edit-section" style="display:none; padding: 0 20px; width: 100%; margin-top:10px;">
+                <div class="input-group" style="text-align:left;">
+                    <label>Name</label>
+                    <input type="text" id="settings-name" value="${u.name || ''}" style="background:#0f172a; color:white; border:1px solid #334155; padding:8px; border-radius:8px; width:100%;">
+                </div>
+                <div class="input-group" style="text-align:left;">
+                    <label>Bio</label>
+                    <input type="text" id="settings-bio" value="${u.bio || ''}" placeholder="Add a bio" style="background:#0f172a; color:white; border:1px solid #334155; padding:8px; border-radius:8px; width:100%;">
+                </div>
+                <button class="primary" style="width:100%; margin: 10px 0;" onclick="window.saveProfile()">Save Changes</button>
+                <input type="file" id="avatar-input" style="display:none;" accept="image/*" onchange="window.updateAvatar(this)">
             </div>
-            <div class="input-group">
-                <label>Bio</label>
-                <input type="text" id="settings-bio" value="${state.user?.user.bio || ''}" placeholder="Add a bio">
+
+            <div class="profile-card__wrapper">
+                <button class="profile-card__btn profile-card__btn-solid" onclick="document.getElementById('profile-edit-section').style.display='block'; this.parentElement.style.display='none';">Edit Profile</button>
+                <button class="profile-card__btn" onclick="window.logout()">Logout</button>
             </div>
-            <button class="primary" style="width:100%;margin-top:10px;" onclick="window.saveProfile()">Save Changes</button>
-             <button class="secondary" style="width:100%;margin-top:10px;" onclick="window.logout()">Log Out</button>
         </div>
      `;
 }
@@ -1048,6 +1212,22 @@ function renderSettingsBlocked() {
 
 function renderSettingsAppearance() {
     const isDark = document.body.classList.contains('dark-mode');
+    const currentWallpaper = localStorage.getItem('oma_wallpaper') || 'default';
+
+    const wallpapers = [
+        { id: 'default', label: 'Default' },
+        { id: 'bubble', label: 'Bubble' },
+        { id: 'choco', label: 'Choco' },
+        { id: 'chocolite', label: 'Choco Lite' },
+        { id: 'crossbox', label: 'Cross Box' },
+        { id: 'dots', label: 'Dots' },
+        { id: 'eyes', label: 'Eyes' },
+        { id: 'japan', label: 'Japan Grid' },
+        { id: 'japan-matrix', label: 'Japan Matrix' },
+        { id: 'matrix', label: 'Matrix' },
+        { id: 'strips', label: 'Strips' }
+    ];
+
     return `
         <div class="sidebar-header">
              <button class="icon-btn" onclick="window.openSettings('main')"><i class="fas fa-arrow-left"></i></button>
@@ -1065,6 +1245,26 @@ function renderSettingsAppearance() {
                         <span class="slider"></span>
                     </label>
                 </div>
+                
+                <div class="settings-section-header">Chat Wallpaper</div>
+                <div style="padding: 10px 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding-bottom: 80px;">
+                    ${wallpapers.map(w => `
+                        <div onclick="window.setWallpaper('${w.id}')" class="wallpaper-btn" style="
+                            padding: 8px 4px; 
+                            border-radius: 12px; 
+                            text-align: center; 
+                            cursor: pointer;
+                            border: 2px solid ${currentWallpaper === w.id ? 'var(--primary-color)' : 'rgba(255,255,255,0.05)'};
+                            background: rgba(255,255,255,0.03);
+                            color: white;
+                            font-size: 0.75rem;
+                            font-weight: 500;
+                        ">
+                            ${w.label}
+                        </div>
+                    `).join('')}
+                </div>
+
                  <div class="settings-item" onclick="window.clearChats()">
                     <div class="settings-text">
                          <h4 style="color:red;">Clear Local History</h4>
@@ -1186,11 +1386,17 @@ async function setupChatLogic() {
     state.messages.forEach(msg => appendMessage(msg, container));
     scrollToBottom(container);
 
+    let isSending = false; // Prevents double sending
+
     form.onsubmit = async (e) => {
         e.preventDefault();
+        if (isSending) return; // Already sending, ignore
+
         const input = document.getElementById('msg-input');
         const content = input.value.trim();
         if (!content) return;
+
+        isSending = true; // Set flag
         input.value = '';
 
         // Optimistic Render
@@ -1253,6 +1459,7 @@ async function setupChatLogic() {
             console.error("Send failed", e);
             // Optionally remove temp message or show error
         } finally {
+            isSending = false; // Reset flag
             if (btn) btn.disabled = false;
             // Re-focus input
             input.focus();
@@ -1781,7 +1988,20 @@ function appendMessage(msg, container) {
     `;
 
     // Long Press / Context Menu Logic
-    // Swipe to Reply Logic
+    // Desktop Hover Reply Button (PC only)
+    if (!('ontouchstart' in window)) {
+        const replyShortcut = document.createElement('button');
+        replyShortcut.className = 'hover-reply-btn';
+        replyShortcut.innerHTML = '<i class="fas fa-reply"></i>';
+        replyShortcut.title = 'Reply';
+        replyShortcut.onclick = (e) => {
+            e.stopPropagation();
+            window.replyToMessage(msg.id);
+        };
+        div.appendChild(replyShortcut);
+    }
+
+    // Add touch events for swipe-to-reply (Mobile)
     let touchStartX = 0;
     let touchMoveX = 0;
     let isSwiping = false;
@@ -2134,12 +2354,14 @@ window.saveProfile = async () => {
     const name = document.getElementById('settings-name').value;
     const bio = document.getElementById('settings-bio').value;
     try {
-        const updatedUser = await api.updateProfile({ name, bio });
-        state.user.user = { ...state.user.user, ...updatedUser };
+        const res = await api.updateProfile({ name, bio });
+        const userData = res.user || res;
+        state.user.user = { ...state.user.user, ...userData };
         localStorage.setItem('oma_user', JSON.stringify(state.user));
-        alert('Profile Updated!');
+        render(); // Refresh UI
+        showCustomAlert('Profile Updated!', 'success');
     } catch (e) {
-        alert('Update failed');
+        showCustomAlert('Update failed', 'error');
     }
 };
 
@@ -2380,6 +2602,8 @@ window.handleVerifyLinkOTP = async () => {
 
     try {
         let idToken;
+        const btn = document.querySelector('#link-otp-group button');
+        if (btn) { btn.disabled = true; btn.innerText = 'Verifying...'; }
 
         if (Capacitor.isNativePlatform()) {
             console.log("Verifying Native Link OTP...");
@@ -2391,22 +2615,31 @@ window.handleVerifyLinkOTP = async () => {
             idToken = tokenResult.token;
         } else {
             console.log("Verifying Web Link OTP...");
+            if (!window.linkConfirmationResult) {
+                throw new Error("No active linking request found. Please try sending OTP again.");
+            }
             const result = await window.linkConfirmationResult.confirm(code);
             idToken = await result.user.getIdToken();
         }
 
+        console.log("Sending linking request to OMA backend...");
         const res = await api.linkPhone(idToken);
 
         // Update local state
         state.user.user.phone = res.phoneNumber;
+        state.user.user.settings = state.user.user.settings || {};
         state.user.user.settings.phoneLinked = true;
         localStorage.setItem('oma_user', JSON.stringify(state.user));
 
         alert("Phone number linked successfully!");
-        render();
+        window.openSettings('account'); // Refresh view
     } catch (error) {
         console.error("Link OTP Verification Error:", error);
-        errorMsg.innerText = error.message || 'Verification failed';
+        let msg = error.message || 'Verification failed';
+        if (error.response?.data?.error) msg = error.response.data.error;
+        errorMsg.innerText = msg;
+        const btn = document.querySelector('#link-otp-group button');
+        if (btn) { btn.disabled = false; btn.innerText = 'Verify & Link'; }
     }
 };
 
@@ -3006,7 +3239,18 @@ function initSocket() {
         socket.on('online_users', (users) => {
             console.log(`[Client] Received online_users list:`, users);
             state.onlineUsers = new Set(users);
-            renderMessagesView(); // Re-render to show dots
+
+            // Re-render sidebar if in messages view
+            if (state.activeTab === 'messages') {
+                const listContainer = document.getElementById('chat-list');
+                if (listContainer) {
+                    const chatList = state.isSearching ? state.searchResults : [{ id: 'general', name: 'General Group', lastMsg: 'Tap to chat', avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', time: '' }, ...state.chats];
+                    listContainer.innerHTML = `
+                        <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
+                        ${renderChatListContent(chatList)}
+                    `;
+                }
+            }
         });
 
         socket.on('user_status', (data) => {
@@ -3181,19 +3425,18 @@ window.startCall = async (type = 'video', targetId = null) => {
 /* --- Global Helpers (Moved out of startCall) --- */
 
 function getHeaderStatusText(chat) {
+    if (!chat || !chat.id) return '';
     if (chat.id === 'general') return 'Tap to view info';
+    if (state.onlineUsers.has(chat.id)) return 'Online';
 
-    if (state.onlineUsers.has(chat.id)) return '<span style="color:#22c55e;font-weight:600;">Online</span>';
-
-    const status = state.userStatuses[chat.id];
-    const lastSeen = (status && status.lastSeen) || chat.lastSeen;
+    const cachedStatus = state.userStatuses[chat.id];
+    const lastSeen = cachedStatus?.lastSeen || chat.lastSeen;
 
     if (lastSeen) {
         if (lastSeen === 'Recently') return 'Last seen recently';
-        return 'Last seen ' + timeAgo(lastSeen);
+        return `Last seen ${timeAgo(lastSeen)}`;
     }
-
-    return 'Offline';
+    return '';
 }
 
 function timeAgo(timestamp) {
@@ -3207,20 +3450,23 @@ function timeAgo(timestamp) {
 }
 
 function updateUserStatusUI(userId, online, lastSeen) {
+    // 1. Dynamic Sidebar Update
     if (state.activeTab === 'messages') {
-        const sidebarContent = document.querySelector('.chat-list');
-        if (sidebarContent) {
-            const sidebarMain = document.getElementById('sidebar-main');
-            if (sidebarMain) {
-                sidebarMain.innerHTML = renderSidebarMain();
-            }
+        const listContainer = document.getElementById('chat-list');
+        if (listContainer) {
+            const chatList = state.isSearching ? state.searchResults : [{ id: 'general', name: 'General Group', lastMsg: 'Tap to chat', avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', time: '' }, ...state.chats];
+            listContainer.innerHTML = `
+                <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
+                ${renderChatListContent(chatList)}
+            `;
         }
     }
+
+    // 2. Header Update
     if (state.activeChatId === userId) {
         const headerStatus = document.getElementById('header-status');
         if (headerStatus) {
             const newText = getHeaderStatusText({ id: userId });
-            console.log(`[Client] Updating header status for ${userId} to: ${newText}`);
             headerStatus.innerHTML = newText;
         }
     }
@@ -3593,3 +3839,96 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
+
+window.setWallpaper = (type) => {
+    localStorage.setItem('oma_wallpaper', type);
+    const bg = document.getElementById('app-wallpaper-bg');
+    if (bg) {
+        document.body.classList.remove('global-wallpaper-active');
+        bg.className = '';
+        bg.innerHTML = '';
+        if (type !== 'default') {
+            document.body.classList.add('global-wallpaper-active');
+            bg.classList.add(`wallpaper-${type}`);
+            window.applyWallpaperElements(type);
+        }
+    }
+    if (state.settingsView === 'appearance') {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) sidebar.innerHTML = renderSidebarMain();
+    }
+};
+
+window.applyWallpaperElements = (type) => {
+    const bg = document.getElementById('app-wallpaper-bg');
+    if (!bg) return;
+    bg.innerHTML = '';
+
+    if (type === 'bubble') {
+        const bubbleContainer = document.createElement('div');
+        bubbleContainer.id = 'stars'; // Reusing container id for simplicity
+        bg.appendChild(bubbleContainer);
+
+        for (let i = 0; i < 40; i++) {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble-sphere';
+            const size = 15 + Math.random() * 35; // Size between 15px and 50px
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            bubble.style.left = `${Math.random() * 100}%`;
+            bubble.style.bottom = `-50px`;
+            bubble.style.animationDuration = `${10 + Math.random() * 20}s`;
+            bubble.style.animationDelay = `${Math.random() * -30}s`;
+            bubble.style.opacity = 0.3 + Math.random() * 0.4;
+            bubbleContainer.appendChild(bubble);
+        }
+    } else if (type === 'japan') {
+        const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
+        for (let i = 0; i < 150; i++) {
+            const span = document.createElement('span');
+            span.innerText = chars[Math.floor(Math.random() * chars.length)];
+            bg.appendChild(span);
+        }
+    } else if (type === 'japan-matrix') {
+        const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
+        for (let i = 0; i < 80; i++) {
+            const span = document.createElement('span');
+            span.innerText = chars[Math.floor(Math.random() * chars.length)];
+            span.style.left = `${Math.random() * 100}%`;
+            span.style.animationDuration = `${5 + Math.random() * 8}s`;
+            span.style.animationDelay = `${Math.random() * -10}s`;
+            bg.appendChild(span);
+        }
+    } else if (type === 'matrix') {
+        // Professional CSS Column approach (40 columns)
+        for (let i = 0; i < 40; i++) {
+            const col = document.createElement('div');
+            col.className = 'matrix-column';
+            bg.appendChild(col);
+        }
+    }
+};
+
+// Initialize theme and wallpaper on load
+(function () {
+    const theme = localStorage.getItem('oma_theme');
+    if (theme === 'dark') document.body.classList.add('dark-mode');
+
+    const initWallpaper = () => {
+        const wallpaper = localStorage.getItem('oma_wallpaper');
+        if (wallpaper && wallpaper !== 'default') {
+            const checkExist = setInterval(() => {
+                const bg = document.getElementById('app-wallpaper-bg');
+                if (bg) {
+                    document.body.classList.add('global-wallpaper-active');
+                    bg.classList.add(`wallpaper-${wallpaper}`);
+                    window.applyWallpaperElements(wallpaper);
+                    clearInterval(checkExist);
+                }
+            }, 100);
+        }
+    };
+    initWallpaper();
+})();
+
+

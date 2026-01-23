@@ -1,0 +1,1 @@
+its not a wallpaper, its ui design for Profile page when licked on users profile.

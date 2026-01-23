@@ -1,0 +1,1 @@
+its not a wallpaper, its a card for deactivate the account.

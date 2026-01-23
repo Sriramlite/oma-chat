@@ -1,0 +1,39 @@
+/* From Uiverse.io by FColombati */ 
+.container {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background:
+    conic-gradient(from -135deg at 6.5% 90%, #996349 0 15%, #fff0 0 100%) 50% /
+      200px 133.3px,
+    conic-gradient(from 135deg at 93.5% 90%, #2a0b00 0 37.5%, #fff0 0 100%) 50% /
+      200px 133.3px,
+    conic-gradient(from 45deg at 93.5% 10%, #2a0b00 0 37.5%, #fff0 0 100%) 50% /
+      200px 133.3px,
+    conic-gradient(
+        from -180deg at 6.5% 10%,
+        #996349 0 37.5%,
+        #612f0e 0 75%,
+        #fff0 0 100%
+      )
+      50% / 200px 133.3px,
+    conic-gradient(from 0deg at 88% 82%, #7b4028 0 75%, #fff0 0 100%) 50% /
+      200px 133.3px,
+    conic-gradient(from -180deg at 12% 18%, #7b4028 0 75%, #fff0 0 100%) 50% /
+      200px 133.3px,
+    conic-gradient(from -135deg at 20% 70%, #2a0b00 0 15%, #fff0 0 100%) 50% /
+      200px 133.3px,
+    conic-gradient(from 135deg at 80% 70%, #612f0e 0 37.5%, #fff0 0 100%) 50% /
+      200px 133.3px,
+    conic-gradient(from 45deg at 80% 30%, #c1a095 0 37.5%, #fff0 0 100%) 50% /
+      200px 133.3px,
+    conic-gradient(
+        from -180deg at 20% 30%,
+        #2a0b00 0 37.5%,
+        #4c230e 0 75%,
+        #fff0 0 100%
+      )
+      50% / 200px 133.3px,
+    #693319;
+}

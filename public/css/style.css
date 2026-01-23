@@ -119,6 +119,13 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
+    position: relative;
+    z-index: 10;
+}
+
+body.global-wallpaper-active,
+body.global-wallpaper-active #app {
+    background: transparent !important;
 }
 
 /* Auth Layout */
@@ -2201,4 +2208,46 @@ body.dark-mode .modal-content button:hover {
     100% {
         background-color: transparent;
     }
+}
+
+/* PC Hover Reply Button */
+.hover-reply-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.message-sent .hover-reply-btn {
+    left: -45px;
+}
+
+.message-received .hover-reply-btn {
+    right: -45px;
+}
+
+.message-bubble:hover .hover-reply-btn {
+    opacity: 1;
+}
+
+.hover-reply-btn:hover {
+    color: var(--primary-color);
+    transform: translateY(-50%) scale(1.1);
+}
+
+body.dark-mode .hover-reply-btn {
+    background: var(--sidebar-bg);
 }
