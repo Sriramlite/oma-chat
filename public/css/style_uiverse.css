@@ -150,15 +150,25 @@
 body:not(.dark-mode) .white::before,
 body:not(.dark-mode) .border::before,
 body:not(.dark-mode) .darkBorderBg::before,
-body:not(.dark-mode) .glow:before {
-    display: none;
-    /* Hide premium effects in light mode if they look bad, or we can adjust them */
+body:not(.dark-mode) .glow:before,
+body:not(.dark-mode) #pink-mask,
+body:not(.dark-mode) #input-mask {
+    display: none !important;
 }
 
 body:not(.dark-mode) #poda {
     border: 1px solid var(--border-color);
     border-radius: 10px;
     background: var(--bg-color);
+}
+
+body.dark-mode #input-mask {
+    background: linear-gradient(90deg, transparent, var(--sidebar-bg) 90%);
+}
+
+#input-mask,
+#pink-mask {
+    transition: opacity 0.3s ease;
 }
 
 /* Background Gradients for Search Bar Layers */
