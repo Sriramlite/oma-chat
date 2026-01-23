@@ -1247,17 +1247,17 @@ function renderSettingsAppearance() {
                 </div>
                 
                 <div class="settings-section-header">Chat Wallpaper</div>
-                <div style="padding: 10px 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding-bottom: 80px;">
+                <div style="padding: 10px 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-bottom: 80px;">
                     ${wallpapers.map(w => `
                         <div onclick="window.setWallpaper('${w.id}')" class="wallpaper-btn" style="
-                            padding: 10px 5px; 
-                            border-radius: 12px; 
+                            padding: 8px 4px; 
+                            border-radius: 10px; 
                             text-align: center; 
                             cursor: pointer;
-                            border: 2px solid ${currentWallpaper === w.id ? 'var(--primary-color)' : 'var(--border-color)'};
+                            border: 1px solid ${currentWallpaper === w.id ? 'var(--primary-color)' : 'var(--border-color)'};
                             background: var(--sidebar-bg);
                             color: var(--text-primary);
-                            font-size: 0.85rem;
+                            font-size: 0.75rem;
                             font-weight: 600;
                             transition: all 0.2s;
                         ">
