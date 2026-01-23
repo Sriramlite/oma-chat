@@ -1247,7 +1247,7 @@ function renderSettingsAppearance() {
                 </div>
                 
                 <div class="settings-section-header">Chat Wallpaper</div>
-                <div style="padding: 10px 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-bottom: 80px;">
+                <div class="wallpaper-grid">
                     ${wallpapers.map(w => `
                         <div onclick="window.setWallpaper('${w.id}')" class="wallpaper-btn" style="
                             padding: 8px 4px; 

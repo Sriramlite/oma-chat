@@ -226,16 +226,26 @@ body.dark-mode #input-mask {
 
 /* === APP WALLPAPER SYSTEM === */
 #app-wallpaper-bg {
-    position: fixed;
+    position: fixed !important;
     inset: 0;
-    z-index: -1;
+    top: 0;
+    left: 0;
+    z-index: -9999 !important;
     /* Move above body but below #app */
-    pointer-events: none;
+    pointer-events: none !important;
     overflow: hidden;
     background-size: cover;
     background-position: center;
     width: 100vw;
     height: 100vh;
+}
+
+.wallpaper-grid {
+    padding: 10px 20px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding-bottom: 80px;
 }
 
 body.global-wallpaper-active {
