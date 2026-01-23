@@ -1247,17 +1247,17 @@ function renderSettingsAppearance() {
                 </div>
                 
                 <div class="settings-section-header">Chat Wallpaper</div>
-                <div style="padding: 10px 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding-bottom: 80px;">
+                <div style="padding: 10px 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding-bottom: 80px;">
                     ${wallpapers.map(w => `
                         <div onclick="window.setWallpaper('${w.id}')" class="wallpaper-btn" style="
-                            padding: 15px 10px; 
+                            padding: 10px 5px; 
                             border-radius: 12px; 
                             text-align: center; 
                             cursor: pointer;
                             border: 2px solid ${currentWallpaper === w.id ? 'var(--primary-color)' : 'var(--border-color)'};
                             background: var(--sidebar-bg);
                             color: var(--text-primary);
-                            font-size: 0.9rem;
+                            font-size: 0.85rem;
                             font-weight: 600;
                             transition: all 0.2s;
                         ">
@@ -3864,15 +3864,18 @@ window.applyWallpaperElements = (type) => {
     const bg = document.getElementById('app-wallpaper-bg');
     if (!bg) return;
     bg.innerHTML = '';
+    bg.style.pointerEvents = 'none';
 
     if (type === 'bubble') {
         const bubbleContainer = document.createElement('div');
         bubbleContainer.id = 'stars'; // Reusing container id for simplicity
+        bubbleContainer.style.pointerEvents = 'none';
         bg.appendChild(bubbleContainer);
 
         for (let i = 0; i < 40; i++) {
             const bubble = document.createElement('div');
             bubble.className = 'bubble-sphere';
+            bubble.style.pointerEvents = 'none';
             const size = 15 + Math.random() * 35; // Size between 15px and 50px
             bubble.style.width = `${size}px`;
             bubble.style.height = `${size}px`;
@@ -3887,6 +3890,7 @@ window.applyWallpaperElements = (type) => {
         const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
         for (let i = 0; i < 150; i++) {
             const span = document.createElement('span');
+            span.style.pointerEvents = 'none';
             span.innerText = chars[Math.floor(Math.random() * chars.length)];
             bg.appendChild(span);
         }
@@ -3894,6 +3898,7 @@ window.applyWallpaperElements = (type) => {
         const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
         for (let i = 0; i < 80; i++) {
             const span = document.createElement('span');
+            span.style.pointerEvents = 'none';
             span.innerText = chars[Math.floor(Math.random() * chars.length)];
             span.style.left = `${Math.random() * 100}%`;
             span.style.animationDuration = `${5 + Math.random() * 8}s`;
@@ -3905,6 +3910,7 @@ window.applyWallpaperElements = (type) => {
         for (let i = 0; i < 40; i++) {
             const col = document.createElement('div');
             col.className = 'matrix-column';
+            col.style.pointerEvents = 'none';
             bg.appendChild(col);
         }
     }
