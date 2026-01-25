@@ -1340,7 +1340,13 @@ emoji-picker {
 }
 
 #incoming-call-popup {
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
     width: 90%;
+    max-width: 400px;
     flex-direction: column;
     padding: 20px;
     gap: 15px;
