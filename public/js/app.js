@@ -3626,34 +3626,34 @@ function initSocket() {
         });
 
         socket.on('user_status', (data) => {
-            const { userId, online, lastSeen, battery } = data; // Assuming battery comes here too? If not, we rely on separate event? 
-            // Wait, usually 'user_status' has battery if we designed it that way.
-            // If not, we need to merge it.
+            const { userId, online, lastSeen, battery } = data;
 
-            if (online) {
-                state.onlineUsers.add(userId);
-            } else {
-                state.onlineUsers.delete(userId);
+            // FIX: Only update online status if explicitly provided (handle partial updates)
+            if (online !== undefined) {
+                if (online) {
+                    state.onlineUsers.add(userId);
+                } else {
+                    state.onlineUsers.delete(userId);
+                }
             }
 
             // Update Cache
             state.userStatuses[userId] = {
                 ...state.userStatuses[userId],
-                lastSeen,
+                ...(lastSeen !== undefined ? { lastSeen } : {}),
                 ...(battery ? { battery } : {})
             };
 
             // CRITICAL: Update State Chat Object so Carousel sees it
             const chatIdx = state.chats.findIndex(c => c.id === userId);
             if (chatIdx !== -1) {
-                state.chats[chatIdx].status = online ? 'online' : 'offline';
-                state.chats[chatIdx].lastSeen = lastSeen;
+                if (online !== undefined) state.chats[chatIdx].status = online ? 'online' : 'offline';
+                if (lastSeen !== undefined) state.chats[chatIdx].lastSeen = lastSeen;
                 if (battery) state.chats[chatIdx].battery = battery;
             }
 
             // Update UI dynamically
-            console.log(`[Client] Received user_status (Cache Updated):`, { userId, online, lastSeen, battery });
-            // updateUserStatusUI(userId, online, lastSeen); // DISABLED: Let Carousel loop handle UI
+            // console.log(`[Client] Received user_status (Cache Updated):`, { userId, online, lastSeen, battery });
         });
 
         socket.on('typing', (data) => {
