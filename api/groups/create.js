@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
         const newGroup = {
             id: crypto.randomUUID(),
             name,
-            adminId: user.id,
+            adminIds: [user.id], // Changed from adminId to adminIds array
             members: [...new Set([...members, user.id])], // Ensure creator is included and uniques
             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
             created: Date.now()

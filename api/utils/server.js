@@ -129,6 +129,18 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Typing Indicators
+    // Typing Indicators
+    // Typing Indicators
+    socket.on('typing', (data) => {
+        const room = String(data.receiverId);
+        io.to(room).emit('typing', data);
+    });
+
+    socket.on('stop_typing', (data) => {
+        io.to(String(data.receiverId)).emit('stop_typing', data);
+    });
+
     // Call Initiation
     socket.on('offer', async (data) => {
         const { targetId, offer } = data;

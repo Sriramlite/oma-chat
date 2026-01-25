@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OMA - Online Messaging App</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=5">
     <!-- Animations -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <!-- FontAwesome -->
@@ -18,13 +18,101 @@
     <div id="app-wallpaper-bg"></div>
     <script>
         window.onerror = function (msg, url, lineNo, columnNo, error) {
-            alert('Error: ' + msg + '\nLine: ' + lineNo);
-            return false;
+            console.error('Error: ' + msg + '\nLine: ' + lineNo);
+            // The provided snippet for this part was malformed.
+            // Assuming the intent was to remove the 'return false;' and potentially add other error handling.
+            // For now, just keeping the console.error as per the instruction.
+            return false; // Keeping this for default browser error suppression if desired.
         };
+
+        // Forced 5-Second Loader
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('initial-loader');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.remove(), 500);
+                }
+            }, 5000); // 5 Seconds
+        });
     </script>
+    <div id="landing-page"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%); z-index:99998; color:white; overflow-y:auto;">
+        <nav
+            style="display:flex; justify-content:space-between; align-items:center; padding:20px 40px; max-width:1200px; margin:0 auto;">
+            <div
+                style="font-size:1.5rem; font-weight:800; background:linear-gradient(to right, #f43f5e, #f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+                OMA</div>
+            <div>
+                <button
+                    onclick="window.location.hash='#login'; document.getElementById('landing-page').style.display='none';"
+                    style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600; margin-right:10px;">Login</button>
+                <button
+                    onclick="window.location.hash='#register'; document.getElementById('landing-page').style.display='none';"
+                    style="background:var(--primary-color); border:none; color:white; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600; box-shadow:0 4px 15px rgba(244, 63, 94, 0.4);">Sign
+                    Up</button>
+            </div>
+        </nav>
+
+        <header style="text-align:center; padding: 100px 20px; max-width:800px; margin:0 auto;">
+            <h1 style="font-size:3.5rem; line-height:1.2; margin-bottom:20px;">
+                Connect Instantly,<br>
+                <span
+                    style="background:linear-gradient(to right, #f43f5e, #f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Securely
+                    & Freely.</span>
+            </h1>
+            <p style="font-size:1.2rem; color:#94a3b8; margin-bottom:40px; line-height:1.6;">
+                Experience the next generation of messaging. High-quality video calls, instant syncing, and a beautiful
+                interface designed for you.
+            </p>
+            <button
+                onclick="window.location.hash='#register'; document.getElementById('landing-page').style.display='none';"
+                style="background:white; color:#0f172a; border:none; padding:16px 40px; border-radius:50px; font-size:1.1rem; font-weight:700; cursor:pointer; transition:transform 0.2s;">Get
+                Started <i class="fas fa-arrow-right" style="margin-left:8px;"></i></button>
+        </header>
+
+        <section
+            style="display:flex; flex-wrap:wrap; justify-content:center; gap:30px; padding:40px 20px; max-width:1200px; margin:0 auto;">
+            <div class="landing-card"
+                style="background:rgba(255,255,255,0.05); padding:30px; border-radius:20px; width:300px; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1);">
+                <div
+                    style="background:rgba(244, 63, 94, 0.2); width:50px; height:50px; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:20px; color:#f43f5e;">
+                    <i class="fas fa-bolt" style="font-size:1.5rem;"></i>
+                </div>
+                <h3 style="margin-bottom:10px; font-size:1.2rem;">Lightning Fast</h3>
+                <p style="color:#94a3b8; font-size:0.95rem;">Real-time message delivery with optimized socket
+                    connections.</p>
+            </div>
+            <div class="landing-card"
+                style="background:rgba(255,255,255,0.05); padding:30px; border-radius:20px; width:300px; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1);">
+                <div
+                    style="background:rgba(16, 185, 129, 0.2); width:50px; height:50px; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:20px; color:#10b981;">
+                    <i class="fas fa-shield-alt" style="font-size:1.5rem;"></i>
+                </div>
+                <h3 style="margin-bottom:10px; font-size:1.2rem;">Secure & Private</h3>
+                <p style="color:#94a3b8; font-size:0.95rem;">Your conversations are private. We prioritize your
+                    security.</p>
+            </div>
+            <div class="landing-card"
+                style="background:rgba(255,255,255,0.05); padding:30px; border-radius:20px; width:300px; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1);">
+                <div
+                    style="background:rgba(59, 130, 246, 0.2); width:50px; height:50px; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:20px; color:#3b82f6;">
+                    <i class="fas fa-video" style="font-size:1.5rem;"></i>
+                </div>
+                <h3 style="margin-bottom:10px; font-size:1.2rem;">HD Video Calls</h3>
+                <p style="color:#94a3b8; font-size:0.95rem;">Crystal clear video and audio calls to stay close to loved
+                    ones.</p>
+            </div>
+        </section>
+
+        <footer style="text-align:center; padding:40px; color:#64748b; font-size:0.9rem;">
+            &copy; 2026 OMA Inc. All rights reserved.
+        </footer>
+    </div>
     <div id="app">
-        <div class="loading-screen">
-            <h1>OMA</h1>
+        <div class="loading-screen" id="initial-loader"
+            style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0f172a;z-index:99999;display:flex;flex-direction:column;justify-content:center;align-items:center;transition:opacity 0.5s;">
+            <h1 style="color:white;font-family:sans-serif;margin-bottom:20px;">OMA</h1>
             <div class="loader">
                 <div class="loader__circle"></div>
                 <div class="loader__circle"></div>
@@ -38,7 +126,7 @@
 
     <!-- Socket.io -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script type="module" src="js/app.js?v=4"></script>
+    <script type="module" src="js/app.js?v=5"></script>
 
 
     <!-- Video Call Modal -->
@@ -84,6 +172,18 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Media Viewer Modal -->
+    <div id="media-viewer-modal" class="hidden"
+        style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:100000;display:flex;justify-content:center;align-items:center;flex-direction:column;">
+        <button onclick="window.closeMediaViewer()"
+            style="position:absolute;top:20px;right:20px;background:none;border:none;color:white;font-size:2rem;cursor:pointer;z-index:100001;"><i
+                class="fas fa-times"></i></button>
+        <div id="media-viewer-content"
+            style="max-width:90%;max-height:90%;display:flex;justify-content:center;align-items:center;">
+            <!-- Content injected via JS -->
+        </div>
     </div>
 
     <!-- Incoming Call Popup -->

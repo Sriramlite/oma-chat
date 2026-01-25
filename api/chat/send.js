@@ -70,10 +70,12 @@ module.exports = async (req, res) => {
                         { chatId: String(message.senderId) },
                         {
                             android: {
+                                priority: 'high',
                                 notification: {
                                     channelId: 'message_channel',
-                                    priority: 'high',
+                                    priority: 'max',
                                     defaultSound: true,
+                                    visibility: 'public',
                                     defaultVibrateTimings: true
                                 }
                             }

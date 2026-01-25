@@ -5,6 +5,19 @@
     gap: 0.3em;
 }
 
+.loader::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 2em;
+    filter: blur(45px);
+    background-color: #e299ff;
+    background-image: radial-gradient(at 52% 57%, hsla(11, 83%, 72%, 1) 0px, transparent 50%),
+        radial-gradient(at 37% 57%, hsla(175, 78%, 66%, 1) 0px, transparent 50%);
+}
+
 .loader__circle {
     --size__loader: 0.6em;
     width: var(--size__loader);
@@ -304,6 +317,7 @@ body.global-wallpaper-active .chat-main {
         linear-gradient(45deg, transparent 37%, white 0, white 63%, transparent 0) wheat !important;
     background-size: 80px 80px !important;
     animation: chocolite-ani 10s linear infinite;
+    will-change: background-position;
 }
 
 @keyframes chocolite-ani {
@@ -329,6 +343,7 @@ body.global-wallpaper-active .chat-main {
     backdrop-filter: blur(1px);
     animation: float-bubble linear infinite;
     pointer-events: none;
+    will-change: transform;
 }
 
 @keyframes float-bubble {
@@ -400,6 +415,7 @@ body.global-wallpaper-active .chat-main {
     background-size: 60px 60px !important;
     background-position: 0 0, 0 0, 30px 30px, 30px 30px !important;
     animation: crossbox-slide 4s linear infinite;
+    will-change: background-position;
 }
 
 @keyframes crossbox-slide {
@@ -426,6 +442,7 @@ body.global-wallpaper-active .chat-main {
     overflow: hidden;
     width: 100%;
     height: 100%;
+    will-change: background-position;
 }
 
 @keyframes dots-hi {
@@ -447,6 +464,14 @@ body.global-wallpaper-active .chat-main {
     background-size: 8px 8px;
     --f: blur(1em) brightness(6);
     animation: dots-hii 10s linear infinite;
+    will-change: backdrop-filter;
+}
+
+@media (max-width: 768px) {
+    .wallpaper-dots::after {
+        animation: none !important;
+        backdrop-filter: blur(0.5em) brightness(1.5);
+    }
 }
 
 @keyframes dots-hi {
@@ -573,6 +598,7 @@ body.global-wallpaper-active .chat-main {
     top: -100px;
     animation: fall linear infinite;
     z-index: 10;
+    will-change: transform;
 }
 
 .wallpaper-matrix {
@@ -590,8 +616,10 @@ body.global-wallpaper-active .chat-main {
     font-size: 16px;
     line-height: 18px;
     font-weight: bold;
+    font-weight: bold;
     animation: fall linear infinite;
     white-space: nowrap;
+    will-change: transform;
 }
 
 .matrix-column::before {

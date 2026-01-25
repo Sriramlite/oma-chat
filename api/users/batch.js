@@ -30,7 +30,10 @@ module.exports = async (req, res) => {
                 name: 1,
                 username: 1,
                 avatar: 1,
-                lastSeen: 1
+                lastSeen: 1,
+                bio: 1,
+                battery: 1,
+                phone: 1
             })
             .toArray();
 

@@ -2,6 +2,8 @@ import { api } from './api.js';
 import { PushNotifications } from './capacitor-push/index.js';
 import { registerPlugin, Capacitor } from './capacitor-core.js';
 import { FirebaseAuthentication } from './capacitor-firebase-auth/index.js';
+import { db } from './db.js';
+import { sync } from './sync.js';
 
 const App = registerPlugin('App');
 
@@ -109,9 +111,34 @@ async function init() {
         state.user = JSON.parse(user);
         initSocket(); // Enable Real-time
 
+        // Initialize Offline Sync
+        sync.init();
+
+        // Listen for Network Status
+        window.addEventListener('network-status', (e) => {
+            const isOnline = e.detail.online;
+            if (!isOnline) {
+                window.showCustomAlert('You are offline. Data will sync when online.', 'warning');
+                document.body.classList.add('offline-mode');
+            } else {
+                window.showCustomAlert('Back online. Syncing...', 'success');
+                document.body.classList.remove('offline-mode');
+            }
+        });
+
         // Load Chats
         const chats = localStorage.getItem('oma_chats');
         if (chats) state.chats = JSON.parse(chats);
+
+        // Try loading from DB if empty
+        if (state.chats.length === 0) {
+            db.getChats().then(c => {
+                if (c && c.length > 0) {
+                    state.chats = c;
+                    render();
+                }
+            });
+        }
 
         render(); // Initial Render
         // refreshSidebar(); // Assuming this function exists elsewhere or will be added
@@ -163,6 +190,16 @@ async function init() {
                 if (state.settingsView) {
                     window.closeSettings();
                     return;
+                }
+
+                // Check Chat Menu
+                const chatMenu = document.getElementById('chat-menu-dropdown');
+                const chatMenuBtn = document.getElementById('btn-chat-menu');
+                if (chatMenu && !chatMenu.classList.contains('hidden')) {
+                    // If the menu is open, close it.
+                    // No need to check e.target here as it's a back button event, not a click.
+                    chatMenu.classList.add('hidden');
+                    return; // Consume the back button event
                 }
 
                 // 4. Chat View (Mobile)
@@ -233,24 +270,48 @@ function renderBottomNav() {
 
 function render() {
     const app = document.getElementById('app');
-    let hash = window.location.hash || '#login';
+    const landing = document.getElementById('landing-page');
 
-    if (state.user) {
-        if (hash === '#login' || hash === '#signup') {
-            window.location.hash = '#chat';
-            return;
+    if (!state.user) {
+        // Not Logged In
+        const hash = window.location.hash;
+
+        if (hash === '#login') {
+            if (landing) landing.style.display = 'none';
+            app.style.display = 'block';
+            app.innerHTML = renderLogin();
+            const form = document.getElementById('login-form');
+            if (form) form.onsubmit = handleLogin;
+        } else if (hash === '#register') {
+            if (landing) landing.style.display = 'none';
+            app.style.display = 'block';
+            app.innerHTML = renderRegister();
+            const form = document.getElementById('signup-form');
+            if (form) form.onsubmit = handleSignup;
+        } else {
+            // Default: Landing Page
+            if (landing) landing.style.display = 'block';
+            app.style.display = 'none';
+            // app.innerHTML = ''; // Keep empty to reduce DOM
         }
-    } else {
-        if (hash !== '#login' && hash !== '#signup') {
-            window.location.hash = '#login';
-            return;
-        }
+        return;
     }
+
+    // Logged In
+    if (landing) landing.style.display = 'none';
+    app.style.display = 'block';
+
+    // If still on login/register hash, switch to chat
+    if (window.location.hash === '#login' || window.location.hash === '#register' || !window.location.hash) {
+        window.location.hash = '#chat';
+    }
+
+    const currentHash = window.location.hash;
 
     app.className = '';
 
-    if (hash.startsWith('#chat')) {
-        const parts = hash.split('/');
+    if (currentHash.startsWith('#chat')) {
+        const parts = currentHash.split('/');
         if (parts.length > 1 && parts[1]) {
             state.activeChatId = parts[1];
             state.mobileView = 'chat';
@@ -260,17 +321,26 @@ function render() {
             state.activeChatId = null;
         }
         renderChatLayout(app);
-    } else if (hash === '#login') {
-        renderLogin(app);
-    } else if (hash === '#signup') {
-        renderSignup(app);
+    } else if (currentHash === '#login') {
+        app.innerHTML = renderLogin();
+    } else if (currentHash === '#register') {
+        app.innerHTML = renderRegister();
     } else {
         app.innerHTML = '<h1>404</h1>';
     }
+
+    // Bind Events after injection
+    if (currentHash === '#login') {
+        const form = document.getElementById('login-form');
+        if (form) form.onsubmit = handleLogin;
+    } else if (currentHash === '#register') {
+        const form = document.getElementById('signup-form');
+        if (form) form.onsubmit = handleSignup;
+    }
 }
 
-function renderLogin(container) {
-    container.innerHTML = `
+function renderLogin() {
+    return `
         <div class="centered-view">
             <div class="auth-box animate__animated animate__fadeIn">
                 <h2>Log in</h2>
@@ -280,14 +350,12 @@ function renderLogin(container) {
                     <button type="submit">Log In</button>
                     <div style="text-align:center; margin: 15px 0; color: grey; font-size: 0.8rem;">OR</div>
                     <button type="button" class="secondary" onclick="window.switchPhoneLogin()" style="background: rgba(var(--primary-color-rgb), 0.1); color: var(--primary-color); border: 1px solid var(--primary-color);">Login with Phone</button>
-                    <a href="#signup" style="display:block; margin-top:15px;">Create Account</a>
+                    <a href="#register" style="display:block; margin-top:15px;">Create Account</a>
                     <div id="error-msg" class="error-msg"></div>
                 </form>
             </div>
         </div>
     `;
-    document.getElementById('login-form').onsubmit = handleLogin;
-    document.getElementById('login-form').onsubmit = handleLogin;
 }
 
 // --- Phone Auth (SMS OTP) ---
@@ -536,23 +604,22 @@ window.renderNameSetup = () => {
     };
 };
 
-function renderSignup(container) {
-    container.innerHTML = `
+function renderRegister() {
+    return `
         <div class="centered-view">
             <div class="auth-box animate__animated animate__fadeIn">
                 <h2>Sign Up</h2>
                 <form id="signup-form">
                     <input type="text" id="username" placeholder="Username" required>
-                    <input type="text" id="name" placeholder="Display Name">
+                    <input type="text" id="name" placeholder="Full Name" required>
                     <input type="password" id="password" placeholder="Password" required>
                     <button type="submit">Sign Up</button>
-                    <a href="#login">Log In</a>
-                    <div id="error-msg" class="error-msg"></div>
+                    <a href="#login" style="display:block; margin-top:15px;">Already have an account?</a>
+                     <div id="error-msg" class="error-msg"></div>
                 </form>
             </div>
         </div>
     `;
-    document.getElementById('signup-form').onsubmit = handleSignup;
 }
 
 async function handleLogin(e) {
@@ -605,6 +672,14 @@ function renderChatLayout(container) {
 
     setupChatLogic();
     setupPullToRefresh();
+
+    // Start Status Carousel if active chat
+    if (state.activeChatId && state.activeChatId !== 'general') {
+        const chat = state.chats.find(c => c.id === state.activeChatId) || state.searchResults.find(c => c.id === state.activeChatId);
+        if (chat) {
+            setTimeout(() => window.startStatusCarousel(chat), 100);
+        }
+    }
 }
 
 function setupPullToRefresh() {
@@ -887,6 +962,9 @@ function renderContactsView() {
             state.searchResults.map(u => `
                     <div class="chat-item" onclick="window.openChat('${u.id}')">
                          <img src="${getAvatarUrl(u)}">
+                            <div class="msg-image-container" onclick="window.openMediaViewer('${u.avatar}', 'image')">
+                                <img src="${u.avatar}" alt="Image" style="cursor:pointer;">
+                            </div>
                         <div class="chat-info">
                             <h4>${u.name}</h4>
                             <p>@${u.username}</p>
@@ -1110,7 +1188,7 @@ function renderSettingsProfile() {
         </div>
         <div class="settings-content settings-slide-in">
              <div class="profile-section">
-                <div style="position:relative;cursor:pointer;" onclick="document.getElementById('avatar-input').click()">
+                <div style="position:relative;cursor:pointer;" onclick="window.openMediaViewer('${getAvatarUrl(state.user?.user || {})}', 'image')">
                     <img src="${getAvatarUrl(state.user?.user || {})}" class="profile-avatar-large">
                     <div style="position:absolute;bottom:0;right:0;background:var(--primary-color);color:white;padding:8px;border-radius:50%;">
                         <i class="fas fa-camera"></i>
@@ -1165,6 +1243,18 @@ function renderSettingsPrivacy() {
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="privacy-readreceipts" ${s.readReceipts ? 'checked' : ''} onchange="window.savePrivacy()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-section-header">Live Status</div>
+                <div class="settings-item">
+                    <div class="settings-text">
+                        <h4>Share Battery Status</h4>
+                        <p>Allow others to see your battery level.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" ${localStorage.getItem('oma_share_battery') === 'true' ? 'checked' : ''} onchange="window.toggleBatteryShare(this)">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -1295,8 +1385,8 @@ function renderMainChatArea() {
 
     return `
         <div class="chat-header">
-            <div class="chat-header-user">
-                <button class="back-btn" onclick="window.closeChat()"><i class="fas fa-arrow-left"></i></button>
+            <div class="chat-header-user" onclick="window.openUserProfile('${activeChat.id}')" style="cursor:pointer;">
+                <button class="back-btn" onclick="event.stopPropagation(); window.closeChat()"><i class="fas fa-arrow-left"></i></button>
                     <img src="${getAvatarUrl(activeChat)}" id="header-avatar">
                     <div>
                     <h4 style="margin:0;" id="header-name">${activeChat.name || activeChat.username}</h4>
@@ -1315,13 +1405,39 @@ function renderMainChatArea() {
             </div>
             
             <div class="chat-actions" id="chat-actions-default">
-                <button class="icon-btn" onclick="window.toggleChatSearch()" title="Search"><i class="fas fa-search"></i></button>
+                <button class="icon-btn desktop-only" onclick="window.toggleChatSearch()" title="Search"><i class="fas fa-search"></i></button>
                 <button class="icon-btn" onclick="window.startCall('audio')"><i class="fas fa-phone"></i></button>
-                <button class="icon-btn" onclick="window.startCall()"><i class="fas fa-video"></i></button>
-                ${activeChat.id !== 'general' ? `
-                    <button class="icon-btn" style="color:#ef4444;" onclick="window.blockCurrentUser('${activeChat.id}')" title="Block User"><i class="fas fa-ban"></i></button>
-                    <button class="icon-btn" style="color:#f59e0b;" onclick="window.reportCurrentUser('${activeChat.id}')" title="Report User"><i class="fas fa-flag"></i></button>
-                ` : ''}
+                <button class="icon-btn" onclick="window.startCall('video')"><i class="fas fa-video"></i></button>
+                
+                <div class="chat-menu" style="position:relative;">
+                    <button class="icon-btn" onclick="window.toggleChatMenu()" id="btn-chat-menu"><i class="fas fa-ellipsis-v"></i></button>
+                    <div id="chat-menu-dropdown" class="hidden" style="position:absolute; top:40px; right:0; background:var(--sidebar-bg); border:1px solid var(--border-color); border-radius:12px; min-width:180px; box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:100; overflow:hidden;">
+                        <div class="menu-item mobile-only" onclick="window.toggleChatSearch(); window.toggleChatMenu();" style="padding:12px 16px; cursor:pointer; color:var(--text-primary); display:flex; gap:10px; align-items:center; transition:background 0.2s;">
+                            <i class="fas fa-search" style="width:20px;"></i> Search
+                        </div>
+                        ${activeChat.type === 'group' ? `
+                             <div class="menu-item" onclick="window.openGroupInfo()" style="padding:12px 16px; cursor:pointer; color:var(--text-primary); display:flex; gap:10px; align-items:center; transition:background 0.2s;">
+                                <i class="fas fa-users" style="width:20px;"></i> Group Info
+                            </div>
+                        ` : ''}
+                        
+                         <div class="menu-item" onclick="window.openSettings('appearance')" style="padding:12px 16px; cursor:pointer; color:var(--text-primary); display:flex; gap:10px; align-items:center; transition:background 0.2s;">
+                            <i class="fas fa-image" style="width:20px;"></i> Wallpaper
+                        </div>
+
+                        ${activeChat.id !== 'general' ? `
+                             <div class="menu-item" onclick="window.deleteCurrentChat()" style="padding:12px 16px; cursor:pointer; color:#ef4444; display:flex; gap:10px; align-items:center; transition:background 0.2s;">
+                                <i class="fas fa-trash" style="width:20px;"></i> Delete Chat
+                            </div>
+                            <div class="menu-item" onclick="window.blockCurrentUser('${activeChat.id}')" style="padding:12px 16px; cursor:pointer; color:#ef4444; display:flex; gap:10px; align-items:center; transition:background 0.2s;">
+                                <i class="fas fa-ban" style="width:20px;"></i> Block
+                            </div>
+                            <div class="menu-item" onclick="window.reportCurrentUser('${activeChat.id}')" style="padding:12px 16px; cursor:pointer; color:#f59e0b; display:flex; gap:10px; align-items:center; transition:background 0.2s;">
+                                <i class="fas fa-flag" style="width:20px;"></i> Report
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -1381,6 +1497,22 @@ async function setupChatLogic() {
 
     pollingInterval = setInterval(() => pollMessages(container), 3000);
 
+    const inputEl = document.getElementById('msg-input');
+    if (inputEl) {
+        inputEl.addEventListener('input', () => {
+            // Emit Typing
+            if (state.activeChatId !== 'general') {
+                socket.emit('typing', { receiverId: state.activeChatId, senderId: state.user.user.id });
+
+                // Debounce Stop
+                clearTimeout(window.typingTimeout);
+                window.typingTimeout = setTimeout(() => {
+                    socket.emit('stop_typing', { receiverId: state.activeChatId, senderId: state.user.user.id });
+                }, 3000);
+            }
+        });
+    }
+
     if (!form || !container) return; // If no chat UI, stop here (don't bind form)
 
     // Render local messages if any (rare since we clear state.messages, but ok)
@@ -1395,10 +1527,16 @@ async function setupChatLogic() {
 
         const input = document.getElementById('msg-input');
         const content = input.value.trim();
+
+        // Stop Typing immediately upon send
+        if (state.activeChatId !== 'general') {
+            socket.emit('stop_typing', { receiverId: state.activeChatId, senderId: state.user.user.id });
+        }
+
         if (!content) return;
 
         isSending = true; // Set flag
-        input.value = '';
+        input.value = ''; // Clear immediately
 
         // Optimistic Render
         const tempId = 'temp-' + Date.now();
@@ -1471,12 +1609,20 @@ async function setupChatLogic() {
     state.messages = [];
     container.innerHTML = '';
 
+    let lastRenderedDate = '';
+
     // Initial Load: Specific Chat History
     try {
         const initialMessages = await api.getHistory(0, state.activeChatId);
         initialMessages.forEach(msg => {
             state.messages.push(msg);
-            appendMessage(msg, container);
+
+            const msgDate = new Date(msg.timestamp).toDateString();
+            const header = msgDate !== lastRenderedDate ? getChatDateHeader(msg.timestamp) : null;
+            if (header) lastRenderedDate = msgDate; // Update tracker
+
+            appendMessage(msg, container, header);
+
             if (msg.timestamp > lastTimestamp) lastTimestamp = msg.timestamp;
         });
         scrollToBottom(container);
@@ -1503,16 +1649,29 @@ async function setupChatLogic() {
     if (msgInput) {
         let typingTimeout;
         msgInput.addEventListener('input', () => {
-            if (state.activeChatId) {
-                // Clear previous timeout to debounce
-                // Actually we want to throttle sending: Send "I am typing" every 2s
-
-                // Simple approach: Just call it. Backend handles timestamp updates.
-
+            if (state.activeChatId && state.user) {
+                // 1. Emit Typing (Throttled)
                 if (!window.lastTypingEmit || Date.now() - window.lastTypingEmit > 2000) {
                     window.lastTypingEmit = Date.now();
-                    api.sendTyping(state.activeChatId).catch(console.error);
+
+                    if (socket && socket.connected) {
+                        socket.emit('typing', {
+                            senderId: state.user.user.id,
+                            receiverId: state.activeChatId
+                        });
+                    }
                 }
+
+                // 2. Debounce Stop Typing
+                if (typingTimeout) clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    if (socket && socket.connected) {
+                        socket.emit('stop_typing', {
+                            senderId: state.user.user.id,
+                            receiverId: state.activeChatId
+                        });
+                    }
+                }, 3000);
             }
         });
 
@@ -1569,7 +1728,20 @@ async function pollMessages(container) {
                     // 2. Sync View (Force Append if missing from DOM)
                     // ONLY append if it matches current filter (or no filter)
                     if (activeContainer && matchesFilter && !document.getElementById('msg-' + msg.id)) {
-                        appendMessage(msg, activeContainer);
+                        let header = null;
+                        const msgIndex = state.messages.findIndex(m => m.id === msg.id);
+                        if (msgIndex > 0) {
+                            const prevMsg = state.messages[msgIndex - 1];
+                            const prevDate = new Date(prevMsg.timestamp).toDateString();
+                            const currDate = new Date(msg.timestamp).toDateString();
+                            if (prevDate !== currDate) {
+                                header = getChatDateHeader(msg.timestamp);
+                            }
+                        } else if (msgIndex === 0) {
+                            header = getChatDateHeader(msg.timestamp);
+                        }
+
+                        appendMessage(msg, activeContainer, header);
                     }
 
                     // 3. Read Acknowledgment Logic
@@ -1779,32 +1951,9 @@ async function pollMessages(container) {
             });
         }
 
-        // 4. Typing Status Poll
-        if (state.activeChatId && state.activeChatId !== 'general') {
-            try {
-                // Poll for *my* ID to see who is typing to *me*
-                const res = await api.getTypingStatus(state.user.user.id);
-                const typingUsers = res.typingUsers || [];
-                const statusEl = document.getElementById('header-status');
-
-                if (statusEl) {
-                    // Check if current partner is typing
-                    if (typingUsers.includes(state.activeChatId)) {
-                        statusEl.textContent = "typing...";
-                        statusEl.style.color = "var(--primary-color)";
-                        statusEl.style.fontWeight = "bold";
-                        statusEl.classList.add('animate__animated', 'animate__pulse', 'animate__infinite');
-                    } else {
-                        // Revert
-                        const chat = state.chats.find(c => c.id === state.activeChatId) || { id: state.activeChatId };
-                        statusEl.style.color = "var(--text-secondary)";
-                        statusEl.style.fontWeight = "normal";
-                        statusEl.classList.remove('animate__animated', 'animate__pulse', 'animate__infinite');
-                        statusEl.innerHTML = getHeaderStatusText(chat);
-                    }
-                }
-            } catch (e) { }
-        }
+        // 4. Typing Status Poll REMOVED
+        // We now use Socket events (typing/stop_typing) to show a Bubble at the bottom.
+        // This prevents overwriting the Header Status Carousel.
     } catch (e) {
         if (e.message === 'Unauthorized' || e.message === 'Invalid Token') window.logout();
     }
@@ -1892,8 +2041,34 @@ function getColorForName(name) {
     return colors[Math.abs(hash) % colors.length];
 }
 
-function appendMessage(msg, container) {
+function getChatDateHeader(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+
+    // Check Yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    if (isToday) return 'Today';
+    if (isYesterday) return 'Yesterday';
+
+    // Default: DD/MM/YY
+    return date.toLocaleDateString([], { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+
+function appendMessage(msg, container, dateHeader = null) {
     if (!container) return;
+
+    // Render Date Header
+    if (dateHeader) {
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'date-header animate__animated animate__fadeIn';
+        headerDiv.innerHTML = `<span>${dateHeader}</span>`;
+        container.appendChild(headerDiv);
+    }
+
     const isMe = msg.senderId === state.user.user.id;
     const div = document.createElement('div');
     div.id = `msg-${msg.id}`;
@@ -1904,7 +2079,7 @@ function appendMessage(msg, container) {
 
     let contentHtml = `<div class="msg-content">${msg.content}</div>`;
     if (msg.type === 'image') {
-        contentHtml = `<img src="${msg.content}" class="msg-image">`;
+        contentHtml = `<img src="${msg.content}" class="msg-image" onclick="window.openMediaViewer('${msg.content}', 'image')" style="cursor:pointer;">`;
     } else if (msg.type === 'video') {
         contentHtml = `<video src="${msg.content}" controls class="msg-video"></video>`;
     } else if (msg.type === 'file') {
@@ -1962,6 +2137,7 @@ function appendMessage(msg, container) {
     const showSenderName = !isMe && isGroupContext;
 
     div.innerHTML = `
+            <div class="msg-menu-btn" onclick="event.stopPropagation(); window.handleMessageLongPress('${msg.id}')"><i class="fas fa-chevron-down"></i></div>
             <div style="width:100%;${isMe ? 'margin-left:auto;' : ''}">
                ${showSenderName ? `<div class="sender-name" style="font-size:0.75rem;color:${getColorForName(msg.senderName)};margin-bottom:2px;font-weight:700;">${msg.senderName}</div>` : ''}
                
@@ -2716,6 +2892,36 @@ document.addEventListener('click', (e) => {
     }
 });
 
+window.toggleChatMenu = () => {
+    const menu = document.getElementById('chat-menu-dropdown');
+    if (menu) menu.classList.toggle('hidden');
+};
+
+window.deleteCurrentChat = async () => {
+    const chatId = state.activeChatId;
+    if (!chatId || chatId === 'general') return;
+
+    if (!confirm('Are you sure you want to delete this chat for everyone? This cannot be undone.')) return;
+
+    try {
+        await api.deleteChat(chatId);
+        window.closeChat();
+
+        // Remove from list locally
+        state.chats = state.chats.filter(c => c.id !== chatId);
+        localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+
+        // Remove from messages
+        state.messages = [];
+
+        render(); // Refresh Sidebar
+        alert('Chat deleted.');
+    } catch (e) {
+        alert('Failed to delete chat: ' + (e.error || e.message));
+    }
+};
+
+
 window.toggleChatSearch = () => {
     const userHeader = document.querySelector('.chat-header-user');
     const actions = document.getElementById('chat-actions-default');
@@ -3020,11 +3226,151 @@ window.submitCreateGroup = async () => {
     }
 };
 
+// --- Group Info Logic ---
+window.openGroupInfo = async () => {
+    const groupId = state.activeChatId;
+    if (!groupId) return;
+    const group = state.chats.find(c => c.id === groupId);
+    if (!group) return;
+
+    // We need fresh details usually, but let's assume Members are in group obj?
+    // Actually our chat object in list might count members but not list IDs if optimized.
+    // Let's assume we need to fetch group details.
+    // For now, let's look at what we have.
+    // Group API response usually includes 'members' array of IDs.
+
+    // Fallback: If no members, fetch.
+    let members = group.members || [];
+    // If we only have IDs, we need to fetch User Objects.
+    let memberDetails = [];
+    if (members.length > 0) {
+        memberDetails = await api.batchGetUsers(members);
+    }
+
+    const isAdmin = group.adminIds && group.adminIds.includes(state.user.user.id);
+    const creatorId = group.createdBy;
+
+    const modalHtml = `
+        <div id="group-info-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(5px);z-index:9999;display:flex;justify-content:center;align-items:center;" onclick="if(event.target.id==='group-info-modal') document.getElementById('group-info-modal').remove()">
+            <div style="background:var(--sidebar-bg); border:1px solid var(--border-color); width:90%; max-width:400px; border-radius:16px; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.3); color:var(--text-primary);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                    <h3 style="margin:0;">Group Info</h3>
+                    <button onclick="document.getElementById('group-info-modal').remove()" class="icon-btn"><i class="fas fa-times"></i></button>
+                </div>
+                
+                <div style="text-align:center;margin-bottom:20px;">
+                    <img src="${getAvatarUrl(group)}" style="width:80px;height:80px;border-radius:50%;margin-bottom:10px;">
+                    <h2>${group.name}</h2>
+                    <p style="color:var(--text-secondary);">${members.length} members</p>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <label style="display:block;margin-bottom:10px;color:var(--text-secondary);font-size:0.9rem;">Actions</label>
+                    ${isAdmin ? `<button onclick="window.promptAddMember('${groupId}')" class="primary" style="width:100%;margin-bottom:10px;padding:10px;">Add Member</button>` : ''}
+                    <button onclick="window.leaveGroup('${groupId}')" style="width:100%;padding:10px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:600;">Leave Group</button>
+                </div>
+
+                <div style="max-height:200px;overflow-y:auto;border-top:1px solid var(--border-color);">
+                    ${memberDetails.map(u => {
+        const isSelf = u.id === state.user.user.id;
+        const isMemberAdmin = (group.adminIds || [group.adminId]).includes(u.id);
+
+        return `
+                        <div style="padding:10px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border-color);">
+                            <img src="${getAvatarUrl(u)}" class="avatar-small">
+                            <div style="flex:1;">
+                                <div style="font-weight:600;">${u.name}</div>
+                                <div style="font-size:0.8rem;color:var(--text-secondary);">
+                                    @${u.username} 
+                                    ${isMemberAdmin ? '<span style="color:var(--primary-color); border:1px solid var(--primary-color); border-radius:4px; padding:0 4px; font-size:0.7rem;">Admin</span>' : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- Admin Actions -->
+                            ${isAdmin && !isSelf ? `
+                                <div style="display:flex; gap:5px;">
+                                    ${!isMemberAdmin ? `
+                                        <button onclick="window.manageGroupMember('${groupId}', '${u.id}', 'promote')" title="Make Admin" class="icon-btn-small" style="color:#10b981;"><i class="fas fa-crown"></i></button>
+                                    ` : `
+                                        <button onclick="window.manageGroupMember('${groupId}', '${u.id}', 'demote')" title="Remove Admin" class="icon-btn-small" style="color:#f59e0b;"><i class="fas fa-user-shield"></i></button>
+                                    `}
+                                    <button onclick="window.manageGroupMember('${groupId}', '${u.id}', 'remove')" title="Remove Member" class="icon-btn-small" style="color:#ef4444;"><i class="fas fa-times"></i></button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        `;
+    }).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+
+    const div = document.createElement('div');
+    div.innerHTML = modalHtml;
+    document.body.appendChild(div);
+};
+
+window.manageGroupMember = async (groupId, memberId, action) => {
+    if (!confirm(`Are you sure you want to ${action} this member?`)) return;
+    try {
+        await api.manageGroup(groupId, memberId, action);
+        document.getElementById('group-info-modal').remove();
+        alert(`Member ${action}d successfully`);
+        // Re-open info to refresh? Or just close.
+        // Let's re-open
+        setTimeout(window.openGroupInfo, 500);
+    } catch (e) {
+        alert('Action failed: ' + e.message);
+    }
+};
+
+window.leaveGroup = async (groupId) => {
+    if (!confirm('Are you sure you want to leave this group?')) return;
+    try {
+        await api.manageGroup(groupId, null, 'leave');
+        document.getElementById('group-info-modal').remove();
+        window.closeChat();
+
+        // Remove from list locally
+        state.chats = state.chats.filter(c => c.id !== groupId);
+        localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+        render(); // Refresh Sidebar
+
+        alert('You left the group');
+    } catch (e) {
+        alert('Failed to leave group');
+    }
+};
+
+window.promptAddMember = async (groupId) => {
+    const input = prompt("Enter User ID to add (Temporary):");
+    // Ideally we show a user search modal. For speed, using prompt or we can reuse search.
+    if (input) {
+        try {
+            await api.manageGroup(groupId, input, 'add');
+            alert('Member added!');
+            document.getElementById('group-info-modal').remove();
+            // Reload info?
+        } catch (e) {
+            alert('Failed: ' + e.message);
+        }
+    }
+};
+
 window.addEventListener('hashchange', render);
 window.addEventListener('DOMContentLoaded', () => {
     const user = localStorage.getItem('oma_user');
     if (user) {
         state.user = JSON.parse(user);
+        // Resume session
+        if (location.hash === '#login' || location.hash === '#register' || location.hash === '') {
+            // Check if we have a valid token?
+            // Let's assume yes and go to chat.
+            location.hash = '#chat';
+        }
+
+        // Start Battery Service
+        window.initBatteryService();
         initSocket(); // Connect immediately on load
 
         // Refresh User in Background
@@ -3164,8 +3510,33 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// --- Media Viewer Logic ---
+window.openMediaViewer = (src, type = 'image') => {
+    const modal = document.getElementById('media-viewer-modal');
+    const content = document.getElementById('media-viewer-content');
+    if (!modal || !content) return;
 
-// --- WebRTC & Socket.io Logic ---
+    if (type === 'image') {
+        content.innerHTML = `<img src="${src}" style="max-width:100%; max-height:80vh; border-radius:8px; box-shadow:0 0 20px rgba(0,0,0,0.5);">`;
+    } else if (type === 'video') {
+        content.innerHTML = `<video src="${src}" controls autoplay style="max-width:100%; max-height:80vh; border-radius:8px;"></video>`;
+    }
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+};
+
+window.closeMediaViewer = () => {
+    const modal = document.getElementById('media-viewer-modal');
+    const content = document.getElementById('media-viewer-content');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        content.innerHTML = ''; // Stop video playback
+    }
+};
+
+// --- Back Button Handling (Updated for Media Viewer) ---
 
 let socket = null;
 let localStream = null;
@@ -3255,7 +3626,10 @@ function initSocket() {
         });
 
         socket.on('user_status', (data) => {
-            const { userId, online, lastSeen } = data;
+            const { userId, online, lastSeen, battery } = data; // Assuming battery comes here too? If not, we rely on separate event? 
+            // Wait, usually 'user_status' has battery if we designed it that way.
+            // If not, we need to merge it.
+
             if (online) {
                 state.onlineUsers.add(userId);
             } else {
@@ -3263,13 +3637,40 @@ function initSocket() {
             }
 
             // Update Cache
-            if (lastSeen) {
-                state.userStatuses[userId] = { ...state.userStatuses[userId], lastSeen };
+            state.userStatuses[userId] = {
+                ...state.userStatuses[userId],
+                lastSeen,
+                ...(battery ? { battery } : {})
+            };
+
+            // CRITICAL: Update State Chat Object so Carousel sees it
+            const chatIdx = state.chats.findIndex(c => c.id === userId);
+            if (chatIdx !== -1) {
+                state.chats[chatIdx].status = online ? 'online' : 'offline';
+                state.chats[chatIdx].lastSeen = lastSeen;
+                if (battery) state.chats[chatIdx].battery = battery;
             }
 
             // Update UI dynamically
-            console.log(`[Client] Received user_status:`, { userId, online, lastSeen });
-            updateUserStatusUI(userId, online, lastSeen);
+            console.log(`[Client] Received user_status (Cache Updated):`, { userId, online, lastSeen, battery });
+            // updateUserStatusUI(userId, online, lastSeen); // DISABLED: Let Carousel loop handle UI
+        });
+
+        socket.on('typing', (data) => {
+            console.log('[DEBUG] Socket Typing Event:', data);
+            // New Visuals: Bubble
+            if (state.activeChatId === data.senderId) {
+                console.log('[DEBUG] Triggering Visuals for:', data.senderId);
+                window.handleTypingVisuals(data.senderId, true);
+            } else {
+                console.log('[DEBUG] Mismatch:', state.activeChatId, '!==', data.senderId);
+            }
+        });
+
+        socket.on('stop_typing', (data) => {
+            if (state.activeChatId === data.senderId) {
+                window.handleTypingVisuals(data.senderId, false);
+            }
         });
 
         socket.on('disconnect', () => {
@@ -3398,6 +3799,18 @@ window.startCall = async (type = 'video', targetId = null) => {
         wrapper.classList.remove('audio-mode');
     }
 
+    // Toggle Button Icon (Video vs Speaker)
+    const toggleBtn = document.getElementById('btn-toggle-video');
+    if (toggleBtn) {
+        if (type === 'audio') {
+            toggleBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            toggleBtn.onclick = window.toggleSpeaker; // Set to speaker toggle
+        } else {
+            toggleBtn.innerHTML = '<i class="fas fa-video"></i>';
+            toggleBtn.onclick = window.toggleVideo; // Set to video toggle
+        }
+    }
+
     await setupLocalMedia(type === 'video');
 
     // Disable video track for audio-only calls
@@ -3430,14 +3843,28 @@ function getHeaderStatusText(chat) {
     if (chat.id === 'general') return 'Tap to view info';
     if (state.onlineUsers.has(chat.id)) return 'Online';
 
-    const cachedStatus = state.userStatuses[chat.id];
-    const lastSeen = cachedStatus?.lastSeen || chat.lastSeen;
-
-    if (lastSeen) {
-        if (lastSeen === 'Recently') return 'Last seen recently';
-        return `Last seen ${timeAgo(lastSeen)}`;
+    if (chat.type === 'group') {
+        const memberCount = chat.members ? chat.members.length : 0;
+        return `${memberCount} members`;
     }
-    return '';
+
+    // Battery Status Logic
+    let batteryHtml = '';
+    if (chat.battery && chat.battery.level !== undefined) {
+        const { level, charging } = chat.battery;
+        let icon = 'empty';
+        if (level > 90) icon = 'full';
+        else if (level > 60) icon = 'three-quarters';
+        else if (level > 30) icon = 'half';
+        else if (level > 10) icon = 'quarter';
+
+        batteryHtml = ` <span style="opacity:0.8; margin-left:8px;"> • <i class="fas fa-battery-${icon}"></i> ${level}%${charging ? ' <i class="fas fa-bolt" style="color:#f59e0b;"></i>' : ''}</span>`;
+    }
+
+    if (chat.lastSeen === 'online') return '<span style="color:var(--primary-color);">Online</span>' + batteryHtml;
+    if (!chat.lastSeen) return 'Offline' + batteryHtml;
+
+    return `Last seen ${timeAgo(chat.lastSeen)}` + batteryHtml;
 }
 
 function timeAgo(timestamp) {
@@ -3480,7 +3907,7 @@ window.savePrivacy = async () => {
     try {
         await api.updateProfile({ settings: state.user.user.settings });
         localStorage.setItem('oma_user', JSON.stringify(state.user));
-    } catch (e) { alert("Failed to save privacy settings"); }
+    } catch (e) { showCustomAlert("Failed to save privacy settings", "error"); }
 };
 
 
@@ -3693,6 +4120,24 @@ window.toggleVideo = () => {
     }
 };
 
+// --- Audio Speaker Toggle ---
+window.toggleSpeaker = () => {
+    // Visual update
+    const btn = document.getElementById('btn-toggle-video');
+    const icon = btn.querySelector('i');
+
+    if (icon.classList.contains('fa-volume-up')) {
+        icon.classList.remove('fa-volume-up');
+        icon.classList.add('fa-volume-mute');
+        console.log("Switched to Earpiece (Simulated)");
+    } else {
+        icon.classList.remove('fa-volume-mute');
+        icon.classList.add('fa-volume-up');
+        console.log("Switched to Speaker (Simulated)");
+    }
+    // Note: Actual hardware toggle requires native plugin or specific browser behaviors not available in standard Web API.
+};
+
 async function setupLocalMedia(videoEnabled = true) {
     try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: videoEnabled, audio: true });
@@ -3775,8 +4220,9 @@ async function registerPush() {
                 id: 'message_channel',
                 name: 'Message Notifications',
                 description: 'Incoming Text Messages',
-                importance: 4, // High (4) or Max (5) for heads-up
+                importance: 5, // Max (Heads-up)
                 visibility: 1, // Public
+                sound: 'message', // /android/app/src/main/res/raw/message.mp3
                 vibration: true
             });
 
@@ -3797,10 +4243,33 @@ async function registerPush() {
                 console.error('Error on registration: ' + JSON.stringify(error));
             });
 
-            await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+            await PushNotifications.addListener('pushNotificationReceived', async (notification) => {
                 console.log('Push received: ', notification);
-                // Show a toast or update UI?
-                // For now just log
+
+                // Show Banner even if app is in foreground?
+                // Capacitor automatically shows notification if not handled?
+                // Actually, by default, pushNotificationReceived just catches it.
+                // To show a banner in foreground, we often need LocalNotifications or just rely on OS behavior 
+                // IF we set presentationOptions.
+
+                // BUT user wants banners.
+
+                // Play Sound manually if needed?
+                // If it's a message and we are NOT in that chat, play sound.
+                const data = notification.notification ? notification.notification.data : notification.data;
+                const chatId = data?.chatId;
+
+                // If we are active in this chat, maybe don't ding?
+                if (state.activeChatId === chatId && document.visibilityState === 'visible') {
+                    // Do nothing, we see the message
+                } else {
+                    // Play sound using our SoundManager as backup for foreground
+                    if (data?.type === 'call') {
+                        // Calls usually handled by socket, but push is backup
+                    } else {
+                        soundManager.play('message');
+                    }
+                }
             });
 
             await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
@@ -3856,9 +4325,93 @@ window.setWallpaper = (type) => {
     }
     if (state.settingsView === 'appearance') {
         const sidebar = document.getElementById('sidebar');
-        if (sidebar) sidebar.innerHTML = renderSidebarMain();
+        // FIX: Re-render specific appearance settings, not the main list
+        if (sidebar) sidebar.innerHTML = renderSettingsAppearance();
     }
 };
+
+// --- Battery Service ---
+window.batteryService = {
+    battery: null,
+    interval: null,
+    lastSent: null
+};
+
+window.initBatteryService = async () => {
+    if (!navigator.getBattery) {
+        console.log("Battery API not supported");
+        return;
+    }
+
+    try {
+        const battery = await navigator.getBattery();
+        window.batteryService.battery = battery;
+
+        // Listeners
+        battery.addEventListener('levelchange', () => window.checkAndSendBattery());
+        battery.addEventListener('chargingchange', () => window.checkAndSendBattery());
+
+        // Generic Interval (3 mins) - Only if active
+        if (window.batteryService.interval) clearInterval(window.batteryService.interval);
+        window.batteryService.interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                window.checkAndSendBattery(true); // Force update every 10 seconds
+            }
+        }, 10000);
+
+        // Visibility Change
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                window.checkAndSendBattery(true);
+            }
+        });
+
+        // Initial check
+        window.checkAndSendBattery();
+
+    } catch (e) {
+        console.error("Battery Init Failed", e);
+    }
+};
+
+window.checkAndSendBattery = async (force = false) => {
+    const shouldShare = localStorage.getItem('oma_share_battery') === 'true';
+    if (!shouldShare) return;
+
+    if (!window.batteryService.battery) return;
+
+    const { level, charging } = window.batteryService.battery;
+    const levelPercent = Math.round(level * 100);
+
+    // De-bounce: Update if level changed > 1% OR charging changed OR Forced
+    const last = window.batteryService.lastSent;
+    const shouldUpdate = force || !last || last.charging !== charging || Math.abs(last.level - levelPercent) >= 1;
+
+    if (shouldUpdate) {
+        try {
+            await api.updateProfile({ battery: { level: levelPercent, charging, timestamp: Date.now() } });
+            window.batteryService.lastSent = { level: levelPercent, charging };
+            console.log("Battery Status Sent:", levelPercent + "%", charging ? "Charging" : "");
+        } catch (e) {
+            console.error("Failed to send battery status", e);
+        }
+    }
+};
+
+window.toggleBatteryShare = (input) => {
+    const enabled = input.checked;
+    localStorage.setItem('oma_share_battery', enabled);
+    if (enabled) {
+        window.initBatteryService();
+        window.checkAndSendBattery(true);
+    } else {
+        // Clear from server? Maybe send null? 
+        // For now, just stop sending.
+        // Ideally we send 'null' to clear it for others.
+        api.updateProfile({ battery: null }).catch(console.error);
+    }
+};
+
 
 window.applyWallpaperElements = (type) => {
     const bg = document.getElementById('app-wallpaper-bg');
@@ -3866,13 +4419,16 @@ window.applyWallpaperElements = (type) => {
     bg.innerHTML = '';
     bg.style.pointerEvents = 'none';
 
+    const isMobile = window.innerWidth < 768;
+
     if (type === 'bubble') {
         const bubbleContainer = document.createElement('div');
         bubbleContainer.id = 'stars'; // Reusing container id for simplicity
         bubbleContainer.style.pointerEvents = 'none';
         bg.appendChild(bubbleContainer);
 
-        for (let i = 0; i < 40; i++) {
+        const count = isMobile ? 12 : 40;
+        for (let i = 0; i < count; i++) {
             const bubble = document.createElement('div');
             bubble.className = 'bubble-sphere';
             bubble.style.pointerEvents = 'none';
@@ -3888,7 +4444,8 @@ window.applyWallpaperElements = (type) => {
         }
     } else if (type === 'japan') {
         const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
-        for (let i = 0; i < 150; i++) {
+        const count = isMobile ? 40 : 150;
+        for (let i = 0; i < count; i++) {
             const span = document.createElement('span');
             span.style.pointerEvents = 'none';
             span.innerText = chars[Math.floor(Math.random() * chars.length)];
@@ -3896,7 +4453,8 @@ window.applyWallpaperElements = (type) => {
         }
     } else if (type === 'japan-matrix') {
         const chars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
-        for (let i = 0; i < 80; i++) {
+        const count = isMobile ? 20 : 80;
+        for (let i = 0; i < count; i++) {
             const span = document.createElement('span');
             span.style.pointerEvents = 'none';
             span.innerText = chars[Math.floor(Math.random() * chars.length)];
@@ -3906,8 +4464,9 @@ window.applyWallpaperElements = (type) => {
             bg.appendChild(span);
         }
     } else if (type === 'matrix') {
-        // Professional CSS Column approach (40 columns)
-        for (let i = 0; i < 40; i++) {
+        // Professional CSS Column approach
+        const count = isMobile ? 15 : 40;
+        for (let i = 0; i < count; i++) {
             const col = document.createElement('div');
             col.className = 'matrix-column';
             col.style.pointerEvents = 'none';
@@ -3915,6 +4474,316 @@ window.applyWallpaperElements = (type) => {
         }
     }
 };
+
+// --- User Profile Modal ---
+// --- User Profile Modal ---
+window.closeUserProfile = () => {
+    const modal = document.getElementById('user-profile-modal');
+    if (modal) {
+        modal.classList.remove('animate__fadeIn');
+        modal.classList.add('animate__fadeOutUp'); // "Go up"
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    }
+};
+
+window.saveProfile = async () => {
+    const nameInput = document.getElementById('settings-name');
+    const bioInput = document.getElementById('settings-bio');
+
+    const name = nameInput ? nameInput.value.trim() : '';
+    const bio = bioInput ? bioInput.value.trim() : '';
+
+    if (!name) return showCustomAlert('Name cannot be empty', 'error');
+
+    try {
+        const updated = await api.updateProfile({ name, bio });
+        // Update local state
+        state.user.user = { ...state.user.user, ...updated };
+        localStorage.setItem('oma_user', JSON.stringify(state.user));
+
+        showCustomAlert('Profile updated successfully!');
+
+        // Refresh view
+        render();
+    } catch (e) {
+        console.error("Save Profile Failed", e);
+        showCustomAlert('Failed to update profile', 'error');
+    }
+};
+
+// --- Status Carousel ---
+window.startStatusCarousel = (chat) => {
+    // Clear previous
+    if (state.statusInterval) clearInterval(state.statusInterval);
+    const headerStatus = document.getElementById('header-status');
+    if (!headerStatus) return;
+
+    // Initial Render
+    let standardText = getHeaderStatusText(chat, false);
+    headerStatus.innerHTML = `<div class="status-text-container"><span class="status-slide" id="status-slide-1">${standardText}</span></div>`;
+
+    let timer = 0;
+    let showBattery = false;
+
+    const update = () => {
+        const container = headerStatus.querySelector('.status-text-container');
+        if (!container) return;
+
+        // Fetch fresh chat object from state to get latest battery/status
+        const freshChat = state.chats.find(c => c.id === chat.id) || chat;
+        standardText = getHeaderStatusText(freshChat, false);
+
+        let content = standardText;
+
+        if (showBattery && freshChat.battery && freshChat.battery.level) {
+            const { level, charging } = freshChat.battery;
+            let icon = 'empty';
+            if (level > 90) icon = 'full';
+            else if (level > 60) icon = 'three-quarters';
+            else if (level > 30) icon = 'half';
+            else if (level > 10) icon = 'quarter';
+
+            content = `<span style="color:#10b981; display:flex; align-items:center; gap:5px;"><i class="fas fa-battery-${icon}"></i> ${level}%${charging ? ' <i class="fas fa-bolt" style="color:#f59e0b;"></i>' : ''}</span>`;
+        }
+
+        container.innerHTML = `<span class="status-slide status-slide-up">${content}</span>`;
+    };
+
+    const cycle = () => {
+        timer++;
+        // 0-10s: Status. 10s: Switch to Battery. 15s: Switch to Status.
+        if (timer === 10) {
+            // Only switch to battery if we have data
+            const freshChat = state.chats.find(c => c.id === chat.id) || chat;
+            if (freshChat.battery && freshChat.battery.level) {
+                showBattery = true;
+                update();
+            } else {
+                timer = 0; // Reset if no battery, keep showing status
+                // Optional: Update status text in case it changed (Online -> Last seen)
+                update();
+            }
+        } else if (timer === 15) {
+            showBattery = false;
+            update();
+            timer = 0;
+        }
+    };
+
+    state.statusInterval = setInterval(cycle, 1000);
+};
+
+// Override typing handler to use Bubble
+window.handleTypingVisuals = (userId, isTyping) => {
+    if (userId !== state.activeChatId) return;
+
+    const container = document.getElementById('messages-container');
+    const existing = document.getElementById('typing-indicator-bubble');
+
+    if (isTyping) {
+        if (!existing) {
+            const bubble = document.createElement('div');
+            bubble.id = 'typing-indicator-bubble';
+            bubble.className = 'typing-bubble animate__animated animate__fadeInUp';
+            bubble.innerHTML = `
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+    `;
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+        }
+    } else {
+        if (existing) existing.remove();
+    }
+};
+
+// --- Chat UI Toggles ---
+window.toggleChatMenu = () => {
+    const menu = document.getElementById('chat-menu-dropdown');
+    if (menu) menu.classList.toggle('hidden');
+};
+
+window.toggleChatSearch = () => {
+    const bar = document.getElementById('chat-search-bar');
+    const actions = document.getElementById('chat-actions-default');
+    const input = document.getElementById('chat-search-input');
+
+    if (bar && actions) {
+        if (bar.style.display === 'none') {
+            bar.style.display = 'flex';
+            actions.style.display = 'none';
+            if (input) input.focus();
+        } else {
+            bar.style.display = 'none';
+            actions.style.display = 'flex';
+            if (input) input.value = '';
+            // Restore messages
+            const container = document.getElementById('messages-container');
+            if (container) {
+                const messages = container.querySelectorAll('.message-wrapper');
+                messages.forEach(m => m.style.display = 'flex');
+            }
+        }
+    }
+};
+
+window.filterChatMessages = (val) => {
+    const container = document.getElementById('messages-container');
+    if (!container) return;
+    const messages = container.querySelectorAll('.message-wrapper');
+    const query = val.toLowerCase();
+
+    messages.forEach(msg => {
+        const textEl = msg.querySelector('.message-content p');
+        if (textEl) {
+            const text = textEl.innerText.toLowerCase();
+            msg.style.display = text.includes(query) ? 'flex' : 'none';
+        }
+    });
+};
+
+// Close Menus on Click Outside (Touch & Click)
+const closeMenuHandler = (e) => {
+    const menu = document.getElementById('chat-menu-dropdown');
+    const attachmentinfo = document.getElementById('attachment-menu');
+    const btn = document.getElementById('btn-chat-menu');
+    const msgModal = document.getElementById('message-options-modal');
+
+    // Close Chat Menu
+    if (menu && !menu.classList.contains('hidden')) {
+        if (!menu.contains(e.target) && !btn.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
+    }
+
+    // Close Attachment Menu
+    if (attachmentinfo && !attachmentinfo.classList.contains('hidden')) {
+        if (!attachmentinfo.contains(e.target) && !e.target.closest('#attachment-btn') && !e.target.closest('.menu-icon')) {
+            attachmentinfo.classList.add('hidden');
+        }
+    }
+
+    // Close Message Options Modal (if clicking outside content)
+    if (msgModal && !msgModal.classList.contains('hidden') && msgModal.style.display !== 'none') {
+        const content = msgModal.querySelector('.modal-content');
+        if (content && !content.contains(e.target)) {
+            window.closeMessageOptions();
+        }
+    }
+};
+
+// Remove existing listeners if any (to prevent duplication on HMR or re-init if this runs multiple times)
+// But essentially just add them once.
+document.removeEventListener('click', closeMenuHandler);
+document.removeEventListener('touchstart', closeMenuHandler);
+document.addEventListener('click', closeMenuHandler);
+document.addEventListener('touchstart', closeMenuHandler, { passive: false });
+
+window.openUserProfile = async (userId) => {
+    console.log("Opening Profile for:", userId);
+    if (!userId) return;
+    if (userId === 'general') {
+        window.openGroupInfo();
+        return;
+    }
+
+    // Find user data
+    let user = state.chats.find(c => c.id === userId) || state.searchResults.find(c => c.id === userId);
+
+    // If we have an active chat context, use that
+    // Always try to fetch fresh data to ensure bio/phone/battery are up to date
+    try {
+        const fresh = await api.batchGetUsers([userId]);
+        console.log("Fresh Profile Data:", fresh);
+        if (fresh && fresh.length > 0) {
+            // Merge fresh data into existing logic
+            user = { ...(user || {}), ...fresh[0] };
+        }
+    } catch (e) {
+        console.error("Failed to fetch fresh profile", e);
+    }
+
+    if (!user) return; // Should not happen if we came from chat
+
+    const isMe = userId === state.user.user.id;
+    const isBlocked = state.user.user.blockedUsers?.includes(userId);
+
+    const modalHtml = `
+        <div id="user-profile-modal" class="modal-overlay animate__animated animate__fadeIn" style="display:flex;">
+            <div class="modal-content" style="width:100%; max-width:400px; padding:0; overflow:hidden; display:flex; flex-direction:column; max-height:90vh;">
+                
+                <!-- Header Image/Avatar -->
+                <div style="height:250px; background:var(--sidebar-bg); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
+                   <img src="${getAvatarUrl(user)}" style="width:100%; height:100%; object-fit:cover; cursor:pointer;" onclick="window.openMediaViewer('${getAvatarUrl(user)}', 'image')">
+                   <button class="icon-btn" onclick="window.closeUserProfile()" style="position:absolute; top:15px; left:15px; background:rgba(0,0,0,0.5); color:white; border-radius:50%;"><i class="fas fa-arrow-left"></i></button>
+
+                </div>
+
+                <div style="padding:20px; flex:1; overflow-y:auto; background:var(--bg-color);">
+                    <div style="text-align:center; margin-bottom:20px;">
+                        <h2 style="margin:0; font-size:1.8rem; color:var(--text-primary);">${user.name}</h2>
+                        <p style="margin:5px 0; color:var(--text-secondary);">@${user.username || 'unknown'}</p>
+                        <p style="margin:2px 0; color:var(--text-secondary); font-size:0.9rem;"><i class="fas fa-phone-alt" style="font-size:0.8rem; margin-right:5px;"></i> ${user.phone || 'No phone linked'}</p>
+                        
+                        <!-- Battery Badge -->
+                        ${user.battery ? `
+                            <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(16, 185, 129, 0.1); color:#10b981; padding:4px 12px; border-radius:20px; font-size:0.85rem; margin-top:10px;">
+                                <i class="fas fa-battery-${user.battery.level > 90 ? 'full' : user.battery.level > 50 ? 'half' : 'quarter'}"></i>
+                                ${user.battery.level}% ${user.battery.charging ? '<i class="fas fa-bolt"></i>' : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Actions -->
+                    ${!isMe ? `
+                        <div style="display:flex; justify-content:center; gap:20px; margin-bottom:30px;">
+                            <div onclick="window.closeUserProfile(); window.openChat('${user.id}')" style="display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; color:var(--primary-color);">
+                                <div style="width:50px; height:50px; border-radius:50%; background:rgba(79, 70, 229, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.2rem;"><i class="fas fa-comment"></i></div>
+                                <span style="font-size:0.8rem; font-weight:600;">Message</span>
+                            </div>
+                            <div onclick="window.startCall('audio')" style="display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; color:#10b981;">
+                                <div style="width:50px; height:50px; border-radius:50%; background:rgba(16, 185, 129, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.2rem;"><i class="fas fa-phone"></i></div>
+                                <span style="font-size:0.8rem; font-weight:600;">Audio</span>
+                            </div>
+                            <div onclick="window.startCall('video')" style="display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; color:#f43f5e;">
+                                <div style="width:50px; height:50px; border-radius:50%; background:rgba(244, 63, 94, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.2rem;"><i class="fas fa-video"></i></div>
+                                <span style="font-size:0.8rem; font-weight:600;">Video</span>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Info Section -->
+                    <div style="background:var(--sidebar-bg); border-radius:12px; padding:16px; margin-bottom:20px; box-shadow:var(--shadow-sm);">
+                        <h4 style="margin:0 0 10px 0; color:var(--text-secondary); font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">About</h4>
+                        <p style="margin:0; font-size:1rem; color:var(--text-primary); line-height:1.5;">${user.bio || 'No bio available.'}</p>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    ${!isMe ? `
+                        <div style="background:var(--sidebar-bg); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-sm);">
+                             <div onclick="window.blockCurrentUser('${user.id}')" style="padding:16px; display:flex; align-items:center; gap:15px; cursor:pointer; border-bottom:1px solid var(--border-color); color:#ef4444 transition:background 0.2s;">
+                                <i class="fas fa-ban" style="color:#ef4444; width:20px;"></i>
+                                <span style="color:#ef4444; font-weight:600;">${isBlocked ? 'Unblock User' : 'Block User'}</span>
+                            </div>
+                            <div onclick="window.reportCurrentUser('${user.id}')" style="padding:16px; display:flex; align-items:center; gap:15px; cursor:pointer; color:#f59e0b;">
+                                <i class="fas fa-flag" style="width:20px;"></i>
+                                <span style="font-weight:600;">Report User</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+
+    const div = document.createElement('div');
+    div.innerHTML = modalHtml;
+    document.body.appendChild(div);
+};
+
 
 // Initialize theme and wallpaper on load
 (function () {
