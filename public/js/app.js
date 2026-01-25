@@ -2378,17 +2378,22 @@ window.toggleEmojiPicker = () => {
 
 window.toggleAttachmentMenu = () => {
     const menu = document.getElementById('attachment-menu');
+    console.log("Toggling attachment menu, element found:", !!menu);
     if (menu) {
-        if (menu.classList.contains('hidden')) {
+        if (menu.classList.contains('hidden') || menu.style.display === 'none') {
             menu.classList.remove('hidden');
+            menu.style.display = 'flex'; // Force flex
             menu.classList.add('animate__animated', 'animate__fadeInUp');
+
             // Hide emoji picker if open
             const emoji = document.getElementById('emoji-picker');
             if (emoji && !emoji.classList.contains('hidden')) {
                 emoji.classList.add('hidden');
+                emoji.style.display = 'none';
             }
         } else {
             menu.classList.add('hidden');
+            menu.style.display = 'none'; // Force hide
             menu.classList.remove('animate__animated', 'animate__fadeInUp');
         }
     }
@@ -3031,7 +3036,22 @@ window.filterChatMessages = (query) => {
 // Existing Function
 window.toggleEmojiPicker = () => {
     const picker = document.getElementById('emoji-picker');
-    if (picker) picker.classList.toggle('hidden');
+    if (picker) {
+        if (picker.classList.contains('hidden') || picker.style.display === 'none') {
+            picker.classList.remove('hidden');
+            picker.style.display = 'block';
+
+            // Hide attachment menu
+            const menu = document.getElementById('attachment-menu');
+            if (menu && !menu.classList.contains('hidden')) {
+                menu.classList.add('hidden');
+                menu.style.display = 'none';
+            }
+        } else {
+            picker.classList.add('hidden');
+            picker.style.display = 'none';
+        }
+    }
 };
 
 window.addEventListener('hashchange', render);
