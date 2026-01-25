@@ -132,6 +132,12 @@
     <!-- Video Call Modal -->
     <div id="video-call-modal" class="hidden">
         <div class="video-wrapper">
+            <!-- Placeholder for Remote Video (Pre-connection) -->
+            <div id="video-placeholder" class="video-placeholder">
+                <img id="placeholder-avatar" src="https://ui-avatars.com/api/?name=User" alt="User">
+                <div class="placeholder-text">Connecting...</div>
+            </div>
+
             <!-- Remote Video -->
             <video id="remote-video" autoplay playsinline></video>
 
@@ -169,6 +175,8 @@
                 <button onclick="window.endCall()" class="call-btn end-call"><i class="fas fa-phone-slash"></i></button>
                 <button id="btn-toggle-video" onclick="window.toggleVideo()" class="call-btn"><i
                         class="fas fa-video"></i></button>
+                <button id="btn-flip-camera" onclick="window.switchCamera()" class="call-btn" style="display:none;"><i
+                        class="fas fa-sync-alt"></i></button>
             </div>
         </div>
 

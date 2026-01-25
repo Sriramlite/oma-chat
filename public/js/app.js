@@ -3919,6 +3919,16 @@ window.answerCall = async () => {
     document.getElementById('video-call-modal').classList.remove('hidden');
     document.getElementById('call-status').textContent = "Connecting...";
 
+    // Reset Placeholder
+    const placeholder = document.getElementById('video-placeholder');
+    if (placeholder) {
+        placeholder.classList.remove('hidden');
+        placeholder.querySelector('.placeholder-text').textContent = "Connecting...";
+        // Set Avatar if possible (remote user avatar?)
+        // We might not have it easily here unless we passed it or looked it up.
+        // For now, keep generic or use existing source if set.
+    }
+
     // Determine Type
     const type = window.pendingCallType || 'video';
     const isVideo = type === 'video';
@@ -4118,6 +4128,53 @@ window.toggleVideo = () => {
             }
         }
     }
+}
+// End toggleVideo
+
+window.currentFacingMode = 'user'; // Default front camera
+
+window.switchCamera = async () => {
+    if (!localStream) return;
+
+    // Toggle Mode
+    window.currentFacingMode = (window.currentFacingMode === 'user') ? 'environment' : 'user';
+    console.log("Switching camera to:", window.currentFacingMode);
+
+    // Get current video track
+    const oldVideoTrack = localStream.getVideoTracks()[0];
+
+    try {
+        // Get new stream with new constraint
+        const newStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: window.currentFacingMode },
+            audio: false
+        });
+        const newVideoTrack = newStream.getVideoTracks()[0];
+
+        // Replace track in PeerConnection (Sender)
+        if (peerConnection) {
+            const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender) {
+                await sender.replaceTrack(newVideoTrack);
+            }
+        }
+
+        // Replace track in Local Stream (keep audio)
+        localStream.removeTrack(oldVideoTrack);
+        localStream.addTrack(newVideoTrack);
+
+        // Update Local Video Element
+        document.getElementById('local-video').srcObject = localStream;
+
+        // Stop old track
+        oldVideoTrack.stop();
+
+    } catch (e) {
+        console.error("Camera switch failed:", e);
+        alert("Could not switch camera. (Device might not have back camera or permission denied)");
+        // Revert mode if failed
+        window.currentFacingMode = (window.currentFacingMode === 'user') ? 'environment' : 'user';
+    }
 };
 
 // --- Audio Speaker Toggle ---
@@ -4140,7 +4197,17 @@ window.toggleSpeaker = () => {
 
 async function setupLocalMedia(videoEnabled = true) {
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: videoEnabled, audio: true });
+        // Use currentFacingMode for constraints
+        const constraints = {
+            video: videoEnabled ? { facingMode: window.currentFacingMode } : false,
+            audio: true
+        };
+
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        // Show/Hide Flip Button
+        const flipBtn = document.getElementById('btn-flip-camera');
+        if (flipBtn) flipBtn.style.display = videoEnabled ? 'flex' : 'none';
 
         // Only attach to video element if video is enabled
         if (videoEnabled) {
@@ -4185,6 +4252,9 @@ function createPeerConnection() {
     peerConnection.ontrack = (event) => {
         document.getElementById('remote-video').srcObject = event.streams[0];
         document.getElementById('call-status').textContent = ""; // Clear status text
+
+        const placeholder = document.getElementById('video-placeholder');
+        if (placeholder) placeholder.classList.add('hidden');
     };
 }
 
