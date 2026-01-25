@@ -4,6 +4,7 @@ import { registerPlugin, Capacitor } from './capacitor-core.js';
 import { FirebaseAuthentication } from './capacitor-firebase-auth/index.js';
 import { db } from './db.js';
 import { sync } from './sync.js';
+import { Device } from './capacitor-device/index.js'; // Ensure correct path/export
 
 const App = registerPlugin('App');
 
@@ -47,7 +48,8 @@ const state = {
     // onlineUsers: new Set(), 
     activeTab: 'messages', // 'messages', 'calls', 'contacts', 'profile'
     onlineUsers: new Set(), // Set of user IDs
-    userStatuses: {} // Map of userId -> { online, lastSeen }
+    userStatuses: {}, // Map of userId -> { online, lastSeen }
+    animatedChats: new Set() // Track chats that have already played initial animation
 };
 
 const soundManager = {
@@ -1421,7 +1423,7 @@ function renderMainChatArea() {
                             </div>
                         ` : ''}
                         
-                         <div class="menu-item" onclick="window.openSettings('appearance')" style="padding:12px 16px; cursor:pointer; color:var(--text-primary); display:flex; gap:10px; align-items:center; transition:background 0.2s;">
+                         <div class="menu-item" onclick="window.toggleChatMenu(); window.openSettings('appearance')" style="padding:12px 16px; cursor:pointer; color:var(--text-primary); display:flex; gap:10px; align-items:center; transition:background 0.2s;">
                             <i class="fas fa-image" style="width:20px;"></i> Wallpaper
                         </div>
 
@@ -1614,6 +1616,8 @@ async function setupChatLogic() {
     // Initial Load: Specific Chat History
     try {
         const initialMessages = await api.getHistory(0, state.activeChatId);
+        const shouldAnimate = !state.animatedChats.has(state.activeChatId);
+
         initialMessages.forEach(msg => {
             state.messages.push(msg);
 
@@ -1621,10 +1625,15 @@ async function setupChatLogic() {
             const header = msgDate !== lastRenderedDate ? getChatDateHeader(msg.timestamp) : null;
             if (header) lastRenderedDate = msgDate; // Update tracker
 
-            appendMessage(msg, container, header);
+            appendMessage(msg, container, header, shouldAnimate);
 
             if (msg.timestamp > lastTimestamp) lastTimestamp = msg.timestamp;
         });
+
+        if (initialMessages.length > 0) {
+            state.animatedChats.add(state.activeChatId);
+        }
+
         scrollToBottom(container);
     } catch (e) {
         console.error("Initial load failed", e);
@@ -2058,7 +2067,7 @@ function getChatDateHeader(timestamp) {
     return date.toLocaleDateString([], { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
-function appendMessage(msg, container, dateHeader = null) {
+function appendMessage(msg, container, dateHeader = null, animate = true) {
     if (!container) return;
 
     // Render Date Header
@@ -2072,7 +2081,9 @@ function appendMessage(msg, container, dateHeader = null) {
     const isMe = msg.senderId === state.user.user.id;
     const div = document.createElement('div');
     div.id = `msg-${msg.id}`;
-    div.className = `message-bubble ${isMe ? 'message-sent' : 'message-received'} animate__animated animate__fadeInUp`;
+    // Conditional Animation
+    const animClass = animate ? 'animate__animated animate__fadeInUp' : '';
+    div.className = `message-bubble ${isMe ? 'message-sent' : 'message-received'} ${animClass}`;
 
     // Use LIVE avatar for self, otherwise use message avatar
     const avatarToUse = isMe ? state.user.user.avatar : msg.avatar;
@@ -2348,6 +2359,41 @@ window.scrollToMessage = (msgId) => {
     }
 };
 
+window.toggleEmojiPicker = () => {
+    const picker = document.getElementById('emoji-picker');
+    if (picker) {
+        if (picker.classList.contains('hidden')) {
+            picker.classList.remove('hidden');
+            // Hide attachment menu if open
+            const attachMenu = document.getElementById('attachment-menu');
+            if (attachMenu && !attachMenu.classList.contains('hidden')) {
+                attachMenu.classList.add('hidden');
+                attachMenu.classList.remove('animate__animated', 'animate__fadeInUp');
+            }
+        } else {
+            picker.classList.add('hidden');
+        }
+    }
+};
+
+window.toggleAttachmentMenu = () => {
+    const menu = document.getElementById('attachment-menu');
+    if (menu) {
+        if (menu.classList.contains('hidden')) {
+            menu.classList.remove('hidden');
+            menu.classList.add('animate__animated', 'animate__fadeInUp');
+            // Hide emoji picker if open
+            const emoji = document.getElementById('emoji-picker');
+            if (emoji && !emoji.classList.contains('hidden')) {
+                emoji.classList.add('hidden');
+            }
+        } else {
+            menu.classList.add('hidden');
+            menu.classList.remove('animate__animated', 'animate__fadeInUp');
+        }
+    }
+};
+
 window.replyToMessage = (msgId) => {
     // If msgId not passed (from menu), use selected
     const id = msgId || window.selectedMessageId;
@@ -2515,6 +2561,28 @@ window.openSettings = (view = 'main') => {
 window.closeSettings = () => {
     state.settingsView = null;
     render();
+};
+
+window.setWallpaper = (id) => {
+    localStorage.setItem('oma_wallpaper', id);
+    // Update active chat area if visible
+    const chatContainer = document.getElementById('messages-container');
+    if (chatContainer) {
+        chatContainer.className = `messages-container wallpaper-${id}`;
+        // Force background update if using CSS var or class-based logic
+        // For now, let's assume classes are handled in CSS or we just re-render settings to show active state
+    }
+    const currentView = state.settingsView;
+    if (currentView === 'appearance') {
+        render(); // Re-render settings to show selection border
+    }
+};
+
+window.toggleChatMenu = () => {
+    const menu = document.getElementById('chat-menu-dropdown');
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
 };
 
 window.toggleDarkMode = (input) => {
@@ -3777,23 +3845,39 @@ window.startCall = async (type = 'video', targetId = null) => {
     currentCallTargetId = state.activeChatId;
 
     document.getElementById('video-call-modal').classList.remove('hidden');
-    document.getElementById('call-status').textContent = type === 'audio' ? "Calling (Voice)..." : "Calling...";
+    document.getElementById('video-call-modal').classList.remove('hidden');
+    // Clear legacy status to prevent overlap
+    const statusEl = document.getElementById('call-status');
+    if (statusEl) {
+        statusEl.textContent = '';
+        statusEl.classList.add('hidden');
+    }
 
     soundManager.play('calling'); // Start Calling Tone
 
     // UI Toggle
     const wrapper = document.querySelector('.video-wrapper');
+
+    // Set Avatar for Placeholder (Video & Audio)
+    const chat = state.chats.find(c => c.id === state.activeChatId);
+    const targetAvatar = (chat && chat.avatar) ? chat.avatar : 'https://ui-avatars.com/api/?name=User';
+
+    const placeholder = document.getElementById('video-placeholder');
+    if (placeholder && type === 'video') {
+        placeholder.classList.remove('hidden');
+        placeholder.querySelector('.placeholder-text').textContent = "Calling...";
+        const placeholderAvatar = document.getElementById('placeholder-avatar');
+        if (placeholderAvatar) placeholderAvatar.src = targetAvatar;
+    } else if (placeholder) {
+        placeholder.classList.add('hidden');
+    }
+
     if (type === 'audio') {
         wrapper.classList.add('audio-mode');
-        // Set Avatar
-        const chat = state.chats.find(c => c.id === state.activeChatId);
+        // Set Audio Avatar 
         const avatarImg = document.getElementById('audio-avatar-img');
         if (avatarImg) {
-            // Default first to prevent stale image
-            avatarImg.src = 'https://ui-avatars.com/api/?name=User';
-            if (chat && chat.avatar) {
-                avatarImg.src = chat.avatar;
-            }
+            avatarImg.src = targetAvatar;
         }
     } else {
         wrapper.classList.remove('audio-mode');
@@ -3915,23 +3999,36 @@ window.savePrivacy = async () => {
 // Answer Call (Callee Side)
 window.answerCall = async () => {
     soundManager.stop('ringtone'); // Stop Ringing
+    if (navigator.vibrate) navigator.vibrate(0); // Stop Vibration immediately
     document.getElementById('incoming-call-popup').classList.add('hidden');
     document.getElementById('video-call-modal').classList.remove('hidden');
-    document.getElementById('call-status').textContent = "Connecting...";
+    // Clear legacy call status
+    const statusEl = document.getElementById('call-status');
+    if (statusEl) {
+        statusEl.textContent = '';
+        statusEl.classList.add('hidden');
+    }
 
     // Reset Placeholder
     const placeholder = document.getElementById('video-placeholder');
-    if (placeholder) {
-        placeholder.classList.remove('hidden');
-        placeholder.querySelector('.placeholder-text').textContent = "Connecting...";
-        // Set Avatar if possible (remote user avatar?)
-        // We might not have it easily here unless we passed it or looked it up.
-        // For now, keep generic or use existing source if set.
-    }
 
-    // Determine Type
+    // Determine Type first
     const type = window.pendingCallType || 'video';
     const isVideo = type === 'video';
+
+    if (placeholder && isVideo) {
+        placeholder.classList.remove('hidden');
+        placeholder.querySelector('.placeholder-text').textContent = "Connecting...";
+
+        // Set Avatar from Caller Info
+        const callerAvatarEl = document.getElementById('caller-avatar'); // From popup
+        const placeholderAvatar = document.getElementById('placeholder-avatar');
+        if (placeholderAvatar && callerAvatarEl && callerAvatarEl.src) {
+            placeholderAvatar.src = callerAvatarEl.src;
+        }
+    } else if (placeholder) {
+        placeholder.classList.add('hidden');
+    }
 
     // UI Toggle
     const wrapper = document.querySelector('.video-wrapper');
@@ -3970,6 +4067,7 @@ window.answerCall = async () => {
 
 window.rejectCall = () => {
     soundManager.stop('ringtone'); // Stop Ringing
+    if (navigator.vibrate) navigator.vibrate(0); // Stop Vibration immediately
     document.getElementById('incoming-call-popup').classList.add('hidden');
     socket.emit('end-call', { targetId: currentCallTargetId });
 
@@ -4137,16 +4235,21 @@ window.switchCamera = async () => {
     if (!localStream) return;
 
     // Toggle Mode
-    window.currentFacingMode = (window.currentFacingMode === 'user') ? 'environment' : 'user';
-    console.log("Switching camera to:", window.currentFacingMode);
+    const nextMode = (window.currentFacingMode === 'user') ? 'environment' : 'user';
+    console.log("Switching camera to:", nextMode);
 
     // Get current video track
     const oldVideoTrack = localStream.getVideoTracks()[0];
 
+    // STOP OLD TRACK FIRST (Fix for Android resource lock)
+    if (oldVideoTrack) {
+        oldVideoTrack.stop();
+    }
+
     try {
         // Get new stream with new constraint
         const newStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: window.currentFacingMode },
+            video: { facingMode: { ideal: nextMode } }, // Use ideal for better compatibility
             audio: false
         });
         const newVideoTrack = newStream.getVideoTracks()[0];
@@ -4160,20 +4263,41 @@ window.switchCamera = async () => {
         }
 
         // Replace track in Local Stream (keep audio)
-        localStream.removeTrack(oldVideoTrack);
+        // Note: We already stopped the old one, so just removing it from object representation
+        if (oldVideoTrack) localStream.removeTrack(oldVideoTrack);
         localStream.addTrack(newVideoTrack);
 
         // Update Local Video Element
-        document.getElementById('local-video').srcObject = localStream;
+        const localVideo = document.getElementById('local-video');
+        localVideo.srcObject = null; // Clear first
+        localVideo.srcObject = localStream;
 
-        // Stop old track
-        oldVideoTrack.stop();
+        // Update State
+        window.currentFacingMode = nextMode;
 
     } catch (e) {
         console.error("Camera switch failed:", e);
         alert("Could not switch camera. (Device might not have back camera or permission denied)");
-        // Revert mode if failed
-        window.currentFacingMode = (window.currentFacingMode === 'user') ? 'environment' : 'user';
+
+        // Attempt to Revert (Restart previous camera)
+        try {
+            const revertStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: window.currentFacingMode },
+                audio: false
+            });
+            const revertTrack = revertStream.getVideoTracks()[0];
+            if (oldVideoTrack) localStream.removeTrack(oldVideoTrack);
+            localStream.addTrack(revertTrack);
+            document.getElementById('local-video').srcObject = localStream;
+
+            if (peerConnection) {
+                const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+                if (sender) await sender.replaceTrack(revertTrack);
+            }
+        } catch (revertErr) {
+            console.error("Critical: Could not revert camera:", revertErr);
+            alert("Camera error. Please restart call.");
+        }
     }
 };
 
@@ -4205,9 +4329,22 @@ async function setupLocalMedia(videoEnabled = true) {
 
         localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
-        // Show/Hide Flip Button
+        // Show/Hide Flip Button based on device count
         const flipBtn = document.getElementById('btn-flip-camera');
-        if (flipBtn) flipBtn.style.display = videoEnabled ? 'flex' : 'none';
+        if (flipBtn) {
+            if (videoEnabled) {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoInputs = devices.filter(device => device.kind === 'videoinput');
+                    flipBtn.style.display = (videoInputs.length > 1) ? 'flex' : 'none';
+                } catch (err) {
+                    console.warn("Could not enumerate devices:", err);
+                    flipBtn.style.display = 'flex'; // Default to show if unsure
+                }
+            } else {
+                flipBtn.style.display = 'none';
+            }
+        }
 
         // Only attach to video element if video is enabled
         if (videoEnabled) {

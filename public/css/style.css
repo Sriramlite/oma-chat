@@ -1334,31 +1334,105 @@ emoji-picker {
 }
 
 .call-controls {
+    position: absolute;
     bottom: 40px;
-    padding: 10px 20px;
-    gap: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 15px 30px;
+    gap: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    border-radius: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    z-index: 50;
+    /* Ensure visibility over placeholder */
+}
+
+.call-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.call-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.call-btn.disabled {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.call-btn.end-call {
+    background: #ef4444;
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.call-btn.end-call:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+#call-timer {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    z-index: 20;
+    backdrop-filter: blur(4px);
+    transition: opacity 0.3s ease;
+}
+
+#call-timer.hidden {
+    display: none;
 }
 
 #incoming-call-popup {
     position: fixed;
-    top: 40px;
+    top: 60px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10000;
-    width: 90%;
-    max-width: 400px;
+    width: 95%;
+    max-width: 360px;
+    display: flex;
     flex-direction: column;
     padding: 20px;
     gap: 15px;
-    border-radius: 24px;
+    border-radius: 20px;
     background: rgba(15, 23, 42, 0.95);
-    backdrop-filter: blur(16px);
-    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 #incoming-call-popup:not(.hidden) {
     display: flex;
-    animation: slideDown 0.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+    animation: fadeIn 0.3s ease-out forwards;
 }
 
 
@@ -1370,7 +1444,8 @@ emoji-picker {
 /* Audio Call Mode */
 .audio-mode #remote-video,
 .audio-mode #local-video,
-.audio-mode #call-status {
+.audio-mode #call-status,
+.audio-mode .video-placeholder {
     display: none !important;
 }
 

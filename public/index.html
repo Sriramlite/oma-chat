@@ -41,7 +41,7 @@
         <nav
             style="display:flex; justify-content:space-between; align-items:center; padding:20px 40px; max-width:1200px; margin:0 auto;">
             <div
-                style="font-size:1.5rem; font-weight:800; background:linear-gradient(to right, #f43f5e, #f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+                style="font-size:1.5rem; font-weight:800; background:linear-gradient(to right, #f43f5e, #f59e0b); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;">
                 OMA</div>
             <div>
                 <button
@@ -58,7 +58,7 @@
             <h1 style="font-size:3.5rem; line-height:1.2; margin-bottom:20px;">
                 Connect Instantly,<br>
                 <span
-                    style="background:linear-gradient(to right, #f43f5e, #f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Securely
+                    style="background:linear-gradient(to right, #f43f5e, #f59e0b); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;">Securely
                     & Freely.</span>
             </h1>
             <p style="font-size:1.2rem; color:#94a3b8; margin-bottom:40px; line-height:1.6;">
@@ -147,6 +147,8 @@
             <!-- Status Overlay -->
             <div id="call-status"></div>
 
+            <div id="call-timer" class="hidden">00:00</div>
+
             <!-- Audio Call UI (Hidden by default) -->
             <div id="audio-call-ui">
                 <div class="pulsing-avatar">
@@ -161,7 +163,6 @@
                     <div class="wave-bar"></div>
                 </div>
                 <div id="audio-status-text">Voice Call</div>
-                <div id="call-timer" class="hidden">00:00</div>
                 <!-- Status Indicators -->
                 <div id="audio-status-icons" class="status-icons">
                     <i id="status-mic-off" class="fas fa-microphone-slash hidden" title="Muted"></i>
