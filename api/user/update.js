@@ -48,6 +48,21 @@ module.exports = async (req, res) => {
 
         if (Object.keys(operations).length > 0) {
             await usersCollection.updateOne({ id: userPayload.id }, operations);
+
+            // Real-time Broadcast for Battery/Status Updates
+            if (battery) {
+                const io = req.app.get('io');
+                if (io) {
+                    // Broadcast to everyone (or just relevant contacts if we had a graph)
+                    // Currently server.js broadcasts status to everyone or re-uses logic.
+                    // Let's match server.js 'user_status' event signature.
+                    io.emit('user_status', {
+                        userId: userPayload.id,
+                        battery: battery,
+                        // potentially online status too if we knew it, but here we just send battery
+                    });
+                }
+            }
         }
 
         const updatedUser = await usersCollection.findOne({ id: userPayload.id });

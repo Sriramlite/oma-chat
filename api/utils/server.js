@@ -77,6 +77,9 @@ const io = new Server(server, {
     }
 });
 
+// Expose IO to API Routes
+app.set('io', io);
+
 // Signaling Logic
 io.on('connection', (socket) => {
     console.log('User Connected:', socket.id);
