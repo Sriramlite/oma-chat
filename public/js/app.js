@@ -1254,7 +1254,7 @@ function renderSettingsPrivacy() {
                         <p>Allow others to see your battery level.</p>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" ${localStorage.getItem('oma_share_battery') === 'true' ? 'checked' : ''} onchange="window.toggleBatteryShare(this)">
+                        <input type="checkbox" ${localStorage.getItem('oma_share_battery') !== 'false' ? 'checked' : ''} onchange="localStorage.setItem('oma_share_battery', this.checked); window.checkAndSendBattery(true);">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -4375,7 +4375,8 @@ window.initBatteryService = async () => {
 };
 
 window.checkAndSendBattery = async (force = false) => {
-    const shouldShare = localStorage.getItem('oma_share_battery') === 'true';
+    // Default ON: Share unless explicitly 'false'
+    const shouldShare = localStorage.getItem('oma_share_battery') !== 'false';
     if (!shouldShare) return;
 
     if (!window.batteryService.battery) return;
