@@ -64,7 +64,15 @@ module.exports = async (req, res) => {
                 if (receiver && receiver.pushToken) {
                     const { sendPushNotification } = require('../utils/firebase');
                     const title = message.senderName;
-                    const body = type === 'image' ? 'Sent an image' : content;
+                    let body = content;
+                    if (type === 'image') body = '📷 Sent an image';
+                    else if (type === 'video') body = '🎥 Sent a video';
+                    else if (type === 'file') {
+                        try {
+                            const f = JSON.parse(content);
+                            body = `Sent a file: ${f.name}`;
+                        } catch (e) { body = 'Sent a file'; }
+                    }
                     // Don't await, run in bg
                     sendPushNotification(receiver.pushToken, title, body,
                         { chatId: String(message.senderId) },
