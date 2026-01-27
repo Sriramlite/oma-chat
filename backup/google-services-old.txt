@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "836902266336",
+    "project_id": "oma-chat-a1b8e",
+    "storage_bucket": "oma-chat-a1b8e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:836902266336:android:6d52e95d720db2afed7785",
+        "android_client_info": {
+          "package_name": "com.oma.chat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCayOHaR17jUU2dcKXzq89awvC7avWy06k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

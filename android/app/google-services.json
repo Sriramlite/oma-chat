@@ -12,7 +12,20 @@
           "package_name": "com.oma.chat"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "836902266336-15p7t6rca7q30pn9v17e0r7rssp16e22.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.oma.chat",
+            "certificate_hash": "1b63de1932526461b83582a8a4424f3dbd26e467"
+          }
+        },
+        {
+          "client_id": "836902266336-on367et8g14g1qva151sv5oafsimjl8n.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCayOHaR17jUU2dcKXzq89awvC7avWy06k"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "836902266336-on367et8g14g1qva151sv5oafsimjl8n.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

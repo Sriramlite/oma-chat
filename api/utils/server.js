@@ -32,6 +32,10 @@ try {
             const apiDir = path.join(__dirname, '..');
             let modulePath = path.join(apiDir, relativePath);
 
+            console.log(`[DEBUG ROUTER] Request: ${req.path}`);
+            console.log(`[DEBUG ROUTER] Relative: ${relativePath}`);
+            console.log(`[DEBUG ROUTER] Check: ${modulePath}.js`);
+
             if (fs.existsSync(modulePath + '.js')) {
                 modulePath = modulePath + '.js';
             } else if (fs.existsSync(path.join(modulePath, 'index.js'))) {

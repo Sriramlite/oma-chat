@@ -2,11 +2,25 @@ import { api } from './api.js';
 import { PushNotifications } from './capacitor-push/index.js';
 import { registerPlugin, Capacitor } from './capacitor-core.js';
 import { FirebaseAuthentication } from './capacitor-firebase-auth/index.js';
+
+// Register App Plugin for Deep Links
+const App = registerPlugin('App');
+
+// Deep Link Handler (Mobile)
+if (Capacitor.isNativePlatform()) {
+    App.addListener('appUrlOpen', data => {
+        console.log('App opened with URL:', data.url);
+        if (firebase.auth().isSignInWithEmailLink(data.url)) {
+            console.log("Detected Deep Link Email Sign-In");
+            handleEmailLinkSignIn(data.url);
+        }
+    });
+}
 import { db } from './db.js';
 import { sync } from './sync.js';
 import { Device } from './capacitor-device/index.js'; // Ensure correct path/export
 
-const App = registerPlugin('App');
+
 
 window.showCustomAlert = function (msg, type = 'error') {
     const existing = document.querySelector('.custom-alert');
@@ -107,6 +121,13 @@ document.addEventListener('touchstart', soundManagerUnlocker);
 async function init() {
     // setupTheme(); // Assuming this function exists elsewhere or will be added
 
+    // Check for Email Magic Link (Must be first)
+    if (firebase.auth().isSignInWithEmailLink(window.location.href)) {
+        console.log("Detected Email Link Sign-In");
+        handleEmailLinkSignIn();
+        return;
+    }
+
     // Check Auth
     const user = localStorage.getItem('oma_user');
     if (user) {
@@ -151,7 +172,12 @@ async function init() {
         // Register Push (Mobile)
         registerPush();
     } else {
-        render(); // Render login/signup if not authenticated
+        // Check for Email Link Sign-in
+        if (window.firebase && firebase.auth().isSignInWithEmailLink(window.location.href)) {
+            handleEmailLinkSignIn();
+        } else {
+            render(); // Render login/signup if not authenticated
+        }
     }
 
     // Back Button Handling (Capacitor)
@@ -351,7 +377,14 @@ function renderLogin() {
                     <input type="password" id="password" placeholder="Password" required>
                     <button type="submit">Log In</button>
                     <div style="text-align:center; margin: 15px 0; color: grey; font-size: 0.8rem;">OR</div>
-                    <button type="button" class="secondary" onclick="window.switchPhoneLogin()" style="background: rgba(var(--primary-color-rgb), 0.1); color: var(--primary-color); border: 1px solid var(--primary-color);">Login with Phone</button>
+                    <div style="display:flex; gap:10px; justify-content:center;">
+                        <button type="button" class="secondary" onclick="window.switchPhoneLogin()" style="flex:1; background: rgba(var(--primary-color-rgb), 0.1); color: var(--primary-color); border: 1px solid var(--primary-color); font-size:0.8rem;">Phone Login</button>
+                        <button type="button" class="secondary" onclick="window.switchEmailLogin()" style="flex:1; background: rgba(var(--primary-color-rgb), 0.1); color: var(--primary-color); border: 1px solid var(--primary-color); font-size:0.8rem;">Email Login</button>
+                    </div>
+                    <button type="button" onclick="window.handleGoogleLogin()" style="margin-top: 15px; background: #fff; color: #3c4043; border: 1px solid #dadce0; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Google Sans', arial, sans-serif; font-weight: 500; font-size: 14px; padding: 10px; width: 100%; transition: background-color .2s box-shadow .2s;">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="G">
+                        Sign in with Google
+                    </button>
                     <a href="#register" style="display:block; margin-top:15px;">Create Account</a>
                     <div id="error-msg" class="error-msg"></div>
                 </form>
@@ -401,6 +434,96 @@ window.renderOTPVerify = () => {
     document.getElementById('otp-verify-form').onsubmit = handleVerifyOTP;
 };
 
+// --- Email Magic Link Auth ---
+
+window.switchEmailLogin = () => {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <div class="centered-view">
+            <div class="auth-box animate__animated animate__fadeIn">
+                <h2>Login with Email</h2>
+                <p style="color: grey; font-size: 0.85rem; margin-bottom: 20px;">We'll send a magic link to your email.</p>
+                <form id="email-login-form">
+                    <input type="email" id="emailInput" placeholder="name@example.com" required>
+                    <button type="submit" id="btn-send-email">Send Link</button>
+                    <a href="#login" onclick="window.renderLogin(document.getElementById('app'))">Back to Login</a>
+                    <div id="error-msg" class="error-msg"></div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.getElementById('email-login-form').onsubmit = handleSendEmailLink;
+};
+
+async function handleSendEmailLink(e) {
+    e.preventDefault();
+    await initFirebaseClient();
+    const email = document.getElementById('emailInput').value;
+    const btn = document.getElementById('btn-send-email');
+    const errorMsg = document.getElementById('error-msg');
+
+    btn.disabled = true;
+    btn.innerText = "Sending...";
+
+    const actionCodeSettings = {
+        // Native: Use Prod URL for App Link. Web: Keep current URL (Localhost support)
+        url: Capacitor.isNativePlatform() ? 'https://oma-chat-app-pho0.onrender.com/' : window.location.href,
+        handleCodeInApp: true
+    };
+
+    try {
+        await firebase.auth().sendSignInLinkToEmail(email, actionCodeSettings);
+        window.localStorage.setItem('emailForSignIn', email);
+
+        document.querySelector('.auth-box').innerHTML = `
+            <h2>Check your Email</h2>
+            <p style="margin: 20px 0;">We sent a login link to <b>${email}</b><br>Click it to finish logging in.</p>
+            <p style="font-size:0.8rem; color:grey;">(You can close this tab)</p>
+            <a href="#login" onclick="window.renderLogin(document.getElementById('app'))">Back to Login</a>
+        `;
+    } catch (error) {
+        console.error("Email Link Error:", error);
+        errorMsg.innerText = error.message;
+        btn.disabled = false;
+        btn.innerText = "Send Link";
+    }
+}
+
+async function handleEmailLinkSignIn(overrideUrl = null) {
+    await initFirebaseClient();
+
+    // Use the override URL (from Deep Link) or current window URL (PC/Web)
+    const linkUrl = overrideUrl || window.location.href;
+
+    let email = window.localStorage.getItem('emailForSignIn');
+    if (!email) {
+        email = window.prompt('Please provide your email for confirmation');
+    }
+
+    try {
+        const result = await firebase.auth().signInWithEmailLink(email, linkUrl);
+        window.localStorage.removeItem('emailForSignIn');
+
+        const idToken = await result.user.getIdToken();
+        const res = await api.verifyEmail(idToken);
+
+        localStorage.setItem('oma_user', JSON.stringify(res));
+        state.user = res;
+        initSocket();
+
+        // Remove query params to clean URL
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+
+        if (res.isNew) window.renderNameSetup();
+        else { window.location.hash = '#chat'; render(); }
+
+    } catch (error) {
+        console.error("Email Sign-in Error:", error);
+        window.showCustomAlert(error.message, 'error');
+        render(); // Fallback to login
+    }
+}
+
 // Global for Firebase confirmation
 let confirmationResult = null;
 
@@ -437,6 +560,18 @@ async function handleSendOTP(e) {
     btn.disabled = true;
     btn.innerText = 'Sending...';
 
+    // RATE LIMIT CHECK
+    try {
+        const limitRes = await api.checkSmsLimit(phone);
+        // If we got here, it's allowed (status 200)
+    } catch (e) {
+        console.error("Rate Limit Error:", e);
+        btn.disabled = false;
+        btn.innerText = 'Send OTP';
+        errorMsg.innerText = e.message || "Daily SMS limit reached.";
+        return;
+    }
+
     try {
         // --- NATIVE FLOW (Android) ---
         if (Capacitor.isNativePlatform()) {
@@ -447,6 +582,8 @@ async function handleSendOTP(e) {
                 await FirebaseAuthentication.addListener('phoneCodeSent', (event) => {
                     console.log("Native phoneCodeSent event:", event);
                     window.nativeVerificationId = event.verificationId;
+                    // Log SMS on success (Optimistic)
+                    api.logSms(document.getElementById('phoneNumber').value).catch(console.error);
                     window.renderOTPVerify();
                 });
 
@@ -512,6 +649,8 @@ async function handleSendOTP(e) {
         });
 
         confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
+        // Log SMS on success
+        api.logSms(phone).catch(console.error);
         window.renderOTPVerify();
     } catch (error) {
         console.error("SMS Send Error:", error);
@@ -635,6 +774,110 @@ async function handleLogin(e) {
         document.getElementById('error-msg').innerText = err.message;
     }
 }
+
+window.handleGoogleLogin = async () => {
+    const errorEl = document.getElementById('error-msg');
+    errorEl.style.color = 'orange';
+    errorEl.innerText = "Initializing...";
+
+    try {
+        await initFirebaseClient();
+    } catch (e) {
+        console.error("Firebase Init Failed:", e);
+        errorEl.style.color = 'red';
+        errorEl.innerText = "Init Failed: " + e.message;
+        return;
+    }
+
+    try {
+        let idToken;
+        errorEl.innerText = "Waiting for Google...";
+
+        if (Capacitor.isNativePlatform()) {
+            // Native Google Auth
+            const result = await FirebaseAuthentication.signInWithGoogle();
+            idToken = result.credential.idToken;
+        } else {
+            // Web Google Auth
+            const provider = new firebase.auth.GoogleAuthProvider();
+            const result = await firebase.auth().signInWithPopup(provider);
+            idToken = await result.user.getIdToken();
+        }
+
+        errorEl.innerText = "Got Token. Verifying...";
+        console.log("Token Len:", idToken.length);
+
+        const res = await api.verifyGoogle(idToken);
+
+        errorEl.style.color = 'green';
+        errorEl.innerText = "Success! Redirecting...";
+
+        if (res.isNew) {
+            // New User: Require Username & Phone Setup
+            window.renderGoogleOnboarding(res.user, res.token);
+        } else {
+            loginUser(res);
+        }
+
+    } catch (e) {
+        console.error("Google Login Error:", e);
+        errorEl.style.color = 'red';
+        errorEl.innerText = 'Login Failed: ' + e.message;
+    }
+};
+
+window.renderGoogleOnboarding = (partialUser, tempToken) => {
+    const app = document.getElementById('app');
+    // Save token temporarily so API calls work (completeProfile needs auth)
+    // We construct a temporary user object since api.js methods use localStorage
+    const tempState = { token: tempToken, user: partialUser };
+    localStorage.setItem('oma_user', JSON.stringify(tempState));
+
+    app.innerHTML = `
+        <div class="centered-view">
+            <div class="auth-box animate__animated animate__fadeIn">
+                <h2>Almost Done!</h2>
+                <p style="color: grey; font-size: 0.85rem; margin-bottom: 20px;">Please complete your profile to continue.</p>
+                <form id="google-setup-form">
+                    <label style="display:block; text-align:left; font-size:0.8rem; margin-bottom:5px;">Your Name (from Google)</label>
+                    <input type="text" value="${partialUser.name}" disabled style="background:#f0f0f0; border:1px solid #ccc; color:#555;">
+                    
+                    <label style="display:block; text-align:left; font-size:0.8rem; margin-bottom:5px;">Choose Username *</label>
+                    <input type="text" id="setup-username" placeholder="Unique Username" required>
+                    
+                    <label style="display:block; text-align:left; font-size:0.8rem; margin-bottom:5px;">Phone Number *</label>
+                    <input type="tel" id="setup-phone" placeholder="Your Phone Number" required>
+
+                    <button type="submit" id="btn-complete-setup">Complete Signup</button>
+                    <div id="setup-error" class="error-msg"></div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('google-setup-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('setup-username').value;
+        const phone = document.getElementById('setup-phone').value;
+        const btn = document.getElementById('btn-complete-setup');
+        const err = document.getElementById('setup-error');
+
+        btn.disabled = true;
+        btn.innerText = "Saving...";
+        err.innerText = "";
+
+        try {
+            const finalRes = await api.completeProfile(username, phone);
+            // On success, finalRes contains the updated token and user
+            loginUser(finalRes);
+        } catch (error) {
+            console.error("Setup Error:", error);
+            err.innerText = error.message;
+            btn.disabled = false;
+            btn.innerText = "Complete Signup";
+        }
+    };
+};
 
 async function handleSignup(e) {
     e.preventDefault();

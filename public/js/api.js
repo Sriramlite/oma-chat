@@ -92,6 +92,13 @@ export const api = {
     signup: (username, password, name) => request('/auth/signup', 'POST', { username, password, name }),
     verifyPhone: (idToken) => request('/auth/phone', 'POST', { idToken }),
     linkPhone: (idToken) => request('/user/link-phone', 'POST', { idToken }),
+    // Rate Limiting
+    checkSmsLimit: (phone) => request('/auth/check-sms-limit', 'POST', { phone }),
+    logSms: (phone) => request('/auth/log-sms', 'POST', { phone }),
+    // Email Auth
+    verifyEmail: (idToken) => request('/auth/email-verify', 'POST', { idToken }),
+    verifyGoogle: (idToken) => request('/auth/google', 'POST', { idToken }),
+    completeProfile: (username, phone) => request('/auth/complete-profile', 'POST', { username, phone }),
     getHistory: async (since, chatId, type) => {
         const queryParams = new URLSearchParams();
         if (since) queryParams.append('since', since);
