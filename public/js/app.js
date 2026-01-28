@@ -1241,16 +1241,21 @@ function renderContactsView() {
 }
 
 // Profile Edit State Management
-// Profile Edit State Management
 window.toggleProfileEdit = (isEdit) => {
     console.log("toggleProfileEdit Called:", isEdit);
     state.isEditingProfile = isEdit;
-    window.refreshSidebar();
+    render();
 };
 
 window.refreshSidebar = () => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.innerHTML = renderSidebarMain();
+    if (sidebar) {
+        if (state.settingsView) {
+            sidebar.innerHTML = renderSettings();
+        } else {
+            sidebar.innerHTML = renderSidebarMain();
+        }
+    }
 };
 
 // Reuse the Profile Content logic from Settings
@@ -1271,8 +1276,15 @@ window.saveProfile = async (btn) => {
 
         window.showCustomAlert('Profile Saved!', 'success');
 
+        // Reset Edit State
         state.isEditingProfile = false;
-        window.refreshSidebar();
+
+        // Navigation Logic
+        if (state.settingsView === 'profile') {
+            window.openSettings('main');
+        } else {
+            render();
+        }
 
     } catch (e) {
         console.error("Save Profile Failed:", e);

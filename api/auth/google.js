@@ -32,8 +32,14 @@ module.exports = async (req, res) => {
         const db = await connectToDatabase();
         const usersCollection = db.collection('users');
 
-        // Check if user exists by email (treat email as username for Google Login)
-        let user = await usersCollection.findOne({ username: email });
+        // Check if user exists by googleId, email, or username (legacy)
+        let user = await usersCollection.findOne({
+            $or: [
+                { googleId: uid },
+                { email: email },
+                { username: email } // Fallback for very old users
+            ]
+        });
         let isNew = false;
 
         if (!user) {

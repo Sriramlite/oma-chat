@@ -2606,6 +2606,7 @@ body.dark-mode .hover-reply-btn {
         transform: translateY(-5px);
     }
 }
+
 /* Profile Card Fixes */
 .profile-card {
     display: flex;
@@ -2614,8 +2615,53 @@ body.dark-mode .hover-reply-btn {
     height: auto;
     overflow-y: visible;
 }
+
 .user-profile-view {
     height: 100%;
     overflow-y: auto;
     padding-bottom: 150px;
+}
+
+/* Custom Toast Alert */
+.custom-alert {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    /* Ensure visibility above all */
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    max-width: 90%;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.custom-alert__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-alert__title {
+    flex: 1;
+}
+
+.custom-alert__close {
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.custom-alert__close:hover {
+    opacity: 1;
 }
