@@ -133,6 +133,7 @@ async function init() {
     if (user) {
         state.user = JSON.parse(user);
         initSocket(); // Enable Real-time
+        setupProfileSync(); // Listen for updates
 
         // Initialize Offline Sync
         sync.init();
@@ -796,7 +797,7 @@ window.handleGoogleLogin = async () => {
         if (Capacitor.isNativePlatform()) {
             // Native Google Auth
             const result = await FirebaseAuthentication.signInWithGoogle();
-            
+
             // ERROR CAUSE: result.credential.idToken is GOOGLE token.
             // We need FIREBASE token. Exchange it:
             errorEl.innerText = "Exchanging Token...";
@@ -978,7 +979,9 @@ function setupPullToRefresh() {
 
 // Helper for Avatar consistency
 function getAvatarUrl(chat) {
-    if (chat.avatar) return chat.avatar;
+    if (chat.avatar && (chat.avatar.startsWith('http') || chat.avatar.startsWith('data:'))) {
+        return chat.avatar;
+    }
     const seed = chat.name || chat.username || 'User';
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(seed)}&background=random`;
 }
@@ -995,9 +998,18 @@ function renderSidebarMain() {
     } else if (state.activeTab === 'profile') {
         // We can reuse the Profile Settings render, or build a dedicated wrapper
         // Use a wrapper to keep the bottom nav visible
+        const isEdit = state.isEditingProfile;
+        const headerContent = isEdit
+            ? `<div style="flex:1;"><button class="icon-btn" onclick="window.toggleProfileEdit(false)"><i class="fas fa-times"></i></button></div>
+               <h3 style="flex:2; text-align:center; margin:0;">Edit Profile</h3>
+               <div style="flex:1; text-align:right;"><button id="header-save-btn" style="background:transparent; border:none; color:var(--primary-color); font-weight:600; font-size:1rem; cursor:pointer;" onclick="window.saveProfile()">Save</button></div>`
+            : `<h3>My Profile</h3>`;
+
         content = `
-            <div class="sidebar-header"><h3>My Profile</h3></div>
-            <div class="settings-list" style="padding-top:10px;">
+            <div class="sidebar-header" style="${isEdit ? 'justify-content:space-between;' : ''}">
+                ${headerContent}
+            </div>
+            <div class="settings-list" style="flex: 1; overflow-y: auto; padding-bottom: 120px; min-height: 0;">
                 ${renderProfileContent()}
             </div>
         `;
@@ -1228,9 +1240,82 @@ function renderContactsView() {
     `;
 }
 
+// Profile Edit State Management
+// Profile Edit State Management
+window.toggleProfileEdit = (isEdit) => {
+    console.log("toggleProfileEdit Called:", isEdit);
+    state.isEditingProfile = isEdit;
+    window.refreshSidebar();
+};
+
+window.refreshSidebar = () => {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.innerHTML = renderSidebarMain();
+};
+
 // Reuse the Profile Content logic from Settings
+window.saveProfile = async (btn) => {
+    // If called from header, btn might be null or icon, handle UI feedback elsewhere or generic
+    const saveBtn = document.getElementById('header-save-btn');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.innerText = "Saving..."; }
+
+    try {
+        const name = document.getElementById('settings-name').value;
+        const bio = document.getElementById('settings-bio').value;
+
+        const updatedUser = await api.updateProfile({ name, bio });
+
+        // Update Local State
+        state.user.user = { ...state.user.user, ...updatedUser };
+        localStorage.setItem('oma_user', JSON.stringify(state.user));
+
+        window.showCustomAlert('Profile Saved!', 'success');
+
+        state.isEditingProfile = false;
+        window.refreshSidebar();
+
+    } catch (e) {
+        console.error("Save Profile Failed:", e);
+        window.showCustomAlert('Failed: ' + e.message);
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = "Save"; }
+    }
+};
+
+window.setupProfileSync = () => {
+    // Wait for socket to be initialized
+    if (typeof socket === 'undefined' || !socket) {
+        setTimeout(window.setupProfileSync, 1000);
+        return;
+    }
+
+    socket.on('profile_update', (data) => {
+        console.log("Received Profile Update:", data);
+
+        // 1. Update Chats List (Sidebar)
+        const chat = state.chats.find(c => c.id === data.userId);
+        if (chat) {
+            if (data.name) chat.name = data.name;
+            if (data.avatar) chat.avatar = data.avatar;
+            if (data.username) chat.username = data.username;
+
+            localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+            window.refreshSidebar();
+        }
+
+        // 2. Update Active Chat Header
+        if (state.activeChatId === data.userId) {
+            const headerName = document.getElementById('header-name');
+            const headerAvatar = document.getElementById('header-avatar');
+            if (headerName && data.name) headerName.innerText = data.name;
+            if (headerAvatar && data.avatar) headerAvatar.src = data.avatar;
+        }
+    });
+};
+
 function renderProfileContent() {
     const u = state.user?.user || {};
+    const isEdit = state.isEditingProfile;
+
     return `
         <div class="profile-card animate__animated animate__fadeIn">
             <div class="profile-card__img">
@@ -1242,7 +1327,7 @@ function renderProfileContent() {
                             <stop offset="1" stop-color="#FC726E"></stop>
                         </linearGradient>
                         <pattern patternUnits="userSpaceOnUse" id="b" width="300" height="250" x="0" y="0" viewBox="0 0 1080 900">
-                            <g fill-opacity="0.5">
+                             <g fill-opacity="0.5">
                                 <polygon fill="#444" points="90 150 0 300 180 300"></polygon>
                                 <polygon points="90 150 180 0 0 0"></polygon>
                                 <polygon fill="#AAA" points="270 150 360 0 180 0"></polygon>
@@ -1326,39 +1411,41 @@ function renderProfileContent() {
             <div class="profile-card__title">${u.name || 'Anonymous'}</div>
             <div class="profile-card__subtitle">@${u.username || 'user'}</div>
             
-            <div class="profile-info-container">
-                <div class="profile-info-item">
-                    <i class="fas fa-info-circle"></i>
-                    <span>${u.bio || 'Available'}</span>
+            ${!isEdit ? `
+                <div class="profile-info-container">
+                    <div class="profile-info-item">
+                        <i class="fas fa-info-circle"></i>
+                        <span>${u.bio || 'Available'}</span>
+                    </div>
+                    <div class="profile-info-item">
+                        <i class="fas fa-phone"></i>
+                        <span>${u.phone || 'No phone linked'}</span>
+                    </div>
+                    <div style="text-align:center; padding-top: 10px;">
+                        <div class="app-version-badge">v2.8.5</div>
+                    </div>
                 </div>
-                <div class="profile-info-item">
-                    <i class="fas fa-phone"></i>
-                    <span>${u.phone || 'No phone linked'}</span>
+                <div class="profile-card__wrapper">
+                     <button class="profile-card__btn profile-card__btn-solid" onclick="window.toggleProfileEdit(true)">Edit Profile</button>
+                    <button class="profile-card__btn" onclick="window.logout()">Logout</button>
                 </div>
-                <div style="text-align:center; padding-top: 10px;">
-                    <div class="app-version-badge">v2.8.5</div>
+            ` : `
+                <div id="profile-edit-section" style="padding: 0 20px 150px 20px; width: 100%; margin-top:10px;">
+                    <div class="input-group" style="text-align:left;">
+                        <label>Name</label>
+                        <input type="text" id="settings-name" value="${u.name || ''}" style="background:#0f172a; color:white; border:1px solid #334155; padding:8px; border-radius:8px; width:100%;">
+                    </div>
+                    <div class="input-group" style="text-align:left;">
+                        <label>Bio</label>
+                        <input type="text" id="settings-bio" value="${u.bio || ''}" placeholder="Add a bio" style="background:#0f172a; color:white; border:1px solid #334155; padding:8px; border-radius:8px; width:100%;">
+                    </div>
+                    <div style="text-align:center; margin-top:10px; color:#aaa; font-size:0.8rem;">
+                        Save button is in the top right corner.
+                    </div>
                 </div>
-            </div>
-
-            <div id="profile-edit-section" style="display:none; padding: 0 20px; width: 100%; margin-top:10px;">
-                <div class="input-group" style="text-align:left;">
-                    <label>Name</label>
-                    <input type="text" id="settings-name" value="${u.name || ''}" style="background:#0f172a; color:white; border:1px solid #334155; padding:8px; border-radius:8px; width:100%;">
-                </div>
-                <div class="input-group" style="text-align:left;">
-                    <label>Bio</label>
-                    <input type="text" id="settings-bio" value="${u.bio || ''}" placeholder="Add a bio" style="background:#0f172a; color:white; border:1px solid #334155; padding:8px; border-radius:8px; width:100%;">
-                </div>
-                <button class="primary" style="width:100%; margin: 10px 0;" onclick="window.saveProfile()">Save Changes</button>
-                <input type="file" id="avatar-input" style="display:none;" accept="image/*" onchange="window.updateAvatar(this)">
-            </div>
-
-            <div class="profile-card__wrapper">
-                <button class="profile-card__btn profile-card__btn-solid" onclick="document.getElementById('profile-edit-section').style.display='block'; this.parentElement.style.display='none';">Edit Profile</button>
-                <button class="profile-card__btn" onclick="window.logout()">Logout</button>
-            </div>
+            `}
         </div>
-     `;
+    `;
 }
 
 function renderSettings() {

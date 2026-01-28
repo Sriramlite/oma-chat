@@ -2606,3 +2606,16 @@ body.dark-mode .hover-reply-btn {
         transform: translateY(-5px);
     }
 }
+/* Profile Card Fixes */
+.profile-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    height: auto;
+    overflow-y: visible;
+}
+.user-profile-view {
+    height: 100%;
+    overflow-y: auto;
+    padding-bottom: 150px;
+}

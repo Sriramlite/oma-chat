@@ -48,24 +48,32 @@ module.exports = async (req, res) => {
 
         if (Object.keys(operations).length > 0) {
             await usersCollection.updateOne({ id: userPayload.id }, operations);
-
-            // Real-time Broadcast for Battery/Status Updates
-            if (battery) {
-                const io = req.app.get('io');
-                if (io) {
-                    // Broadcast to everyone (or just relevant contacts if we had a graph)
-                    // Currently server.js broadcasts status to everyone or re-uses logic.
-                    // Let's match server.js 'user_status' event signature.
-                    io.emit('user_status', {
-                        userId: userPayload.id,
-                        battery: battery,
-                        // potentially online status too if we knew it, but here we just send battery
-                    });
-                }
-            }
         }
 
         const updatedUser = await usersCollection.findOne({ id: userPayload.id });
+        if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+
+        // Real-time Broadcast
+        const io = req.app.get('io');
+        if (io) {
+            if (battery) {
+                io.emit('user_status', {
+                    userId: userPayload.id,
+                    battery: battery,
+                });
+            }
+
+            // Broadcast Generic Profile Update (Name, Bio, Avatar)
+            if (name || bio || avatar) {
+                io.emit('profile_update', {
+                    userId: userPayload.id,
+                    name: updatedUser.name,
+                    bio: updatedUser.bio,
+                    avatar: updatedUser.avatar,
+                    username: updatedUser.username
+                });
+            }
+        }
         if (!updatedUser) return res.status(404).json({ error: 'User not found' });
 
         const { password, ...safeUser } = updatedUser;
