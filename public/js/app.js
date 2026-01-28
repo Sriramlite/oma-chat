@@ -796,7 +796,13 @@ window.handleGoogleLogin = async () => {
         if (Capacitor.isNativePlatform()) {
             // Native Google Auth
             const result = await FirebaseAuthentication.signInWithGoogle();
-            idToken = result.credential.idToken;
+            
+            // ERROR CAUSE: result.credential.idToken is GOOGLE token.
+            // We need FIREBASE token. Exchange it:
+            errorEl.innerText = "Exchanging Token...";
+            const credential = firebase.auth.GoogleAuthProvider.credential(result.credential.idToken);
+            const userCredential = await firebase.auth().signInWithCredential(credential);
+            idToken = await userCredential.user.getIdToken();
         } else {
             // Web Google Auth
             const provider = new firebase.auth.GoogleAuthProvider();
