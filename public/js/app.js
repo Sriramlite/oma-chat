@@ -829,7 +829,7 @@ window.handleGoogleLogin = async () => {
     } catch (e) {
         console.error("Google Login Error:", e);
         errorEl.style.color = 'red';
-        errorEl.innerText = 'Login Failed: ' + e.message;
+        errorEl.innerText = 'Login Failed: ' + (e.message || JSON.stringify(e));
     }
 };
 

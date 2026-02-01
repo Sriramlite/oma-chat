@@ -11,7 +11,8 @@
       "providers": [
         "phone",
         "google.com"
-      ]
+      ],
+      "webClientId": "836902266336-on367et8g14g1qva151sv5oafsimjl8n.apps.googleusercontent.com"
     }
   }
 }
