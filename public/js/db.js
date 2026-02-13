@@ -158,5 +158,18 @@ export const db = {
             request.onsuccess = () => resolve(request.result);
             request.onerror = (e) => reject(e);
         });
+    },
+
+    async clear() {
+        if (!this.db) await this.open();
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['chats', 'messages', 'queue'], 'readwrite');
+            transaction.objectStore('chats').clear();
+            transaction.objectStore('messages').clear();
+            // Keep queue? Maybe not if logging out.
+            transaction.objectStore('queue').clear();
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = (e) => reject(e);
+        });
     }
 };

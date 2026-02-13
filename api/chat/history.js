@@ -32,12 +32,23 @@ module.exports = async (req, res) => {
 
             query = {
                 $or: [
-                    { receiverId: 'general' },
+                    { receiverId: 'general' }, // Keep general group
                     { receiverId: user.id },
                     { senderId: user.id },
                     { receiverId: { $in: groupIds } }
                 ]
             };
+
+            // CRITICAL FIX: For Call Logs, STRICTLY restrict to User's own calls
+            if (type === 'call_log') {
+                query = {
+                    type: 'call_log',
+                    $or: [
+                        { senderId: user.id },
+                        { receiverId: user.id }
+                    ]
+                };
+            }
         } else if (targetChatId === 'general') {
             query = { receiverId: 'general' };
         } else {

@@ -18,6 +18,7 @@ if (Capacitor.isNativePlatform()) {
 }
 import { db } from './db.js';
 import { sync } from './sync.js';
+import { nearby } from './nearby.js'; // BLE Module
 import { Device } from './capacitor-device/index.js'; // Ensure correct path/export
 
 
@@ -99,9 +100,11 @@ const soundManager = {
     unlock() {
         // Play and pause all sounds silently to unlock audio context
         Object.values(this.sounds).forEach(sound => {
+            sound.muted = true; // Mute for unlock
             sound.play().then(() => {
                 sound.pause();
                 sound.currentTime = 0;
+                sound.muted = false; // Unmute for future use
             }).catch(() => { });
         });
         document.removeEventListener('click', soundManagerUnlocker);
@@ -115,6 +118,38 @@ const soundManagerUnlocker = () => {
 };
 document.addEventListener('click', soundManagerUnlocker);
 document.addEventListener('touchstart', soundManagerUnlocker);
+
+// Helper for Filter Switching - Global Scope
+window.setChatFilter = (mode) => {
+    if (state.chatFilter === mode) return; // No change
+
+    state.chatFilter = mode;
+    render(); // Re-render sidebar to show active chip and correct list
+
+    if (mode === 'nearby') {
+        // DEBUG: Alert
+        alert("Switching to Nearby Mode...");
+        if (window.nearby && window.nearby.startScanning) {
+            window.nearby.startScanning();
+            window.refreshNearbyList();
+        } else {
+            // Try to init nearby if not ready
+            if (window.nearby && window.nearby.init) {
+                window.nearby.init().then(() => {
+                    window.nearby.startScanning();
+                    window.refreshNearbyList();
+                });
+            } else {
+                console.warn("Nearby module not loaded.");
+                window.showCustomAlert("Nearby module not ready", "error");
+            }
+        }
+    } else {
+        if (window.nearby && window.nearby.stopScanning) {
+            window.nearby.stopScanning();
+        }
+    }
+};
 
 // --- Initialization ---
 
@@ -137,6 +172,34 @@ async function init() {
 
         // Initialize Offline Sync
         sync.init();
+
+        // Initialize State defaults
+        state.chatFilter = 'global';
+        state.nearby = state.nearby || { peers: [], messages: [] };
+
+        // Helper to refresh Nearby UI from nearby.js data
+        window.refreshNearbyList = () => {
+            if (state.chatFilter !== 'nearby') return;
+
+            // Convert Map to Array for UI
+            const peers = Array.from(window.nearby.peers.values());
+            const listContainer = document.getElementById('chat-list');
+            if (listContainer) {
+                const chatObjs = peers.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    lastMsg: `Signal: ${p.rssi} dBm`,
+                    time: 'Nearby',
+                    avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(p.name) + '&background=random',
+                    isNearby: true
+                }));
+
+                listContainer.innerHTML = `
+                    <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
+                    ${renderChatListContent(chatObjs)}
+                `;
+            }
+        };
 
         // Listen for Network Status
         window.addEventListener('network-status', (e) => {
@@ -180,76 +243,109 @@ async function init() {
             render(); // Render login/signup if not authenticated
         }
     }
+}
 
-    // Back Button Handling (Capacitor)
-    // Try imported App first, then fallback to global
-    // Note: If using a bundler, 'App' should work. If script tag, 'window.Capacitor.Plugins.App'
-    const AppPlugin = App || (window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.App : null);
+const AppPlugin = App || (window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.App : null);
 
-    if (AppPlugin) {
+if (AppPlugin) {
+    AppPlugin.addListener('backButton', async () => {
         try {
-            AppPlugin.addListener('backButton', async () => {
-                // 1. Modals
-                if (!document.getElementById('video-call-modal').classList.contains('hidden')) {
-                    // Minify call logic if possible, else do nothing or hangup?
-                    // User said "back closes app", checking for hangup might be accidental.
-                    // Let's just return to prevent closing app.
-                    return;
-                }
-                if (!document.getElementById('incoming-call-popup').classList.contains('hidden')) {
-                    window.rejectCall();
-                    return;
-                }
-                if (document.getElementById('group-modal-container')) {
-                    window.closeGroupModal();
-                    return;
-                }
+            // DEBUG: Confirm Event
+            // alert('Back Button Pressed'); 
 
-                // 2. Attachment/Emoji
-                if (!document.getElementById('attachment-menu').classList.contains('hidden')) {
-                    window.toggleAttachmentMenu();
-                    return;
-                }
-                if (!document.getElementById('emoji-picker').classList.contains('hidden')) {
-                    window.toggleEmojiPicker();
-                    return;
-                }
+            // 1. Modals & Overlays (Priority)
+            const incomingCall = document.getElementById('incoming-call-popup');
+            if (incomingCall && !incomingCall.classList.contains('hidden')) {
+                window.rejectCall();
+                return;
+            }
 
-                // 3. Settings
-                if (state.settingsView) {
-                    window.closeSettings();
-                    return;
-                }
+            const groupModal = document.getElementById('group-modal-container');
+            if (groupModal) {
+                window.closeGroupModal();
+                return;
+            }
 
-                // Check Chat Menu
-                const chatMenu = document.getElementById('chat-menu-dropdown');
-                const chatMenuBtn = document.getElementById('btn-chat-menu');
-                if (chatMenu && !chatMenu.classList.contains('hidden')) {
-                    // If the menu is open, close it.
-                    // No need to check e.target here as it's a back button event, not a click.
-                    chatMenu.classList.add('hidden');
-                    return; // Consume the back button event
-                }
+            const profileModal = document.getElementById('user-profile-modal');
+            if (profileModal) {
+                window.closeUserProfile();
+                return;
+            }
 
-                // 4. Chat View (Mobile)
-                if (state.mobileView === 'chat' && state.activeChatId) {
-                    window.closeChat();
-                    return;
-                }
+            const mediaViewer = document.getElementById('media-viewer-modal');
+            if (mediaViewer && !mediaViewer.classList.contains('hidden')) {
+                window.closeMediaViewer();
+                return;
+            }
 
-                // 5. Root (Tab View)
-                // If not on 'messages' tab, switch to it first
-                if (state.activeTab !== 'messages') {
-                    window.switchTab('messages');
-                } else {
-                    AppPlugin.minimizeApp();
+            // 2. Attachment/Emoji/Menus
+            const attachMenu = document.getElementById('attachment-menu');
+            if (attachMenu && !attachMenu.classList.contains('hidden')) {
+                attachMenu.classList.add('hidden');
+                return;
+            }
+            const emojiPicker = document.getElementById('emoji-picker');
+            if (emojiPicker && !emojiPicker.classList.contains('hidden')) {
+                emojiPicker.classList.add('hidden');
+                return;
+            }
+            const chatMenu = document.getElementById('chat-menu-dropdown');
+            if (chatMenu && !chatMenu.classList.contains('hidden')) {
+                chatMenu.classList.add('hidden');
+                return;
+            }
+
+            // 3. Navigation Logic (Hash Based)
+            const hash = window.location.hash;
+
+            // If in Chat (#chat/...), go back to list
+            if (hash.startsWith('#chat/') && hash.length > 6) {
+                window.closeChat(); // Sets hash to #chat (which render handles as list?) or we should set to #
+                // window.location.hash = ''; // Force list
+                return;
+            }
+
+            // If in Nearby Mode, switch to Global
+            if (state.chatFilter === 'nearby') {
+                window.setChatFilter('global');
+                return;
+            }
+
+            // If Searching, clear search
+            if (state.isSearching) {
+                state.isSearching = false;
+                state.searchResults = [];
+                const searchInput = document.getElementById('user-search');
+                if (searchInput) {
+                    searchInput.value = '';
+                    window.render(); // Force render to clear search results
                 }
-            });
-            console.log("Back Button Listener Attached Successfully");
-        } catch (e) {
-            console.warn("Back button setup failed", e);
+                return;
+            }
+
+            // If in Settings
+            if (state.settingsView) {
+                window.closeSettings();
+                return;
+            }
+
+            // 4. Root Tab Handling
+            // If not on 'messages' tab, switch to it
+            if (state.activeTab !== 'messages') {
+                window.switchTab('messages');
+            } else {
+                // 4. Default: Minimize App (Home Screen)
+                AppPlugin.minimizeApp();
+            }
+        } catch (error) {
+            console.error("Back Button Error:", error);
+            // Fallback
+            AppPlugin.minimizeApp();
         }
-    }
+    });
+    console.log("Back Button Listener Attached via App Plugin");
+} else {
+    console.warn("Capacitor App Plugin not found. Back button handling disabled.");
 }
 
 async function syncProfile() {
@@ -986,6 +1082,11 @@ function getAvatarUrl(chat) {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(seed)}&background=random`;
 }
 
+window.handleImageError = (img, seed) => {
+    img.onerror = null;
+    img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(seed || 'User')}&background=random`;
+};
+
 function renderSidebarMain() {
     let content = '';
 
@@ -1066,6 +1167,13 @@ function renderMessagesView() {
                 </div>
             </div>
         </div>
+        
+        <!-- Filter Bubbles -->
+        <div class="filter-bubbles">
+            <div class="filter-chip ${!state.chatFilter || state.chatFilter === 'global' ? 'active' : ''}" onclick="window.setChatFilter('global')">Global</div>
+            <div class="filter-chip ${state.chatFilter === 'nearby' ? 'active' : ''}" onclick="window.setChatFilter('nearby')">Nearby</div>
+        </div>
+
         <div class="chat-list" id="chat-list">
              <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
             ${renderChatListContent(chatList)}
@@ -1080,17 +1188,20 @@ function renderChatListContent(chatList) {
 
     return chatList.map(chat => {
         const isUnread = chat.unreadCount > 0;
+        const clickAction = chat.isNearby ? `window.nearby.connect('${chat.id}')` : `window.openChat('${chat.id}')`;
+        const avatarUrl = chat.isNearby ? chat.avatar : getAvatarUrl(chat);
+
         return `
-            <div class="chat-item ${chat.id === state.activeChatId ? 'active' : ''}" onclick="window.openChat('${chat.id}')">
+            <div class="chat-item ${chat.id === state.activeChatId ? 'active' : ''}" onclick="${clickAction}">
                 <div class="avatar-wrapper">
-                    <img src="${getAvatarUrl(chat)}">
+                    <img src="${avatarUrl}" onerror="window.handleImageError(this, '${(chat.name || chat.username || 'User').replace(/'/g, "\\'")}')">
                     ${state.onlineUsers.has(chat.id) ? '<div class="status-dot"></div>' : ''}
                 </div>
                 <div class="chat-info">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <h4 style="${isUnread ? 'font-weight: 800; color: var(--text-primary);' : ''}">${chat.name || chat.username}</h4>
                         <span style="font-size:0.75rem; color: ${isUnread ? 'var(--primary-color)' : 'var(--text-secondary)'};">
-                           ${chat.time ? timeAgo(chat.time) : ''}
+                           ${chat.time ? (chat.isNearby ? chat.time : timeAgo(chat.time)) : ''}
                         </span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -1224,7 +1335,7 @@ function renderContactsView() {
             ${state.isSearching ?
             state.searchResults.map(u => `
                     <div class="chat-item" onclick="window.openChat('${u.id}')">
-                         <img src="${getAvatarUrl(u)}">
+                         <img src="${getAvatarUrl(u)}" onerror="window.handleImageError(this, '${(u.name || u.username || 'User').replace(/'/g, "\\'")}')">
                             <div class="msg-image-container" onclick="window.openMediaViewer('${u.avatar}', 'image')">
                                 <img src="${u.avatar}" alt="Image" style="cursor:pointer;">
                             </div>
@@ -1728,6 +1839,18 @@ function renderMainChatArea() {
         activeChat = state.searchResults.find(c => c.id === state.activeChatId);
     }
 
+    // Check Nearby Peers
+    if (!activeChat && window.nearby && window.nearby.peers.has(state.activeChatId)) {
+        const peer = window.nearby.peers.get(state.activeChatId);
+        activeChat = {
+            id: peer.id,
+            name: peer.name,
+            avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(peer.name) + '&background=random',
+            isNearby: true,
+            status: 'Nearby'
+        };
+    }
+
     if (!activeChat) {
         // Fallback since we might have opened via URL
         activeChat = { name: 'Chat', avatar: 'https://ui-avatars.com/api/?name=?' };
@@ -1737,7 +1860,7 @@ function renderMainChatArea() {
         <div class="chat-header">
             <div class="chat-header-user" onclick="window.openUserProfile('${activeChat.id}')" style="cursor:pointer;">
                 <button class="back-btn" onclick="event.stopPropagation(); window.closeChat()"><i class="fas fa-arrow-left"></i></button>
-                    <img src="${getAvatarUrl(activeChat)}" id="header-avatar">
+                    <img src="${getAvatarUrl(activeChat)}" id="header-avatar" onerror="window.handleImageError(this, '${(activeChat.name || activeChat.username || 'User').replace(/'/g, "\\'")}')">
                     <div>
                     <h4 style="margin:0;" id="header-name">${activeChat.name || activeChat.username}</h4>
                 <span id="header-status" style="font-size:0.8rem;color:var(--text-secondary); transition: all 0.3s;">
@@ -1887,6 +2010,17 @@ async function setupChatLogic() {
 
         isSending = true; // Set flag
         input.value = ''; // Clear immediately
+
+        // Nearby Chat Interception
+        if (window.nearby && window.nearby.peers.has(state.activeChatId)) {
+            try {
+                await window.nearby.sendMessage(content);
+            } catch (err) {
+                console.error("Nearby Send Error", err);
+            }
+            isSending = false;
+            return;
+        }
 
         // Optimistic Render
         const tempId = 'temp-' + Date.now();
@@ -2731,7 +2865,6 @@ window.toggleAttachmentMenu = () => {
         if (menu.classList.contains('hidden') || menu.style.display === 'none') {
             menu.classList.remove('hidden');
             menu.style.display = 'flex'; // Force flex
-            menu.classList.add('animate__animated', 'animate__fadeInUp');
 
             // Hide emoji picker if open
             const emoji = document.getElementById('emoji-picker');
@@ -2742,7 +2875,6 @@ window.toggleAttachmentMenu = () => {
         } else {
             menu.classList.add('hidden');
             menu.style.display = 'none'; // Force hide
-            menu.classList.remove('animate__animated', 'animate__fadeInUp');
         }
     }
 };
@@ -3538,9 +3670,9 @@ window.logout = () => {
     state.user = null;
     state.chats = []; // Clear chats on logout
     localStorage.removeItem('oma_user');
-    // Optional: Keep chats? No, privacy.
     localStorage.removeItem('oma_chats');
     window.location.hash = '#login';
+    window.location.reload();
 };
 
 
@@ -3550,10 +3682,29 @@ window.loginUser = (data) => {
     localStorage.setItem('oma_user', JSON.stringify(data));
     window.location.hash = '#chat';
     initSocket();
+
+    // Force Permissions on First Launch / Login
+    if (window.Capacitor && window.Capacitor.Plugins) {
+        // Push Notifications
+        const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+        if (PushNotifications) {
+            PushNotifications.requestPermissions().then(result => {
+                if (result.receive === 'granted') {
+                    PushNotifications.register();
+                }
+            });
+        }
+        // Local Notifications (if used)
+        const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+        if (LocalNotifications) {
+            LocalNotifications.requestPermissions();
+        }
+    }
 };
 
-window.clearChats = () => {
+window.clearChats = async () => {
     if (confirm('Are you sure you want to clear your recent chats list?')) {
+        try { if (window.db) await window.db.clear(); } catch (e) { }
         state.chats = [];
         localStorage.removeItem('oma_chats');
         alert('Chats cleared.');
@@ -4168,6 +4319,95 @@ function initSocket() {
         // End Call
         socket.on('end-call', () => {
             endCallCleanup(true);
+        });
+
+        socket.on('receive_message', (msg) => {
+            console.log('[Client] Received Message:', msg);
+
+            // 1. Play Sound (Only for others)
+            if (msg.senderId !== state.user.user.id) {
+                soundManager.play('message');
+            }
+
+            // 2. Active Chat Update
+            if (state.activeChatId === msg.receiverId || state.activeChatId === msg.senderId || (msg.receiverId === 'general' && state.activeChatId === 'general')) {
+                // We are looking at this chat
+                const container = document.getElementById('messages-container');
+                if (container) {
+                    // DUPLICATION FIX:
+                    // If I sent this, check if we have a pending/optimistic message for it via Content/Timestamp linkage?
+                    // Or simpler: If I am the sender, and I see a "sending" bubble, assumes it's this one.
+
+                    if (msg.senderId === state.user.user.id) {
+                        // Find any bubble that is 'sending' with same content?
+                        // Ideally we use a client-generated ID passed through server.
+                        // For now, heuristic:
+                        const pending = Array.from(document.querySelectorAll('.message.sending')).find(el => {
+                            // Check content text
+                            return el.innerText.includes(msg.content);
+                        });
+
+                        if (pending) {
+                            // Let the form.onsubmit handler finish its job (updating ID).
+                            // We ignore this socket event for DOM appending.
+                            console.log("Ignoring socket echo for own pending message");
+                            return;
+                        }
+                    }
+
+                    // Check if already exists (my own message via optimism that already finished)
+                    const existing = document.getElementById(`msg-${msg.id}`);
+                    if (!existing) {
+                        appendMessage(msg, container);
+                        scrollToBottom(container);
+
+                        // Mark as Read immediately (only if from others)
+                        if (msg.senderId !== state.user.user.id) {
+                            api.markAsRead(state.activeChatId).catch(console.error);
+                        }
+                    }
+                }
+            } else {
+                // 3. Background/Sidebar Update
+                // Increment Unread Count locally
+                // Logic: If msg is from 'general', update 'general'. If from User, update User.
+                const chatIdToUpdate = (msg.receiverId === 'general') ? 'general' : msg.senderId;
+
+                // Don't mark my own messages as unread if they arrive on another device (optional preference)
+                if (msg.senderId === state.user.user.id && msg.receiverId !== 'general') {
+                    // Determine if I should update "Last Message" for my own chat in list? Yes.
+                    // But unread count? No.
+                    const sentStatsTarget = msg.receiverId;
+                    const targetChat = state.chats.find(c => c.id === sentStatsTarget);
+                    if (targetChat) {
+                        targetChat.lastMsg = `You: ${msg.type === 'text' ? msg.content : 'Media'}`;
+                        targetChat.time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        refreshSidebar();
+                    }
+                    return;
+                }
+
+                const chat = state.chats.find(c => c.id === chatIdToUpdate);
+                if (chat) {
+                    if (msg.senderId !== state.user.user.id) {
+                        chat.unread = (chat.unread || 0) + 1;
+                    }
+                    chat.lastMsg = msg.type === 'text' ? msg.content : (msg.type === 'image' ? 'Photo' : 'File');
+                    chat.time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    // Refresh Sidebar to show dot
+                    refreshSidebar();
+
+                    // Show Toast
+                    window.showCustomAlert(`New message from ${msg.senderName}`, 'info');
+                } else {
+                    // New chat? Fetch list
+                    api.getRecentChats().then(chats => {
+                        state.chats = chats;
+                        refreshSidebar();
+                    });
+                }
+            }
         });
 
     } catch (e) {

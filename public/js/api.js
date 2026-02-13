@@ -109,9 +109,12 @@ export const api = {
 
         // CACHE MESSAGES ON SUCCESS
         if (Array.isArray(res)) {
-            // Need to ensure chatId is present. If fetching for specific chat, we know it.
-            // If fetching 'all' (history loop), messages should ideally have it.
-            await db.saveMessages(res);
+            // Inject chatId for indexing if provided
+            const messagesWithChatId = res.map(msg => {
+                if (chatId && !msg.chatId) return { ...msg, chatId };
+                return msg;
+            });
+            await db.saveMessages(messagesWithChatId);
         }
         return res;
     },
@@ -119,13 +122,10 @@ export const api = {
         const res = await request('/chat/send', 'POST', { content, type, receiverId, replyToId });
         // CACHE IF SUCCESS (Real message)
         if (res && res.id && !res.id.startsWith('temp-')) {
-            // We need to store it with the correct chatId. 
-            // In a group (general), chatId key is 'general' or similar? 
-            // The message object usually has receiverId. 
-            // If receiverId is a group, that's the chat ID. 
-            // If receiverId is a user (DM), the chat ID logic is complex (usually both user IDs).
-            // For now, let's just save the message object as is. 
-            // `db.saveMessages` relies on `id`. indexing uses properties.
+            // Inject chatId using receiverId as context
+            if (!res.chatId && receiverId) {
+                res.chatId = receiverId;
+            }
             await db.saveMessages(res);
         }
         return res;

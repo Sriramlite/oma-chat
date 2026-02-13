@@ -57,6 +57,22 @@ module.exports = async (req, res) => {
 
         await messagesCollection.insertOne(message);
 
+        // Real-time Socket Emission
+        const io = req.app.get('io');
+        if (io) {
+            // Emit to receiver
+            const targetRoom = String(receiverId);
+            io.to(targetRoom).emit('receive_message', message);
+
+            // Also emit to sender (for multi-device sync)
+            if (message.receiverId !== 'general') {
+                io.to(String(message.senderId)).emit('receive_message', message);
+            } else {
+                // For groups ('general'), the sender is also in the room usually, but let's be safe
+                // io.to('general').emit('receive_message', message); // Already covered above if targetRoom is 'general'
+            }
+        }
+
         // Send Push Notification
         if (receiverId !== 'general') {
             try {

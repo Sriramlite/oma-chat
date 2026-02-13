@@ -2665,3 +2665,46 @@ body.dark-mode .hover-reply-btn {
 .custom-alert__close:hover {
     opacity: 1;
 }
+
+/* Chat Filter Bubbles (WhatsApp Style) */
+.filter-bubbles {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+    padding-bottom: 5px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.filter-bubbles::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
+
+.filter-chip {
+    background: var(--search-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.filter-chip:hover {
+    background: var(--hover-bg);
+}
+
+.filter-chip.active {
+    background: var(--primary-color);
+    /* Green */
+    color: #fff;
+    /* White text */
+    border-color: var(--primary-color);
+    font-weight: 600;
+}
