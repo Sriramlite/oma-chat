@@ -5635,5 +5635,7 @@ window.openUserProfile = async (userId) => {
     };
     initWallpaper();
 })();
+console.log("App.js Loaded Successfully (v6)");
+console.log("App.js Loaded Successfully (v6)");
 
 
