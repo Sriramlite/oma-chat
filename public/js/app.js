@@ -2860,11 +2860,21 @@ window.toggleEmojiPicker = () => {
 
 window.toggleAttachmentMenu = () => {
     const menu = document.getElementById('attachment-menu');
-    console.log("Toggling attachment menu, element found:", !!menu);
+    console.log("toggleAttachmentMenu Called. Element:", menu);
+
     if (menu) {
-        if (menu.classList.contains('hidden') || menu.style.display === 'none') {
+        // Check computed style to be sure
+        const style = window.getComputedStyle(menu);
+        const isHidden = menu.classList.contains('hidden') || style.display === 'none';
+
+        console.log("Current State -> Hidden Class:", menu.classList.contains('hidden'), "Display:", style.display);
+
+        if (isHidden) {
+            console.log("Action: OPENING Menu");
             menu.classList.remove('hidden');
-            menu.style.display = 'flex'; // Force flex
+            menu.style.display = 'flex';
+            menu.style.zIndex = '10001'; // Force High Z-Index
+            menu.style.bottom = '80px'; // Ensure position
 
             // Hide emoji picker if open
             const emoji = document.getElementById('emoji-picker');
@@ -2873,9 +2883,12 @@ window.toggleAttachmentMenu = () => {
                 emoji.style.display = 'none';
             }
         } else {
+            console.log("Action: CLOSING Menu");
             menu.classList.add('hidden');
-            menu.style.display = 'none'; // Force hide
+            menu.style.display = 'none';
         }
+    } else {
+        console.error("CRITICAL: Attachment menu element not found in DOM.");
     }
 };
 
