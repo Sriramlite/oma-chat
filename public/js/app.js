@@ -163,10 +163,12 @@ async function init() {
         return;
     }
 
-    // Check Auth
-    const user = localStorage.getItem('oma_user');
-    if (user) {
-        state.user = JSON.parse(user);
+    // Auto Login
+    const storedUser = localStorage.getItem('oma_user');
+    if (storedUser) {
+        state.user = JSON.parse(storedUser);
+        registerPush(); // Ensure push is registered on auto-login
+
         initSocket(); // Enable Real-time
         setupProfileSync(); // Listen for updates
 
@@ -4300,6 +4302,11 @@ window.addEventListener('DOMContentLoaded', () => {
         window.initBatteryService();
         initSocket(); // Connect immediately on load
 
+        // Init Push (if native) - Non-blocking
+        if (typeof registerPush === 'function') {
+            registerPush().catch(e => console.error("Push Init Failed (Non-fatal):", e));
+        }
+
         // Refresh User in Background
         api.getMe().then(refreshedUser => {
             let updated = false;
@@ -4431,8 +4438,8 @@ window.addEventListener('DOMContentLoaded', () => {
         initSocket();
 
         // Init Push (if native) - Non-blocking
-        if (typeof initPush === 'function') {
-            initPush().catch(e => console.error("Push Init Failed (Non-fatal):", e));
+        if (typeof registerPush === 'function') {
+            registerPush().catch(e => console.error("Push Init Failed (Non-fatal):", e));
         }
     }
 });
@@ -4644,6 +4651,13 @@ function initSocket() {
             soundManager.stop('calling'); // Stop Calling Tone
             if (peerConnection) {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+
+                // Process Queued Candidates (Caller Side)
+                while (window.iceCandidateQueue && window.iceCandidateQueue.length > 0) {
+                    const c = window.iceCandidateQueue.shift();
+                    peerConnection.addIceCandidate(c).catch(e => console.error("Queued ICE Error (Caller)", e));
+                }
+
                 startCallTimer(); // Start timer for caller
                 wasConnected = true;
             }
@@ -4651,8 +4665,13 @@ function initSocket() {
 
         // ICE Candidate
         socket.on('ice-candidate', (data) => {
-            if (peerConnection) {
-                peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            const candidate = new RTCIceCandidate(data.candidate);
+            if (peerConnection && peerConnection.remoteDescription) {
+                peerConnection.addIceCandidate(candidate).catch(e => console.error("ICE Error", e));
+            } else {
+                if (!window.iceCandidateQueue) window.iceCandidateQueue = [];
+                window.iceCandidateQueue.push(candidate);
+                // console.log("ICE Candidate Queued (Remote desc not ready)");
             }
         });
 
@@ -5006,6 +5025,12 @@ window.answerCall = async () => {
 
     await peerConnection.setRemoteDescription(new RTCSessionDescription(window.pendingOffer));
 
+    // Process Queued Candidates (Callee Side)
+    while (window.iceCandidateQueue && window.iceCandidateQueue.length > 0) {
+        const c = window.iceCandidateQueue.shift();
+        peerConnection.addIceCandidate(c).catch(e => console.error("Queued ICE Error (Callee)", e));
+    }
+
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
 
@@ -5111,6 +5136,8 @@ function endCallCleanup(isRemote = false) {
     stopCallTimer();
     wasConnected = false;
     window.isCaller = false;
+    window.isCaller = false;
+    window.iceCandidateQueue = []; // Clear Queue
 }
 
 let wasConnected = false; // Track if we ever established connection to distinguish missed calls (naive)
@@ -5317,7 +5344,7 @@ async function setupLocalMedia(videoEnabled = true) {
     try {
         // Use currentFacingMode for constraints
         const constraints = {
-            video: videoEnabled ? { facingMode: window.currentFacingMode } : false,
+            video: videoEnabled ? { facingMode: { ideal: window.currentFacingMode || 'user' } } : false,
             audio: true
         };
 

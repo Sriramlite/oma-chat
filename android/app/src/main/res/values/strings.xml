@@ -5,4 +5,5 @@
     <string name="package_name">com.oma.chat</string>
     <string name="custom_url_scheme">com.oma.chat</string>
     <string name="server_client_id">836902266336-on367et8g14g1qva151sv5oafsimjl8n.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">836902266336-on367et8g14g1qva151sv5oafsimjl8n.apps.googleusercontent.com</string>
 </resources>

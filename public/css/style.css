@@ -1598,10 +1598,13 @@ emoji-picker.hidden {
     left: 50%;
     transform: translate(-50%, -50%);
     background: rgba(0, 0, 0, 0.6);
+    color: white;
     padding: 10px 20px;
     border-radius: 20px;
-    font-size: 1.1rem;
+    font-size: 1rem;
     z-index: 20;
+    pointer-events: none;
+    transition: opacity 0.3s;
 }
 
 /* Timer Position Fix */
