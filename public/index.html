@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OMA - Online Messaging App</title>
-    <link rel="stylesheet" href="css/style.css?v=6">
+    <link rel="stylesheet" href="css/style.css?v=21">
     <!-- Animations -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
     <!-- FontAwesome -->
@@ -124,7 +124,7 @@
 
     <!-- Socket.io -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script type="module" src="js/app.js?v=6"></script>
+    <script type="module" src="js/app.js?v=21"></script>
 
 
     <!-- Video Call Modal -->
@@ -169,13 +169,16 @@
 
             <!-- Controls -->
             <div class="call-controls">
-                <button id="btn-toggle-mute" onclick="window.toggleMute()" class="call-btn"><i
+                <button id="btn-toggle-mute" onclick="window.toggleMute()" class="call-btn" title="Mute"><i
                         class="fas fa-microphone"></i></button>
-                <button onclick="window.endCall()" class="call-btn end-call"><i class="fas fa-phone-slash"></i></button>
-                <button id="btn-toggle-video" onclick="window.toggleVideo()" class="call-btn"><i
+                <button id="btn-flip-camera" onclick="window.switchCamera()" class="call-btn" title="Switch Camera"
+                    style="display:none;"><i class="fas fa-sync-alt"></i></button>
+                <button onclick="window.endCall()" class="call-btn end-call" title="End Call"><i
+                        class="fas fa-phone-slash"></i></button>
+                <button id="btn-toggle-video" onclick="window.toggleVideo()" class="call-btn" title="Camera"><i
                         class="fas fa-video"></i></button>
-                <button id="btn-flip-camera" onclick="window.switchCamera()" class="call-btn" style="display:none;"><i
-                        class="fas fa-sync-alt"></i></button>
+                <button id="btn-flashlight" onclick="window.toggleFlashlight()" class="call-btn" title="Flashlight"
+                    style="display:none;"><i class="fas fa-bolt"></i></button>
             </div>
         </div>
 

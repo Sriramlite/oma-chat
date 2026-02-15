@@ -397,6 +397,12 @@ function render() {
     const app = document.getElementById('app');
     const landing = document.getElementById('landing-page');
 
+    if (!app) {
+        console.error("Critical: #app element not found. Retrying render...", new Error().stack);
+        setTimeout(render, 50);
+        return;
+    }
+
     if (!state.user) {
         // Not Logged In
         const hash = window.location.hash;
@@ -1861,11 +1867,11 @@ function renderMainChatArea() {
             <div class="chat-header-user" onclick="window.openUserProfile('${activeChat.id}')" style="cursor:pointer;">
                 <button class="back-btn" onclick="event.stopPropagation(); window.closeChat()"><i class="fas fa-arrow-left"></i></button>
                     <img src="${getAvatarUrl(activeChat)}" id="header-avatar" onerror="window.handleImageError(this, '${(activeChat.name || activeChat.username || 'User').replace(/'/g, "\\'")}')">
-                    <div>
-                    <h4 style="margin:0;" id="header-name">${activeChat.name || activeChat.username}</h4>
-                <span id="header-status" style="font-size:0.8rem;color:var(--text-secondary); transition: all 0.3s;">
+                    <div class="chat-header-info">
+                    <h4 id="header-name">${activeChat.name || activeChat.username}</h4>
+                <p id="header-status">
                     ${getHeaderStatusText(activeChat)}
-                </span>
+                </p>
                 </div>
             </div>
             
@@ -1918,9 +1924,8 @@ function renderMainChatArea() {
         
         <emoji-picker class="hidden" id="emoji-picker"></emoji-picker>
         
-        <!-- Attachment Menu -->
-        <!-- Attachment Menu -->
-        <div id="attachment-menu" class="hidden attachment-menu">
+        <!-- Attachment Menu (Siblings approach) -->
+        <div id="attachment-menu" class="attachment-menu hidden">
             <div onclick="document.getElementById('input-media').click()">
                 <div class="menu-icon icon-photo"><i class="fas fa-image"></i></div>
                 <span>Photo/Video</span>
@@ -1944,15 +1949,34 @@ function renderMainChatArea() {
         </div>
 
         <div class="input-area">
+             <!-- Input Area -->
             <input type="file" id="input-media" style="display:none;" accept="image/*,video/*" onchange="window.handleMedia(this)">
             <input type="file" id="input-file" style="display:none;" accept="*" onchange="window.handleMedia(this)">
             
-            <button class="icon-btn" onclick="window.toggleAttachmentMenu()"><i class="fas fa-paperclip"></i></button>
-            <button class="icon-btn" onclick="window.toggleEmojiPicker()"><i class="far fa-smile"></i></button>
+            <button class="icon-btn" onclick="window.toggleAttachmentMenu(event)"><i class="fas fa-paperclip"></i></button>
+            <button class="icon-btn" onclick="window.toggleEmojiPicker(event)"><i class="far fa-smile"></i></button>
+            <button class="icon-btn" onclick="window.toggleGifPicker(event)" title="GIFs"><span style="font-weight:800;font-size:0.75rem;letter-spacing:-0.5px;">GIF</span></button>
             <form id="msg-form">
-                <input type="text" id="msg-input" placeholder="Message..." autocomplete="off">
-                <button type="submit" class="icon-btn" style="color:var(--primary-color)"><i class="fas fa-paper-plane"></i></button>
+                <input type="text" id="msg-input" placeholder="Message..." autocomplete="off" oninput="window.updateSendBtn()">
+                <button type="submit" id="send-or-mic-btn" style="background:var(--primary-gradient);color:#fff;border:none;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(79,70,229,0.3);flex-shrink:0;"><i class="fas fa-microphone"></i></button>
             </form>
+        </div>
+        <!-- Voice Recording Indicator -->
+        <div id="voice-recording-bar" class="voice-recording-bar hidden">
+            <div class="recording-pulse"></div>
+            <span id="recording-timer">0:00</span>
+            <div style="flex:1;"></div>
+            <button class="icon-btn" id="cancel-recording-btn" onclick="window.cancelVoiceRecording()" title="Cancel"><i class="fas fa-trash" style="color:#ef4444;"></i></button>
+            <button class="icon-btn" id="send-recording-btn" onclick="window.stopVoiceRecording()" title="Send"><i class="fas fa-paper-plane" style="color:var(--primary-color);"></i></button>
+        </div>
+        <!-- GIF Picker Panel -->
+        <div id="gif-picker" class="gif-picker hidden">
+            <div class="gif-search-bar">
+                <input type="text" id="gif-search-input" placeholder="Search GIFs..." oninput="window.searchGifs(this.value)">
+            </div>
+            <div id="gif-results" class="gif-results">
+                <div class="gif-loading">Search for GIFs or browse trending</div>
+            </div>
         </div>
     `;
 }
@@ -2006,10 +2030,15 @@ async function setupChatLogic() {
             socket.emit('stop_typing', { receiverId: state.activeChatId, senderId: state.user.user.id });
         }
 
-        if (!content) return;
+        // If input is empty, start voice recording instead
+        if (!content) {
+            window.startVoiceRecording();
+            return;
+        }
 
         isSending = true; // Set flag
         input.value = ''; // Clear immediately
+        window.updateSendBtn(); // Reset to mic icon
 
         // Nearby Chat Interception
         if (window.nearby && window.nearby.peers.has(state.activeChatId)) {
@@ -2125,15 +2154,8 @@ async function setupChatLogic() {
     // Removed duplicate setInterval here, moved to top of function
 
 
-    // Emoji Listener
-    const picker = document.querySelector('emoji-picker');
-    if (picker) {
-        picker.addEventListener('emoji-click', event => {
-            const input = document.getElementById('msg-input');
-            input.value += event.detail.unicode;
-            input.focus();
-        });
-    }
+    // Bind emoji listener (guarded — only binds once, even though setupChatLogic runs on every chat open)
+    if (typeof bindEmojiListener === 'function') bindEmojiListener();
 
     // Typing Listener
     const msgInput = document.getElementById('msg-input');
@@ -2594,13 +2616,56 @@ function appendMessage(msg, container, dateHeader = null, animate = true) {
                 </a>
             </div>
         `;
+    } else if (msg.type === 'audio') {
+        // Voice Message
+        const audioId = 'audio-' + msg.id;
+        contentHtml = `
+            <div class="voice-msg" id="vm-${msg.id}">
+                <button class="play-voice-btn" onclick="window.playVoice('${audioId}', '${msg.id}')">
+                    <i class="fas fa-play"></i>
+                </button>
+                <div class="voice-progress-wrap">
+                    <div class="voice-progress-bar" id="vp-${msg.id}"></div>
+                </div>
+                <span class="voice-duration" id="vd-${msg.id}">0:00</span>
+                <audio id="${audioId}" src="${msg.content}" preload="metadata"
+                    onloadedmetadata="window.setVoiceDuration('${msg.id}', this.duration)"></audio>
+            </div>
+        `;
+    } else if (msg.type === 'gif') {
+        // GIF Message
+        contentHtml = `<img src="${msg.content}" class="msg-gif" onclick="window.openMediaViewer('${msg.content}', 'image')" style="cursor:pointer;">`;
+    } else if (msg.type === 'call_log') {
+        // Call Status Message — render as centered system-style message with icon
+        let callIcon = 'fa-phone';
+        let callColor = '#94a3b8';
+        let callLabel = msg.content;
+
+        if (msg.content.includes('Answered')) {
+            callIcon = 'fa-phone';
+            callColor = '#22c55e';
+        } else if (msg.content.includes('Declined')) {
+            callIcon = 'fa-phone-slash';
+            callColor = '#ef4444';
+        } else if (msg.content.includes('No Answer') || msg.content.includes('Missed')) {
+            callIcon = 'fa-phone-slash';
+            callColor = '#f59e0b';
+        }
+
+        const callDate = new Date(msg.timestamp);
+        const callTime = callDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        div.className = 'call-log-message animate__animated animate__fadeIn';
+        div.innerHTML = `
+            <i class="fas ${callIcon}" style="color:${callColor};font-size:0.85rem;"></i>
+            <span>${callLabel}</span>
+            <span class="call-log-time">${callTime}</span>
+        `;
+        container.appendChild(div);
+        return;
     } else if (msg.type === 'system') {
         // System Message Style
         div.className = 'message-bubble system-message animate__animated animate__fadeIn';
-        div.style.alignSelf = 'center';
-        div.style.background = 'rgba(0,0,0,0.2)';
-        div.style.color = 'var(--text-secondary)';
-        div.style.fontSize = '0.8rem';
         div.innerHTML = msg.content;
         container.appendChild(div);
         return;
@@ -2858,39 +2923,74 @@ window.toggleEmojiPicker = () => {
     }
 };
 
-window.toggleAttachmentMenu = () => {
+// ===== ATTACHMENT MENU TOGGLE =====
+window.toggleAttachmentMenu = function (e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+
     const menu = document.getElementById('attachment-menu');
-    console.log("toggleAttachmentMenu Called. Element:", menu);
+    if (!menu) return;
 
-    if (menu) {
-        // Check computed style to be sure
-        const style = window.getComputedStyle(menu);
-        const isHidden = menu.classList.contains('hidden') || style.display === 'none';
-
-        console.log("Current State -> Hidden Class:", menu.classList.contains('hidden'), "Display:", style.display);
-
-        if (isHidden) {
-            console.log("Action: OPENING Menu");
-            menu.classList.remove('hidden');
-            menu.style.display = 'flex';
-            menu.style.zIndex = '10001'; // Force High Z-Index
-            menu.style.bottom = '80px'; // Ensure position
-
-            // Hide emoji picker if open
-            const emoji = document.getElementById('emoji-picker');
-            if (emoji && !emoji.classList.contains('hidden')) {
-                emoji.classList.add('hidden');
-                emoji.style.display = 'none';
-            }
-        } else {
-            console.log("Action: CLOSING Menu");
-            menu.classList.add('hidden');
-            menu.style.display = 'none';
+    if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        // Close emoji picker if open
+        const emoji = document.getElementById('emoji-picker');
+        if (emoji && !emoji.classList.contains('hidden')) {
+            emoji.classList.add('hidden');
         }
     } else {
-        console.error("CRITICAL: Attachment menu element not found in DOM.");
+        menu.classList.add('hidden');
     }
 };
+
+// ===== EMOJI PICKER TOGGLE =====
+window.toggleEmojiPicker = function (e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+
+    const picker = document.getElementById('emoji-picker');
+    if (!picker) return;
+
+    if (picker.classList.contains('hidden')) {
+        picker.classList.remove('hidden');
+        // Close attachment menu if open
+        const menu = document.getElementById('attachment-menu');
+        if (menu && !menu.classList.contains('hidden')) {
+            menu.classList.add('hidden');
+        }
+    } else {
+        picker.classList.add('hidden');
+    }
+};
+
+// ===== UNIFIED CLICK-OUTSIDE HANDLER (WhatsApp Style) =====
+// Single listener in bubble phase. Closes any open menu/picker when clicking outside.
+document.addEventListener('click', function (e) {
+    // --- Attachment Menu ---
+    const menu = document.getElementById('attachment-menu');
+    if (menu && !menu.classList.contains('hidden')) {
+        const paperclipBtn = e.target.closest('button[onclick*="toggleAttachmentMenu"]');
+        if (!menu.contains(e.target) && !paperclipBtn) {
+            menu.classList.add('hidden');
+        }
+    }
+
+    // --- Emoji Picker ---
+    const picker = document.getElementById('emoji-picker');
+    if (picker && !picker.classList.contains('hidden')) {
+        const emojiBtn = e.target.closest('button[onclick*="toggleEmojiPicker"]');
+        if (!picker.contains(e.target) && !emojiBtn) {
+            picker.classList.add('hidden');
+        }
+    }
+
+    // --- Chat Menu Dropdown ---
+    const chatMenu = document.getElementById('chat-menu-dropdown');
+    if (chatMenu && !chatMenu.classList.contains('hidden')) {
+        const chatMenuBtn = e.target.closest('button[onclick*="toggleChatMenu"]');
+        if (!chatMenu.contains(e.target) && !chatMenuBtn) {
+            chatMenu.classList.add('hidden');
+        }
+    }
+});
 
 window.replyToMessage = (msgId) => {
     // If msgId not passed (from menu), use selected
@@ -3417,46 +3517,30 @@ window.deleteAccount = async () => {
     }
 };
 
-window.toggleAttachmentMenu = () => {
-    const menu = document.getElementById('attachment-menu');
-    if (menu) menu.classList.toggle('hidden');
-};
+// NOTE: toggleAttachmentMenu defined at ~line 2867.
+// NOTE: toggleEmojiPicker defined at ~line 2886.
+// NOTE: Click-outside handler defined at ~line 2907.
+// DO NOT re-define them here.
 
-window.toggleEmojiPicker = () => {
-    const picker = document.getElementById('emoji-picker');
-    if (picker) picker.classList.toggle('hidden');
-};
-
-// Handle Emoji Selection
-document.querySelector('emoji-picker')?.addEventListener('emoji-click', event => {
-    const input = document.getElementById('msg-input');
-    if (input) {
-        input.value += event.detail.unicode;
-        input.focus();
+// Handle Emoji Selection (SINGLE global listener)
+let _emojiListenerBound = false;
+function bindEmojiListener() {
+    if (_emojiListenerBound) return;
+    const picker = document.querySelector('emoji-picker');
+    if (picker) {
+        picker.addEventListener('emoji-click', event => {
+            const input = document.getElementById('msg-input');
+            if (input) {
+                input.value += event.detail.unicode;
+                input.focus();
+            }
+        });
+        _emojiListenerBound = true;
     }
-});
-
-// Close menu/picker when clicking outside
-document.addEventListener('click', (e) => {
-    const menu = document.getElementById('attachment-menu');
-    const picker = document.getElementById('emoji-picker');
-
-    // Check Attachment Menu
-    const menuBtn = document.querySelector('.icon-btn .fa-paperclip')?.closest('button');
-    if (menu && !menu.classList.contains('hidden')) {
-        if (menu.contains(e.target)) return;
-        if (menuBtn && (e.target === menuBtn || menuBtn.contains(e.target))) return;
-        menu.classList.add('hidden');
-    }
-
-    // Check Emoji Picker
-    const pickerBtn = document.querySelector('.icon-btn .fa-smile')?.closest('button');
-    if (picker && !picker.classList.contains('hidden')) {
-        if (picker.contains(e.target)) return;
-        if (pickerBtn && (e.target === pickerBtn || pickerBtn.contains(e.target))) return;
-        picker.classList.add('hidden');
-    }
-});
+}
+// Try to bind now, and also on DOM ready
+bindEmojiListener();
+document.addEventListener('DOMContentLoaded', bindEmojiListener);
 
 window.toggleChatMenu = () => {
     const menu = document.getElementById('chat-menu-dropdown');
@@ -3526,26 +3610,7 @@ window.filterChatMessages = (query) => {
     // Verify Ticks Logic for re-rendered messages (optional, pure visual)
 };
 
-// Existing Function
-window.toggleEmojiPicker = () => {
-    const picker = document.getElementById('emoji-picker');
-    if (picker) {
-        if (picker.classList.contains('hidden') || picker.style.display === 'none') {
-            picker.classList.remove('hidden');
-            picker.style.display = 'block';
-
-            // Hide attachment menu
-            const menu = document.getElementById('attachment-menu');
-            if (menu && !menu.classList.contains('hidden')) {
-                menu.classList.add('hidden');
-                menu.style.display = 'none';
-            }
-        } else {
-            picker.classList.add('hidden');
-            picker.style.display = 'none';
-        }
-    }
-};
+// NOTE: toggleEmojiPicker is defined at ~line 2886. DO NOT re-define here.
 
 window.addEventListener('hashchange', render);
 const resizeImage = (base64Str, maxWidth = 800) => {
@@ -3636,6 +3701,268 @@ window.handleMedia = async (input) => {
         }
     };
     reader.readAsDataURL(file);
+};
+
+// ===== DYNAMIC SEND / MIC BUTTON =====
+window.updateSendBtn = () => {
+    const input = document.getElementById('msg-input');
+    const btn = document.getElementById('send-or-mic-btn');
+    if (!input || !btn) return;
+    const icon = btn.querySelector('i');
+    if (input.value.trim().length > 0) {
+        icon.className = 'fas fa-paper-plane';
+        icon.style.transform = 'rotate(-30deg)';
+        btn._isRecordMode = false;
+    } else {
+        icon.className = 'fas fa-microphone';
+        icon.style.transform = '';
+        btn._isRecordMode = true;
+    }
+};
+
+// ===== VOICE RECORDING =====
+let _mediaRecorder = null;
+let _audioChunks = [];
+let _recordingTimerInterval = null;
+let _recordingSeconds = 0;
+
+window.startVoiceRecording = async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Try webm first, fallback to ogg, then default
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+            ? 'audio/webm;codecs=opus'
+            : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
+                ? 'audio/ogg;codecs=opus'
+                : '';
+
+        _mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+        _audioChunks = [];
+        _recordingSeconds = 0;
+
+        _mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) _audioChunks.push(e.data);
+        };
+
+        _mediaRecorder.onstop = () => {
+            // Stop all tracks to release mic
+            stream.getTracks().forEach(t => t.stop());
+        };
+
+        _mediaRecorder.start(100); // collect in 100ms chunks
+
+        // Show recording bar, hide input area
+        const inputArea = document.querySelector('.input-area');
+        const recordBar = document.getElementById('voice-recording-bar');
+        if (inputArea) inputArea.classList.add('hidden');
+        if (recordBar) recordBar.classList.remove('hidden');
+
+        // Start timer
+        const timerEl = document.getElementById('recording-timer');
+        _recordingTimerInterval = setInterval(() => {
+            _recordingSeconds++;
+            const m = Math.floor(_recordingSeconds / 60);
+            const s = (_recordingSeconds % 60).toString().padStart(2, '0');
+            if (timerEl) timerEl.textContent = `${m}:${s}`;
+        }, 1000);
+
+    } catch (e) {
+        console.error('Mic access denied', e);
+        alert('Microphone access is required for voice messages.');
+    }
+};
+
+window.stopVoiceRecording = async () => {
+    if (!_mediaRecorder || _mediaRecorder.state === 'inactive') return;
+    if (window._voiceSending) return; // Guard against double sends
+    window._voiceSending = true;
+
+    return new Promise((resolve) => {
+        const recorder = _mediaRecorder;
+        const chunks = [..._audioChunks]; // Snapshot chunks
+        _audioChunks = []; // Clear immediately to prevent re-use
+        _mediaRecorder = null; // Prevent re-entry
+
+        recorder.onstop = async () => {
+            // Stop mic tracks
+            recorder.stream.getTracks().forEach(t => t.stop());
+
+            // Clear timer
+            clearInterval(_recordingTimerInterval);
+            _recordingTimerInterval = null;
+
+            // Restore UI
+            const inputArea = document.querySelector('.input-area');
+            const recordBar = document.getElementById('voice-recording-bar');
+            if (inputArea) inputArea.classList.remove('hidden');
+            if (recordBar) recordBar.classList.add('hidden');
+
+            if (chunks.length === 0) { window._voiceSending = false; resolve(); return; }
+
+            // Convert to base64
+            const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64 = reader.result;
+                try {
+                    await api.sendMessage(base64, 'audio', state.activeChatId);
+                    const container = document.getElementById('messages-container');
+                    if (container) pollMessages(container);
+                } catch (err) {
+                    console.error('Voice send failed', err);
+                    alert('Failed to send voice message.');
+                }
+                window._voiceSending = false;
+                resolve();
+            };
+            reader.readAsDataURL(blob);
+        };
+        recorder.stop();
+    });
+};
+
+window.cancelVoiceRecording = () => {
+    if (_mediaRecorder && _mediaRecorder.state !== 'inactive') {
+        _mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        _mediaRecorder.stop();
+    }
+    _audioChunks = [];
+    clearInterval(_recordingTimerInterval);
+    _recordingTimerInterval = null;
+
+    // Restore UI
+    const inputArea = document.querySelector('.input-area');
+    const recordBar = document.getElementById('voice-recording-bar');
+    if (inputArea) inputArea.classList.remove('hidden');
+    if (recordBar) recordBar.classList.add('hidden');
+};
+
+// ===== VOICE PLAYBACK =====
+let _currentPlayingAudio = null;
+let _currentPlayingId = null;
+
+window.playVoice = (audioId, msgId) => {
+    const audio = document.getElementById(audioId);
+    if (!audio) return;
+
+    const btn = document.querySelector(`#vm-${msgId} .play-voice-btn i`);
+    const progressBar = document.getElementById(`vp-${msgId}`);
+
+    // If already playing this one, pause it
+    if (_currentPlayingId === msgId && !audio.paused) {
+        audio.pause();
+        if (btn) btn.className = 'fas fa-play';
+        return;
+    }
+
+    // Stop any other playing voice
+    if (_currentPlayingAudio && _currentPlayingAudio !== audio) {
+        _currentPlayingAudio.pause();
+        _currentPlayingAudio.currentTime = 0;
+        const oldBtn = document.querySelector(`#vm-${_currentPlayingId} .play-voice-btn i`);
+        if (oldBtn) oldBtn.className = 'fas fa-play';
+        const oldBar = document.getElementById(`vp-${_currentPlayingId}`);
+        if (oldBar) oldBar.style.width = '0%';
+    }
+
+    _currentPlayingAudio = audio;
+    _currentPlayingId = msgId;
+    if (btn) btn.className = 'fas fa-pause';
+    audio.play();
+
+    audio.ontimeupdate = () => {
+        if (audio.duration && progressBar) {
+            progressBar.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+        }
+    };
+    audio.onended = () => {
+        if (btn) btn.className = 'fas fa-play';
+        if (progressBar) progressBar.style.width = '0%';
+        _currentPlayingAudio = null;
+        _currentPlayingId = null;
+    };
+};
+
+window.setVoiceDuration = (msgId, duration) => {
+    const el = document.getElementById(`vd-${msgId}`);
+    if (el && duration && isFinite(duration)) {
+        const m = Math.floor(duration / 60);
+        const s = Math.floor(duration % 60).toString().padStart(2, '0');
+        el.textContent = `${m}:${s}`;
+    }
+};
+
+// ===== GIF PICKER =====
+let _gifSearchTimeout = null;
+const TENOR_API_KEY = 'AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ'; // Free Tenor API key
+
+window.toggleGifPicker = (e) => {
+    if (e) e.stopPropagation();
+    const picker = document.getElementById('gif-picker');
+    if (!picker) return;
+
+    const isHidden = picker.classList.contains('hidden');
+    picker.classList.toggle('hidden');
+
+    // Load trending on first open
+    if (isHidden && !picker._loaded) {
+        picker._loaded = true;
+        window.fetchGifs('trending');
+    }
+};
+
+window.fetchGifs = async (query) => {
+    const resultsDiv = document.getElementById('gif-results');
+    if (!resultsDiv) return;
+    resultsDiv.innerHTML = '<div class="gif-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+
+    try {
+        const endpoint = query === 'trending'
+            ? `https://tenor.googleapis.com/v2/featured?key=${TENOR_API_KEY}&limit=30&media_filter=tinygif`
+            : `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${TENOR_API_KEY}&limit=30&media_filter=tinygif`;
+
+        const res = await fetch(endpoint);
+        const data = await res.json();
+
+        if (!data.results || data.results.length === 0) {
+            resultsDiv.innerHTML = '<div class="gif-loading">No GIFs found</div>';
+            return;
+        }
+
+        resultsDiv.innerHTML = data.results.map(gif => {
+            const url = gif.media_formats?.tinygif?.url || gif.media_formats?.gif?.url;
+            if (!url) return '';
+            return `<img src="${url}" class="gif-item" onclick="window.sendGif('${url}')" alt="GIF" loading="lazy">`;
+        }).join('');
+
+    } catch (err) {
+        console.error('GIF fetch failed', err);
+        resultsDiv.innerHTML = '<div class="gif-loading">Failed to load GIFs</div>';
+    }
+};
+
+window.searchGifs = (query) => {
+    clearTimeout(_gifSearchTimeout);
+    if (!query || query.trim().length < 2) {
+        window.fetchGifs('trending');
+        return;
+    }
+    _gifSearchTimeout = setTimeout(() => {
+        window.fetchGifs(query.trim());
+    }, 400);
+};
+
+window.sendGif = async (url) => {
+    try {
+        await api.sendMessage(url, 'gif', state.activeChatId);
+        const container = document.getElementById('messages-container');
+        if (container) pollMessages(container);
+        // Close GIF picker
+        const picker = document.getElementById('gif-picker');
+        if (picker) picker.classList.add('hidden');
+    } catch (err) {
+        console.error('GIF send failed', err);
+    }
 };
 
 window.openChat = async (chatId) => {
@@ -4449,13 +4776,9 @@ window.startCall = async (type = 'video', targetId = null) => {
     }
 
 
-    // If target provided (e.g. from Calls tab), set it as active
     if (targetId) {
         state.activeChatId = targetId;
     }
-
-
-
 
     // Check if group
     if (state.activeChatId.includes('-') && !state.chats.find(c => c.id === state.activeChatId && c.type !== 'group')) {
@@ -4465,7 +4788,6 @@ window.startCall = async (type = 'video', targetId = null) => {
 
     currentCallTargetId = state.activeChatId;
 
-    document.getElementById('video-call-modal').classList.remove('hidden');
     document.getElementById('video-call-modal').classList.remove('hidden');
     // Clear legacy status to prevent overlap
     const statusEl = document.getElementById('call-status');
@@ -4504,15 +4826,21 @@ window.startCall = async (type = 'video', targetId = null) => {
         wrapper.classList.remove('audio-mode');
     }
 
-    // Toggle Button Icon (Video vs Speaker)
+    // Toggle Button Icon (Video vs Speaker) & Camera Flip & Flashlight
     const toggleBtn = document.getElementById('btn-toggle-video');
+    const flipBtn = document.getElementById('btn-flip-camera');
+    const flashBtn = document.getElementById('btn-flashlight');
     if (toggleBtn) {
         if (type === 'audio') {
             toggleBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
             toggleBtn.onclick = window.toggleSpeaker; // Set to speaker toggle
+            if (flipBtn) flipBtn.style.display = 'none';
+            if (flashBtn) flashBtn.style.display = 'none';
         } else {
             toggleBtn.innerHTML = '<i class="fas fa-video"></i>';
             toggleBtn.onclick = window.toggleVideo; // Set to video toggle
+            if (flipBtn) flipBtn.style.display = 'flex'; // Show camera flip for video calls
+            if (flashBtn) flashBtn.style.display = 'flex'; // Show flashlight for video calls
         }
     }
 
@@ -4546,7 +4874,11 @@ window.startCall = async (type = 'video', targetId = null) => {
 function getHeaderStatusText(chat) {
     if (!chat || !chat.id) return '';
     if (chat.id === 'general') return 'Tap to view info';
-    if (state.onlineUsers.has(chat.id)) return 'Online';
+
+    // Online status with green dot
+    if (state.onlineUsers.has(chat.id)) {
+        return '<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.5);display:inline-block;"></span>Online</span>';
+    }
 
     if (chat.type === 'group') {
         const memberCount = chat.members ? chat.members.length : 0;
@@ -4566,8 +4898,8 @@ function getHeaderStatusText(chat) {
         batteryHtml = ` <span style="opacity:0.8; margin-left:8px;"> • <i class="fas fa-battery-${icon}"></i> ${level}%${charging ? ' <i class="fas fa-bolt" style="color:#f59e0b;"></i>' : ''}</span>`;
     }
 
-    if (chat.lastSeen === 'online') return '<span style="color:var(--primary-color);">Online</span>' + batteryHtml;
-    if (!chat.lastSeen) return 'Offline' + batteryHtml;
+    if (chat.lastSeen === 'online') return '<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.5);display:inline-block;"></span>Online</span>' + batteryHtml;
+    if (!chat.lastSeen) return '<span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>Offline</span>' + batteryHtml;
 
     return `Last seen ${timeAgo(chat.lastSeen)}` + batteryHtml;
 }
@@ -4692,13 +5024,15 @@ window.rejectCall = () => {
     document.getElementById('incoming-call-popup').classList.add('hidden');
     socket.emit('end-call', { targetId: currentCallTargetId });
 
-    // Log "Declined"
-    if (currentCallTargetId) {
+    // Log "Declined" (guard against duplicate from endCallCleanup)
+    if (currentCallTargetId && !window._callLogSent) {
+        window._callLogSent = true;
         api.sendMessage(`Declined`, 'call_log', currentCallTargetId).catch(console.error);
     }
 
     currentCallTargetId = null;
     window.pendingOffer = null;
+    setTimeout(() => { window._callLogSent = false; }, 2000);
 };
 
 window.endCall = () => {
@@ -4724,23 +5058,32 @@ function endCallCleanup(isRemote = false) {
         peerConnection = null;
     }
 
-    // Stop all media tracks (Camera & Mic)
+    // Stop all media tracks (Camera & Mic) — thorough cleanup
     if (localStream) {
         try {
             localStream.getTracks().forEach(track => {
                 track.stop();
-                track.enabled = false; // Double tap
+                track.enabled = false;
             });
         } catch (e) { console.error("Track stop error", e); }
         localStream = null;
     }
 
-    // Clear Video Elements
-    document.getElementById('local-video').srcObject = null;
-    document.getElementById('remote-video').srcObject = null;
+    // Clear Video Elements and force release
+    const localVideo = document.getElementById('local-video');
+    const remoteVideo = document.getElementById('remote-video');
+    if (localVideo) {
+        localVideo.srcObject = null;
+        localVideo.load(); // Force browser to release camera handle
+    }
+    if (remoteVideo) {
+        remoteVideo.srcObject = null;
+        remoteVideo.load();
+    }
 
-    // Log the Call
-    if (target) {
+    // Log the Call (skip if already logged by rejectCall)
+    if (target && !window._callLogSent) {
+        window._callLogSent = true;
         if (wasConnected && callSeconds > 0) {
             if (!isRemote) {
                 const mins = Math.floor(callSeconds / 60).toString().padStart(2, '0');
@@ -4750,27 +5093,24 @@ function endCallCleanup(isRemote = false) {
         } else {
             if (!isRemote) {
                 let logMessage = "";
-                // Local party ended the call before connection
                 if (window.isCaller) {
-                    logMessage = "No Answer"; // I was caller, I gave up
+                    logMessage = "No Answer";
                 } else {
-                    logMessage = "Declined"; // I was callee, I Rejected call
+                    logMessage = "Declined";
                 }
-
                 if (logMessage) {
                     api.sendMessage(logMessage, 'call_log', target).catch(console.error);
                 }
             }
         }
+        setTimeout(() => { window._callLogSent = false; }, 2000);
     }
 
     currentCallTargetId = null;
-
     window.pendingOffer = null;
-
     stopCallTimer();
     wasConnected = false;
-    window.isCaller = false; // Reset
+    window.isCaller = false;
 }
 
 let wasConnected = false; // Track if we ever established connection to distinguish missed calls (naive)
@@ -4919,6 +5259,39 @@ window.switchCamera = async () => {
             console.error("Critical: Could not revert camera:", revertErr);
             alert("Camera error. Please restart call.");
         }
+    }
+};
+
+// --- Flashlight Toggle (Torch for mobile rear camera) ---
+window._flashlightOn = false;
+window.toggleFlashlight = async () => {
+    if (!localStream) return;
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (!videoTrack) return;
+
+    try {
+        const capabilities = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
+        if (!capabilities.torch) {
+            alert('Flashlight not available on this device/camera.');
+            return;
+        }
+
+        window._flashlightOn = !window._flashlightOn;
+        await videoTrack.applyConstraints({ advanced: [{ torch: window._flashlightOn }] });
+
+        // UI Feedback
+        const btn = document.getElementById('btn-flashlight');
+        if (btn) {
+            if (window._flashlightOn) {
+                btn.classList.add('active-control');
+                btn.querySelector('i').style.color = '#f59e0b';
+            } else {
+                btn.classList.remove('active-control');
+                btn.querySelector('i').style.color = '';
+            }
+        }
+    } catch (e) {
+        console.error('Flashlight toggle failed:', e);
     }
 };
 
