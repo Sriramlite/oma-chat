@@ -118,8 +118,8 @@ export const api = {
         }
         return res;
     },
-    sendMessage: async (content, type = 'text', receiverId = 'general', replyToId = null) => {
-        const res = await request('/chat/send', 'POST', { content, type, receiverId, replyToId });
+    sendMessage: async (content, type = 'text', receiverId = 'general', replyToId = null, tempId = null) => {
+        const res = await request('/chat/send', 'POST', { content, type, receiverId, replyToId, tempId });
         // CACHE IF SUCCESS (Real message)
         if (res && res.id && !res.id.startsWith('temp-')) {
             // Inject chatId using receiverId as context

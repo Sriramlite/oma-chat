@@ -31,6 +31,7 @@ module.exports = async (req, res) => {
 
         const message = {
             id: crypto.randomUUID(),
+            tempId: req.body.tempId || null, // Echo back tempId for client deduplication
             senderId: user.id,
             senderName: fullUser ? fullUser.name : user.username,
             avatar: fullUser ? fullUser.avatar : '',

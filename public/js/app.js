@@ -2071,6 +2071,11 @@ async function setupChatLogic() {
             } : null
         };
         appendMessage(tempMsg, container);
+
+        // Add data-temp-id for reliable socket matching
+        const tempEl = document.getElementById(`msg-${tempId}`);
+        if (tempEl) tempEl.dataset.tempId = tempId;
+
         scrollToBottom(container);
 
         // Disable button to prevent double-send
@@ -2079,7 +2084,7 @@ async function setupChatLogic() {
 
         try {
             const replyToId = state.replyingTo ? state.replyingTo.id : null;
-            const realMsg = await api.sendMessage(content, 'text', state.activeChatId, replyToId);
+            const realMsg = await api.sendMessage(content, 'text', state.activeChatId, replyToId, tempId);
 
             // Clear Reply State
             if (state.replyingTo) window.cancelReply();
@@ -4698,18 +4703,30 @@ function initSocket() {
                     // Or simpler: If I am the sender, and I see a "sending" bubble, assumes it's this one.
 
                     if (msg.senderId === state.user.user.id) {
-                        // Find any bubble that is 'sending' with same content?
-                        // Ideally we use a client-generated ID passed through server.
-                        // For now, heuristic:
-                        const pending = Array.from(document.querySelectorAll('.message.sending')).find(el => {
-                            // Check content text
+                        // 1. Precise Match via tempId
+                        if (msg.tempId) {
+                            const pending = document.querySelector(`.message-bubble[data-temp-id="${msg.tempId}"]`);
+                            if (pending) {
+                                // Transition Temp -> Real
+                                pending.id = `msg-${msg.id}`;
+                                pending.removeAttribute('data-temp-id');
+                                pending.classList.remove('message-sending');
+                                // Update check icon
+                                const tick = pending.querySelector('.tick-icon');
+                                if (tick) tick.innerHTML = '<i class="fas fa-check" style="color:rgba(255,255,255,0.5);"></i>';
+
+                                console.log("Socket echo matched via tempId");
+                                return; // Stop processing (don't append duplicate)
+                            }
+                        }
+
+                        // 2. Fallback Heuristic (Legacy)
+                        const pendingLegacy = Array.from(document.querySelectorAll('.message.sending')).find(el => {
                             return el.innerText.includes(msg.content);
                         });
 
-                        if (pending) {
-                            // Let the form.onsubmit handler finish its job (updating ID).
-                            // We ignore this socket event for DOM appending.
-                            console.log("Ignoring socket echo for own pending message");
+                        if (pendingLegacy) {
+                            console.log("Ignoring socket echo for own pending message (Legacy Match)");
                             return;
                         }
                     }
