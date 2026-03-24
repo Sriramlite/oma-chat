@@ -5910,12 +5910,19 @@ async function registerPush() {
             });
 
             // Request permission
-            const permStatus = await PushNotifications.checkPermissions();
+            // alert("Push: Checking permissions..."); 
+            let permStatus = await PushNotifications.checkPermissions();
             if (permStatus.receive === 'prompt') {
-                const newPerm = await PushNotifications.requestPermissions();
+                // alert("Push: Requesting permissions...");
+                permStatus = await PushNotifications.requestPermissions();
             }
-            if (permStatus.receive !== 'denied') {
+
+            if (permStatus.receive === 'granted') {
+                // alert("Push: Registering with FCM...");
                 await PushNotifications.register();
+                // alert("Push: Registration call sent.");
+            } else {
+                alert("Push: Permission denied (" + permStatus.receive + ")");
             }
         } catch (e) {
             console.error("Push registration failed", e);
