@@ -5925,6 +5925,7 @@ async function registerPush() {
                 alert("Push: Permission denied (" + permStatus.receive + ")");
             }
         } catch (e) {
+            alert("Push: Global Failure: " + e.message);
             console.error("Push registration failed", e);
         }
     } else {
