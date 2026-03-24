@@ -5833,20 +5833,25 @@ window.logToDebug = (msg) => {
 async function registerPush() {
     window.logToDebug("Push: registerPush() called");
     
-    // Robust Plugin Detection
-    let Push = PushNotifications;
-    if (!Push || !Push.register) {
-        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
-            Push = window.Capacitor.Plugins.PushNotifications;
-            window.logToDebug("Push: Using window.Capacitor.Plugins fallback");
-        }
-    }
+    // Fuzzy Plugin Discovery
+    const allPlugins = (window.Capacitor && window.Capacitor.Plugins) ? Object.keys(window.Capacitor.Plugins) : [];
+    const findPlugin = (query) => {
+        const key = allPlugins.find(k => k.toLowerCase() === query.toLowerCase());
+        return key ? window.Capacitor.Plugins[key] : null;
+    };
 
+    let Push = PushNotifications || findPlugin('PushNotifications') || findPlugin('PushNotification');
+    
+    // Even if Keys are empty, check if register is a function (could be a Proxy)
+    const hasRegister = !!(Push && typeof Push.register === 'function');
+    
     const hasCap = !!window.Capacitor;
     const isNative = hasCap && window.Capacitor.isNativePlatform();
-    window.logToDebug("Push: isNative=" + isNative + ", HasPlugin=" + !!(Push && Push.register));
+    window.logToDebug(`Push: isNative=${isNative}, DetectedPlugin=${!!Push}, HasRegister=${hasRegister}`);
 
-    if (isNative && Push && Push.register) {
+    if (isNative && Push) {
+        // If it's a proxy with hidden keys, try to call methods anyway
+        window.logToDebug("Push: Attempting registration sequence...");
         // Individual Try/Catch blocks for resilience
         try {
             await Push.removeAllListeners();
@@ -5938,17 +5943,18 @@ async function registerPush() {
 window.checkPluginStatus = () => {
     try {
         const allPlugins = (window.Capacitor && window.Capacitor.Plugins) ? Object.keys(window.Capacitor.Plugins) : [];
-        const imported = PushNotifications ? Object.keys(PushNotifications) : 'NULL';
-        const globalPlat = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) 
-            ? Object.keys(window.Capacitor.Plugins.PushNotifications) : 'NULL';
-            
-        window.logToDebug("TOTAL Registered Plugins: " + JSON.stringify(allPlugins));
-        window.logToDebug("Imported Push Keys: " + JSON.stringify(imported));
-        window.logToDebug("Global Push Keys: " + JSON.stringify(globalPlat));
+        const Push = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) || {};
         
-        alert("ALL PLUGINS: " + allPlugins.join(', ') + 
-              "\n\nImported Push: " + (imported === 'NULL' ? 'NULL' : imported.join(', ')) + 
-              "\n\nGlobal Push: " + (globalPlat === 'NULL' ? 'NULL' : globalPlat.join(', ')));
+        const status = {
+            keys: Object.keys(Push),
+            type: typeof Push,
+            hasRegister: typeof Push.register,
+            hasAddListener: typeof Push.addListener,
+            allInRegistry: allPlugins
+        };
+            
+        window.logToDebug("FULL PLUGIN STATUS: " + JSON.stringify(status));
+        alert(`PLUGINS: ${allPlugins.join(', ')}\n\nPush Plugin Info:\n- Type: ${status.type}\n- keys: [${status.keys.join(',')}]\n- .register: ${status.hasRegister}\n- .addListener: ${status.hasAddListener}`);
     } catch (e) {
         window.logToDebug("Check failed: " + e.message);
         alert("Check failed: " + e.message);
