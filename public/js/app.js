@@ -726,18 +726,54 @@ function renderAuthNavbar() {
     window.handleLogoClick = () => {
         window.logoClicks = (window.logoClicks || 0) + 1;
         if (window.logoClicks >= 5) {
-            const current = localStorage.getItem('oma_dev_ip') || "";
-            const ip = prompt("Dev Mode: Set Backend IP (e.g. http://192.168.1.10:5000)", current);
-            if (ip !== null) {
-                localStorage.setItem('oma_dev_ip', ip);
-                location.reload();
-            }
             window.logoClicks = 0;
+            const menu = `
+                <div id="dev-menu-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; color:white; padding:40px; box-sizing:border-box; overflow-y:auto;">
+                    <h2>OMA Diagnostics</h2>
+                    <hr>
+                    <p><b>User ID:</b> ${state.user ? state.user.id : 'Not Logged In'}</p>
+                    <p><b>API Base:</b> ${getApiBase()}</p>
+                    <p><b>Push Token:</b> <span style="font-size:0.7rem; color:#0f0; word-break:break-all;">${localStorage.getItem('oma_push_token') || 'None'}</span></p>
+                    <hr>
+                    <button onclick="window.setDevIp()" style="width:100%; padding:10px; margin-bottom:10px; background:#444; color:white; border:none;">Set Backend IP</button>
+                    <button onclick="window.forcePushRegister()" style="width:100%; padding:10px; margin-bottom:10px; background:#444; color:white; border:none;">Force Token Refresh</button>
+                    <button onclick="window.sendDiagnosticPush()" style="width:100%; padding:10px; margin-bottom:10px; background:#007bff; color:white; border:none;">Send Test Notification</button>
+                    <button onclick="document.getElementById('dev-menu-modal').remove()" style="width:100%; padding:10px; background:#dc3545; color:white; border:none;">Close</button>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', menu);
         } else {
-            window.location.hash = '';
             // Reset clicks if they stop clicking
             clearTimeout(window.logoClickTimeout);
             window.logoClickTimeout = setTimeout(() => { window.logoClicks = 0; }, 2000);
+        }
+    };
+
+    window.setDevIp = () => {
+        const current = localStorage.getItem('oma_dev_ip') || "";
+        const ip = prompt("Dev Mode: Set Backend IP (e.g. http://192.168.1.10:5000)", current);
+        if (ip !== null) {
+            localStorage.setItem('oma_dev_ip', ip);
+            location.reload();
+        }
+    };
+
+    window.forcePushRegister = async () => {
+        if (window.registerPush) {
+            alert("Triggering Push Registration...");
+            await window.registerPush();
+            alert("Done! Check Push Token above.");
+            location.reload();
+        }
+    };
+
+    window.sendDiagnosticPush = async () => {
+        try {
+            alert("Requesting backend to send push...");
+            const res = await api.sendTestNotification();
+            alert("Success! Check your notification tray.");
+        } catch (e) {
+            alert("Failed: " + e.message);
         }
     };
 
@@ -5875,6 +5911,7 @@ async function registerPush() {
             await PushNotifications.addListener('registration', async ({ value }) => {
                 // alert('Push: Token received!'); // Removed Debug Alert
                 console.log('Mobile Push Token:', value);
+                localStorage.setItem('oma_push_token', value);
                 try {
                     await api.updatePushToken(value);
                     console.log('Push Token sent to server');
