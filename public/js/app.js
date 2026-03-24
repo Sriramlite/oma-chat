@@ -723,25 +723,38 @@ function renderAuthNavbar() {
     const isSubState = hash.includes('/') || hash === '#setup';
     
     // Hidden Dev Menu: Click OMA logo 5 times to set custom local IP
+    window.showDiagnostics = () => {
+        const userId = state.user?.user?.id || 'Not Logged In';
+        const apiBase = getApiBase();
+        const pushToken = localStorage.getItem('oma_push_token') || 'None';
+        
+        const menu = `
+            <div id="dev-menu-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:20000; color:white; padding:40px; box-sizing:border-box; overflow-y:auto; font-family: 'Inter', sans-serif; backdrop-filter: blur(10px);">
+                <h2 style="margin-bottom:20px; color:#3b82f6;">OMA Diagnostics</h2>
+                <div style="background:#1e1e1e; padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #333;">
+                    <p style="margin-bottom:8px;"><b>User ID:</b> <span style="opacity:0.8;">${userId}</span></p>
+                    <p style="margin-bottom:8px;"><b>API Base:</b> <span style="opacity:0.8;">${apiBase}</span></p>
+                    <p style="margin-bottom:0;"><b>Push Token:</b> <br><span style="font-size:0.75rem; color:#10b981; word-break:break-all;">${pushToken}</span></p>
+                </div>
+                
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <button onclick="window.setDevIp()" style="width:100%; padding:14px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; cursor:pointer;">Set Backend IP</button>
+                    <button onclick="window.forcePushRegister()" style="width:100%; padding:14px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; cursor:pointer;">Force Token Refresh</button>
+                    <button onclick="window.sendDiagnosticPush()" style="width:100%; padding:14px; border-radius:10px; background:#3b82f6; color:white; border:none; font-weight:600; cursor:pointer;">Send Test Notification</button>
+                    <button onclick="document.getElementById('dev-menu-modal').remove()" style="width:100%; padding:14px; border-radius:10px; background:#ef4444; color:white; border:none; font-weight:600; cursor:pointer; margin-top:20px;">Close Diagnostics</button>
+                </div>
+
+                <p style="margin-top:20px; font-size:0.8rem; opacity:0.6; text-align:center;">OMA v1.0.0 Debug Suite</p>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', menu);
+    };
+
     window.handleLogoClick = () => {
         window.logoClicks = (window.logoClicks || 0) + 1;
         if (window.logoClicks >= 5) {
             window.logoClicks = 0;
-            const menu = `
-                <div id="dev-menu-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; color:white; padding:40px; box-sizing:border-box; overflow-y:auto;">
-                    <h2>OMA Diagnostics</h2>
-                    <hr>
-                    <p><b>User ID:</b> ${state.user ? state.user.id : 'Not Logged In'}</p>
-                    <p><b>API Base:</b> ${getApiBase()}</p>
-                    <p><b>Push Token:</b> <span style="font-size:0.7rem; color:#0f0; word-break:break-all;">${localStorage.getItem('oma_push_token') || 'None'}</span></p>
-                    <hr>
-                    <button onclick="window.setDevIp()" style="width:100%; padding:10px; margin-bottom:10px; background:#444; color:white; border:none;">Set Backend IP</button>
-                    <button onclick="window.forcePushRegister()" style="width:100%; padding:10px; margin-bottom:10px; background:#444; color:white; border:none;">Force Token Refresh</button>
-                    <button onclick="window.sendDiagnosticPush()" style="width:100%; padding:10px; margin-bottom:10px; background:#007bff; color:white; border:none;">Send Test Notification</button>
-                    <button onclick="document.getElementById('dev-menu-modal').remove()" style="width:100%; padding:10px; background:#dc3545; color:white; border:none;">Close</button>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', menu);
+            window.showDiagnostics();
         } else {
             // Reset clicks if they stop clicking
             clearTimeout(window.logoClickTimeout);
@@ -1854,6 +1867,14 @@ function renderSettingsMain() {
                     <div class="settings-icon-container" style="background:linear-gradient(135deg, #3b82f6, #2563eb);"><i class="fas fa-palette" style="color:white;"></i></div>
                     <div class="settings-text">
                         <h4>Appearance</h4>
+                    </div>
+                    <i class="fas fa-chevron-right settings-arrow"></i>
+                </div>
+
+                <div class="settings-item" onclick="window.showDiagnostics(); window.closeSettings()">
+                    <div class="settings-icon-container" style="background:linear-gradient(135deg, #6b7280, #4b5563);"><i class="fas fa-bug" style="color:white;"></i></div>
+                    <div class="settings-text">
+                        <h4>Diagnostics & Debug</h4>
                     </div>
                     <i class="fas fa-chevron-right settings-arrow"></i>
                 </div>
