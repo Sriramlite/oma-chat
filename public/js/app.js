@@ -5820,10 +5820,10 @@ function createPeerConnection() {
 // --- Push Notification Logic ---
 
 async function registerPush() {
-    // alert("Debug: registerPush() called!"); // Removed Debug Alert
+    alert("Push: registerPush() called");
     const hasCap = !!window.Capacitor;
     const isNative = hasCap && window.Capacitor.isNativePlatform();
-    // alert(`Debug: Cap=${hasCap}, Native=${isNative}`); // Removed Debug Alert
+    alert("Push: isNative=" + isNative);
 
     // Only run on mobile (Capacitor)
     if (isNative) {
@@ -5862,7 +5862,7 @@ async function registerPush() {
 
             // alert('Push: Initializing...'); // Removed Debug Alert
             await PushNotifications.addListener('registration', async ({ value }) => {
-                // alert('Push: Token received!'); // Removed Debug Alert
+                alert('Push Token Received: ' + value.substring(0, 10) + '...'); 
                 console.log('Mobile Push Token:', value);
                 localStorage.setItem('oma_push_token', value);
                 try {
@@ -5910,17 +5910,17 @@ async function registerPush() {
             });
 
             // Request permission
-            // alert("Push: Checking permissions..."); 
+            alert("Push: Checking permissions..."); 
             let permStatus = await PushNotifications.checkPermissions();
             if (permStatus.receive === 'prompt') {
-                // alert("Push: Requesting permissions...");
+                alert("Push: Requesting permissions...");
                 permStatus = await PushNotifications.requestPermissions();
             }
 
             if (permStatus.receive === 'granted') {
-                // alert("Push: Registering with FCM...");
+                alert("Push: Calling register()...");
                 await PushNotifications.register();
-                // alert("Push: Registration call sent.");
+                alert("Push: register() called. Awaiting token...");
             } else {
                 alert("Push: Permission denied (" + permStatus.receive + ")");
             }
