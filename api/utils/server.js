@@ -1,17 +1,35 @@
 require('dotenv').config();
+// Fix for Node.js v24 DNS bug on Windows 10
+require('dns').setServers(['8.8.8.8', '8.8.4.4']);
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { connectToDatabase } = require('./db'); // Import DB connection
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Rate Limiters
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // Limit each IP to 10 requests per window
+    message: { error: "Too many attempts from this IP, please try again after 15 minutes" },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Apply rate limiting to specific auth routes
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/signup', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../../public')));
 
@@ -82,8 +100,10 @@ const io = new Server(server, {
     }
 });
 
-// Expose IO to API Routes
+// Expose IO and Online State to API Routes
 app.set('io', io);
+app.set('onlineUsers', onlineUsers);
+app.set('disconnectTimers', disconnectTimers);
 
 // Signaling Logic
 io.on('connection', (socket) => {
@@ -176,12 +196,14 @@ io.on('connection', (socket) => {
                 }, {
                     android: {
                         priority: 'high',
+                        ttl: 0,
                         notification: {
                             channelId: 'call_channel',
                             priority: 'max',
                             defaultSound: true,
                             defaultVibrateTimings: true,
-                            visibility: 'public'
+                            visibility: 'public',
+                            fullScreenIntent: true // CRITICAL: Wakes app to full-screen
                         }
                     }
                 });

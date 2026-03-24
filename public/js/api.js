@@ -1,9 +1,24 @@
 import { db } from './db.js';
 import { sync } from './sync.js';
 
-// For Android App/Local Dev enabling cross-origin to prod:
-const API_BASE = 'https://oma-chat-app-pho0.onrender.com/api';
-// const API_BASE = '/api'; // Uncomment for strict local-only dev
+// Dynamic API Base: Use local server if running on localhost (Web), otherwise use production Render URL
+// NOTE: Capacitor/Native environments MUST use absolute URLs (relative '/api' points to local app files).
+const getApiBase = () => {
+    // Check if overridden in localStorage (useful for local dev on mobile device)
+    const manualIp = localStorage.getItem('oma_dev_ip'); // e.g., 'http://192.168.1.10:5000'
+    if (manualIp) return `${manualIp}/api`;
+
+    const isLocalWeb = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
+    if (isNative) {
+        return 'https://oma-chat-app-pho0.onrender.com/api'; // Native must use absolute prod URL by default
+    }
+    
+    return isLocalWeb ? '/api' : 'https://oma-chat-app-pho0.onrender.com/api';
+};
+
+const API_BASE = getApiBase();
 
 async function request(endpoint, method = 'GET', data = null) {
     const headers = { 'Content-Type': 'application/json' };
@@ -92,6 +107,9 @@ export const api = {
     signup: (username, password, name) => request('/auth/signup', 'POST', { username, password, name }),
     verifyPhone: (idToken) => request('/auth/phone', 'POST', { idToken }),
     linkPhone: (idToken) => request('/user/link-phone', 'POST', { idToken }),
+    // Fast2SMS Auth
+    sendSmsOTP: (phone) => request('/auth/fast2sms-wa-send', 'POST', { phone }),
+    verifySmsOTP: (phone, otp) => request('/auth/fast2sms-verify', 'POST', { phone, otp }),
     // Rate Limiting
     checkSmsLimit: (phone) => request('/auth/check-sms-limit', 'POST', { phone }),
     logSms: (phone) => request('/auth/log-sms', 'POST', { phone }),
@@ -167,5 +185,14 @@ export const api = {
     deleteMessage: (messageId, mode) => request('/chat/actions', 'POST', { action: 'delete', messageId, mode }),
     editMessage: (messageId, newContent) => request('/chat/actions', 'POST', { action: 'edit', messageId, newContent }),
     starMessage: (messageId) => request('/chat/actions', 'POST', { action: 'star', messageId }),
-    pinMessage: (messageId) => request('/chat/actions', 'POST', { action: 'pin', messageId })
+    pinMessage: (messageId) => request('/chat/actions', 'POST', { action: 'pin', messageId }),
+
+    // Account Recovery
+    forgotPassword: (username) => request('/auth/forgot-password', 'POST', { username }),
+    resetPassword: (username, otp, newPassword) => request('/auth/reset-password', 'POST', { username, otp, newPassword }),
+
+    // Admin APIs
+    getAdminUsers: () => request('/admin/users', 'GET'),
+    getAdminStats: () => request('/admin/stats', 'GET'),
+    adminAction: (action, userId, data = {}) => request('/admin/actions', 'POST', { action, userId, ...data })
 };

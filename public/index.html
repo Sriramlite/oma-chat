@@ -11,6 +11,16 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style_uiverse.css">
+
+    <!-- Inline Regression Fix: handleImageError must be in head to be available for early image failures -->
+    <script>
+        window.handleImageError = (img, name) => {
+            if (!img) return;
+            img.onerror = null; // Prevent infinite loop
+            const seed = name || 'User';
+            img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(seed)}&background=random`;
+        };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.18.3/index.js" type="module"></script>
 </head>
 
@@ -43,10 +53,10 @@
                 OMA</div>
             <div>
                 <button
-                    onclick="window.location.hash='#login'; document.getElementById('landing-page').style.display='none';"
+                    onclick="window.location.hash='#login';"
                     style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:white; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600; margin-right:10px;">Login</button>
                 <button
-                    onclick="window.location.hash='#register'; document.getElementById('landing-page').style.display='none';"
+                    onclick="window.location.hash='#register';"
                     style="background:var(--primary-color); border:none; color:white; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:600; box-shadow:0 4px 15px rgba(244, 63, 94, 0.4);">Sign
                     Up</button>
             </div>
@@ -64,7 +74,7 @@
                 interface designed for you.
             </p>
             <button
-                onclick="window.location.hash='#register'; document.getElementById('landing-page').style.display='none';"
+                onclick="window.location.hash='#register';"
                 style="background:white; color:#0f172a; border:none; padding:16px 40px; border-radius:50px; font-size:1.1rem; font-weight:700; cursor:pointer; transition:transform 0.2s;">Get
                 Started <i class="fas fa-arrow-right" style="margin-left:8px;"></i></button>
         </header>
@@ -127,12 +137,17 @@
     <script type="module" src="js/app.js?v=21"></script>
 
 
+    <!-- Admin Dashboard Overlay -->
+    <div id="admin-dashboard-overlay" class="admin-overlay hidden">
+        <div id="admin-dashboard-container"></div>
+    </div>
+
     <!-- Video Call Modal -->
     <div id="video-call-modal" class="hidden">
         <div class="video-wrapper">
             <!-- Placeholder for Remote Video (Pre-connection) -->
-            <div id="video-placeholder" class="video-placeholder">
-                <img id="placeholder-avatar" src="https://ui-avatars.com/api/?name=User" alt="User">
+            <div id="video-placeholder" class="video-placeholder hidden">
+                <img id="placeholder-avatar" src="https://ui-avatars.com/api/?name=U" alt="User" onerror="window.handleImageError(this, 'User')">
                 <div class="placeholder-text">Connecting...</div>
             </div>
 
@@ -150,7 +165,7 @@
             <!-- Audio Call UI (Hidden by default) -->
             <div id="audio-call-ui">
                 <div class="pulsing-avatar">
-                    <img id="audio-avatar-img" src="https://ui-avatars.com/api/?name=U" alt="User">
+                    <img id="audio-avatar-img" src="https://ui-avatars.com/api/?name=U" alt="User" onerror="window.handleImageError(this, 'User')">
                 </div>
                 <!-- Waveform Visualizer -->
                 <div class="voice-waveform">
@@ -199,7 +214,7 @@
     <!-- Incoming Call Popup -->
     <div id="incoming-call-popup" class="hidden">
         <div class="caller-info">
-            <img id="caller-avatar" src="" class="avatar-small">
+            <img id="caller-avatar" src="" class="avatar-small" onerror="window.handleImageError(this, 'User')">
             <span id="caller-name">Caller Name</span>
         </div>
         <div class="popup-actions">

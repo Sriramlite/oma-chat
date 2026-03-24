@@ -1,9 +1,10 @@
 const { connectToDatabase } = require('../utils/db');
 const { generateToken } = require('../utils/auth');
+const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
 module.exports = async (req, res) => {
-    // CORS Headers
+    // ... (CORS headers omitted for brevity in thought, but must be included in replacement)
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -24,10 +25,29 @@ module.exports = async (req, res) => {
         const db = await connectToDatabase();
         const usersCollection = db.collection('users');
 
-        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
-        const user = await usersCollection.findOne({ username, password: hashedPassword });
+        const user = await usersCollection.findOne({ username });
+        if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
-        if (!user) {
+        let isMatch = false;
+        try {
+            isMatch = await bcrypt.compare(password, user.password);
+        } catch (e) {
+            // Not a bcrypt hash, or comparison failed
+        }
+
+        if (!isMatch) {
+            // Try Legacy SHA256 (for accounts created before migration)
+            const oldHash = crypto.createHash('sha256').update(password).digest('hex');
+            if (user.password === oldHash) {
+                // Verified legacy password! Upgrade to Bcrypt now.
+                const newHash = await bcrypt.hash(password, 10);
+                await usersCollection.updateOne({ _id: user._id }, { $set: { password: newHash } });
+                isMatch = true;
+                console.log(`User ${username} migrated to Bcrypt on login.`);
+            }
+        }
+
+        if (!isMatch) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 

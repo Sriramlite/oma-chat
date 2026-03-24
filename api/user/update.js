@@ -65,11 +65,15 @@ module.exports = async (req, res) => {
 
             // Broadcast Generic Profile Update (Name, Bio, Avatar)
             if (name || bio || avatar) {
+                const settings = updatedUser.settings || {};
+                const canEveryoneSeeAvatar = settings.profilePhotoPrivacy === 'everyone' || !settings.profilePhotoPrivacy;
+                const canEveryoneSeeAbout = settings.aboutPrivacy === 'everyone' || !settings.aboutPrivacy;
+
                 io.emit('profile_update', {
                     userId: userPayload.id,
                     name: updatedUser.name,
-                    bio: updatedUser.bio,
-                    avatar: updatedUser.avatar,
+                    bio: canEveryoneSeeAbout ? updatedUser.bio : '',
+                    avatar: canEveryoneSeeAvatar ? updatedUser.avatar : 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
                     username: updatedUser.username
                 });
             }

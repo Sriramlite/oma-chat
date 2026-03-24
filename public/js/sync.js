@@ -70,7 +70,10 @@ export const sync = {
                 // Helper to get base url
                 // Note: We need to match what's in api.js. 
                 // Ideally this should be shared constant.
-                const API_BASE = 'https://oma-chat-app-pho0.onrender.com/api';
+                // Dynamic API Base for Sync
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? '/api' 
+    : 'https://oma-chat-app-pho0.onrender.com/api';
 
                 const res = await fetch(`${API_BASE}${req.endpoint}`, config);
 

@@ -19,33 +19,31 @@ module.exports = async (req, res) => {
 
         const { username, phone } = req.body;
 
-        if (!username || !phone) {
-            return res.status(400).json({ error: 'Username and Phone are required' });
+        // Clean phone number
+        const cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.length < 10) {
+            return res.status(400).json({ error: 'Invalid phone number' });
         }
 
         const db = await connectToDatabase();
         const usersCollection = db.collection('users');
 
         // 1. Check Username Uniqueness (if changed)
-        // Note: The temporary username was the email.
         const existingUsername = await usersCollection.findOne({ username });
         if (existingUsername && existingUsername.id !== userPayload.id) {
             return res.status(409).json({ error: 'Username already taken' });
         }
 
         // 2. Check Phone Uniqueness
-        // Phone might not exist on any user yet, or might be linked.
-        if (phone) {
-            const existingPhone = await usersCollection.findOne({ phone });
-            if (existingPhone && existingPhone.id !== userPayload.id) {
-                return res.status(409).json({ error: 'Phone number already linked to another account' });
-            }
+        const existingPhone = await usersCollection.findOne({ phone: cleanPhone });
+        if (existingPhone && existingPhone.id !== userPayload.id) {
+            return res.status(409).json({ error: 'Phone number already linked to another account' });
         }
 
         // 3. Update User
         await usersCollection.updateOne(
             { id: userPayload.id },
-            { $set: { username, phone } }
+            { $set: { username, phone: cleanPhone } }
         );
 
         // 4. Return Updated User & Token (Token claims might need update if username changed)

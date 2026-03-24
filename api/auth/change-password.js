@@ -1,6 +1,6 @@
-const { readDb, writeDb } = require('../utils/json-db');
+const { connectToDatabase } = require('../utils/db');
 const { verifyToken } = require('../utils/auth');
-const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 module.exports = async (req, res) => {
     // CORS
@@ -22,22 +22,47 @@ module.exports = async (req, res) => {
     const { oldPassword, newPassword } = req.body;
     if (!oldPassword || !newPassword) return res.status(400).json({ error: 'Missing fields' });
 
-    const db = readDb();
-    const userIndex = db.users.findIndex(u => u.id === userPayload.id);
-
-    if (userIndex === -1) return res.status(404).json({ error: 'User not found' });
-
-    const user = db.users[userIndex];
-    const hashedOld = crypto.createHash('sha256').update(oldPassword).digest('hex');
-
-    if (user.password !== hashedOld) {
-        return res.status(401).json({ error: 'Incorrect old password' });
+    if (newPassword.length < 8) {
+        return res.status(400).json({ error: 'New password must be at least 8 characters long' });
     }
 
-    const hashedNew = crypto.createHash('sha256').update(newPassword).digest('hex');
-    db.users[userIndex].password = hashedNew;
+    try {
+        const db = await connectToDatabase();
+        const usersCollection = db.collection('users');
 
-    writeDb(db);
+        const user = await usersCollection.findOne({ id: userPayload.id });
+        if (!user) return res.status(404).json({ error: 'User not found' });
 
-    res.status(200).json({ message: 'Password updated successfully' });
+        // Verify old password
+        let isMatch = false;
+        try {
+            isMatch = await bcrypt.compare(oldPassword, user.password);
+        } catch (e) {}
+
+        if (!isMatch) {
+            const oldHash = require('crypto').createHash('sha256').update(oldPassword).digest('hex');
+            if (user.password === oldHash) {
+                isMatch = true;
+                console.log(`User ${user.id} legacy password verified for change.`);
+            }
+        }
+
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Incorrect old password' });
+        }
+
+        // Hash and update
+        const salt = await bcrypt.genSalt(10);
+        const hashedNew = await bcrypt.hash(newPassword, salt);
+
+        await usersCollection.updateOne(
+            { id: user.id },
+            { $set: { password: hashedNew } }
+        );
+
+        res.status(200).json({ message: 'Password updated successfully' });
+    } catch (e) {
+        console.error("Change Password Error:", e);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 };

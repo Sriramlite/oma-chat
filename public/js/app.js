@@ -58,6 +58,7 @@ const state = {
     isSearching: false,
     searchResults: [],
     mobileView: 'list', // 'list' or 'chat'
+    pendingPhone: null,
     settingsView: null, // null, 'profile', 'appearance', etc.
     activeTab: 'messages', // 'messages', 'calls', 'contacts', 'profile'
     // onlineUsers: new Set(), 
@@ -66,6 +67,20 @@ const state = {
     userStatuses: {}, // Map of userId -> { online, lastSeen }
     animatedChats: new Set() // Track chats that have already played initial animation
 };
+
+// Helper: Securely update and deduplicate state.chats
+function updateStateChats(newChatsOrSingle) {
+    const list = Array.isArray(newChatsOrSingle) ? newChatsOrSingle : [newChatsOrSingle];
+    const chatMap = new Map(state.chats.map(c => [c.id, c]));
+    
+    list.forEach(c => {
+        if (!c.id) return;
+        const existing = chatMap.get(c.id) || {};
+        chatMap.set(c.id, { ...existing, ...c });
+    });
+    
+    state.chats = Array.from(chatMap.values());
+}
 
 const soundManager = {
     sounds: {
@@ -154,7 +169,7 @@ window.setChatFilter = (mode) => {
 // --- Initialization ---
 
 async function init() {
-    // setupTheme(); // Assuming this function exists elsewhere or will be added
+    await initFirebaseClient(); // Ensure Firebase is ready
 
     // Check for Email Magic Link (Must be first)
     if (firebase.auth().isSignInWithEmailLink(window.location.href)) {
@@ -171,6 +186,7 @@ async function init() {
 
         initSocket(); // Enable Real-time
         setupProfileSync(); // Listen for updates
+        initNotificationManager(); // Register SW and Permissions
 
         // Initialize Offline Sync
         sync.init();
@@ -238,12 +254,7 @@ async function init() {
         // Register Push (Mobile)
         registerPush();
     } else {
-        // Check for Email Link Sign-in
-        if (window.firebase && firebase.auth().isSignInWithEmailLink(window.location.href)) {
-            handleEmailLinkSignIn();
-        } else {
-            render(); // Render login/signup if not authenticated
-        }
+        render(); // Render login/signup if not authenticated
     }
 }
 
@@ -313,6 +324,12 @@ if (AppPlugin) {
                 return;
             }
 
+            // If in Login Sub-state, go back to Login Choice
+            if (hash === '#login/phone' || hash === '#login/email') {
+                window.location.hash = '#login';
+                return;
+            }
+            
             // If Searching, clear search
             if (state.isSearching) {
                 state.isSearching = false;
@@ -322,6 +339,12 @@ if (AppPlugin) {
                     searchInput.value = '';
                     window.render(); // Force render to clear search results
                 }
+                return;
+            }
+
+            // If in Name Setup or Login Choice, go back to Landing
+            if (hash === '#setup' || hash === '#login' || hash === '#register') {
+                window.location.hash = '';
                 return;
             }
 
@@ -409,12 +432,23 @@ function render() {
         // Not Logged In
         const hash = window.location.hash;
 
-        if (hash === '#login') {
+        if (hash.startsWith('#login')) {
             if (landing) landing.style.display = 'none';
             app.style.display = 'block';
-            app.innerHTML = renderLogin();
-            const form = document.getElementById('login-form');
-            if (form) form.onsubmit = handleLogin;
+            
+            if (hash === '#login/phone') {
+                app.innerHTML = renderPhoneLoginContent();
+                const form = document.getElementById('phone-login-form');
+                if (form) form.onsubmit = handleSendOTP;
+            } else if (hash === '#login/email') {
+                app.innerHTML = renderEmailLoginContent();
+                const form = document.getElementById('email-login-form');
+                if (form) form.onsubmit = handleSendEmailLink;
+            } else {
+                app.innerHTML = renderLogin();
+                const form = document.getElementById('login-form');
+                if (form) form.onsubmit = handleLogin;
+            }
         } else if (hash === '#register') {
             if (landing) landing.style.display = 'none';
             app.style.display = 'block';
@@ -425,7 +459,6 @@ function render() {
             // Default: Landing Page
             if (landing) landing.style.display = 'block';
             app.style.display = 'none';
-            // app.innerHTML = ''; // Keep empty to reduce DOM
         }
         return;
     }
@@ -454,10 +487,20 @@ function render() {
             state.activeChatId = null;
         }
         renderChatLayout(app);
+    } else if (currentHash === '#setup') {
+        app.innerHTML = renderNameSetupContent();
+        const form = document.getElementById('name-setup-form');
+        if (form) form.onsubmit = handleNameSetup;
     } else if (currentHash === '#login') {
         app.innerHTML = renderLogin();
     } else if (currentHash === '#register') {
         app.innerHTML = renderRegister();
+    } else if (currentHash === '#forgot-password') {
+        app.innerHTML = renderForgotPassword();
+    } else if (currentHash === '#reset-password') {
+        app.innerHTML = renderResetPassword();
+    } else if (currentHash === '#updates') {
+        app.innerHTML = renderUpdates();
     } else {
         app.innerHTML = '<h1>404</h1>';
     }
@@ -469,11 +512,18 @@ function render() {
     } else if (currentHash === '#register') {
         const form = document.getElementById('signup-form');
         if (form) form.onsubmit = handleSignup;
+    } else if (currentHash === '#forgot-password') {
+        const form = document.getElementById('forgot-form');
+        if (form) form.onsubmit = handleForgotPassword;
+    } else if (currentHash === '#reset-password') {
+        const form = document.getElementById('reset-form');
+        if (form) form.onsubmit = handleResetPassword;
     }
 }
 
 function renderLogin() {
     return `
+        ${renderAuthNavbar()}
         <div class="centered-view">
             <div class="auth-box animate__animated animate__fadeIn">
                 <h2>Log in</h2>
@@ -483,7 +533,7 @@ function renderLogin() {
                     <button type="submit">Log In</button>
                     <div style="text-align:center; margin: 15px 0; color: grey; font-size: 0.8rem;">OR</div>
                     <div style="display:flex; gap:10px; justify-content:center;">
-                        <button type="button" class="secondary" onclick="window.switchPhoneLogin()" style="flex:1; background: rgba(var(--primary-color-rgb), 0.1); color: var(--primary-color); border: 1px solid var(--primary-color); font-size:0.8rem;">Phone Login</button>
+                        <button type="button" class="secondary" disabled style="flex:1; background: rgba(0,0,0,0.05); color: grey; border: 1px solid rgba(0,0,0,0.1); font-size:0.8rem; cursor: not-allowed; opacity: 0.7;">Phone Login (Soon)</button>
                         <button type="button" class="secondary" onclick="window.switchEmailLogin()" style="flex:1; background: rgba(var(--primary-color-rgb), 0.1); color: var(--primary-color); border: 1px solid var(--primary-color); font-size:0.8rem;">Email Login</button>
                     </div>
                     <button type="button" onclick="window.handleGoogleLogin()" style="margin-top: 15px; background: #fff; color: #3c4043; border: 1px solid #dadce0; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Google Sans', arial, sans-serif; font-weight: 500; font-size: 14px; padding: 10px; width: 100%; transition: background-color .2s box-shadow .2s;">
@@ -491,6 +541,7 @@ function renderLogin() {
                         Sign in with Google
                     </button>
                     <a href="#register" style="display:block; margin-top:15px;">Create Account</a>
+                    <a href="#forgot-password" style="display:block; margin-top:10px; color: grey; font-size: 0.8rem;">Forgot Password?</a>
                     <div id="error-msg" class="error-msg"></div>
                 </form>
             </div>
@@ -498,26 +549,228 @@ function renderLogin() {
     `;
 }
 
+function renderForgotPassword() {
+    return `
+        ${renderAuthNavbar()}
+        <div class="centered-view">
+            <div class="auth-box animate__animated animate__fadeIn">
+                <h2>Forgot Password</h2>
+                <p style="color: grey; font-size: 0.85rem; margin-bottom: 20px;">Enter your username to receive an OTP via WhatsApp.</p>
+                <form id="forgot-form">
+                    <input type="text" id="forgot-username" placeholder="Username" required>
+                    <button type="submit" id="btn-forgot-send">Send OTP</button>
+                    <a href="#login" style="display:block; margin-top:15px;">Back to Login</a>
+                    <div id="forgot-error" class="error-msg"></div>
+                </form>
+            </div>
+        </div>
+    `;
+}
+
+async function handleForgotPassword(e) {
+    e.preventDefault();
+    const username = document.getElementById('forgot-username').value;
+    const btn = document.getElementById('btn-forgot-send');
+    const err = document.getElementById('forgot-error');
+
+    btn.disabled = true;
+    btn.innerText = "Sending...";
+
+    try {
+        await api.forgotPassword(username);
+        localStorage.setItem('reset_username', username);
+        window.location.hash = '#reset-password';
+    } catch (e) {
+        err.innerText = e.message;
+        btn.disabled = false;
+        btn.innerText = "Send OTP";
+    }
+}
+
+function renderResetPassword() {
+    const username = localStorage.getItem('reset_username') || '';
+    return `
+        ${renderAuthNavbar()}
+        <div class="centered-view">
+            <div class="auth-box animate__animated animate__fadeIn">
+                <h2>Reset Password</h2>
+                <p style="color: grey; font-size: 0.85rem; margin-bottom: 20px;">Enter the 6-digit OTP sent to your WhatsApp.</p>
+                <form id="reset-form">
+                    <input type="text" id="reset-username" value="${username}" required disabled style="background:#f0f0f0;">
+                    <input type="text" id="reset-otp" placeholder="6-digit OTP" required maxlength="6">
+                    <input type="password" id="reset-new-password" placeholder="New Password (min 8 chars)" required minlength="8">
+                    <button type="submit" id="btn-reset-confirm">Reset Password</button>
+                    <div id="reset-error" class="error-msg"></div>
+                </form>
+            </div>
+        </div>
+    `;
+}
+
+async function handleResetPassword(e) {
+    e.preventDefault();
+    const username = localStorage.getItem('reset_username');
+    const otp = document.getElementById('reset-otp').value;
+    const newP = document.getElementById('reset-new-password').value;
+    const btn = document.getElementById('btn-reset-confirm');
+    const err = document.getElementById('reset-error');
+
+    btn.disabled = true;
+    btn.innerText = "Resetting...";
+
+    try {
+        await api.resetPassword(username, otp, newP);
+        localStorage.removeItem('reset_username');
+        showCustomAlert('Password reset successfully! Please login.');
+        window.location.hash = '#login';
+    } catch (e) {
+        err.innerText = e.message;
+        btn.disabled = false;
+        btn.innerText = "Reset Password";
+    }
+}
+
+function renderUpdates() {
+    const changelog = [
+        {
+            version: 'v2.8.5',
+            date: 'March 2026',
+            title: 'Security & Recovery',
+            tags: ['Security', 'New Feature'],
+            items: [
+                'WhatsApp-based Password Recovery (OTP).',
+                'Upgraded to Bcrypt salted hashing for passwords.',
+                'Implemented IP-based Rate Limiting on login/signup.',
+                'Mandatory phone verification for enhanced security.',
+                'Fixed MongoDB consistency in password management.'
+            ]
+        },
+        {
+            version: 'v2.8.0',
+            date: 'Feb 2026',
+            title: 'WhatsApp Integration',
+            tags: ['Integration'],
+            items: [
+                'Fast2SMS WhatsApp API integration.',
+                'Verified OTP delivery via Meta Proxy.',
+                'Support for WhatsApp business templates.'
+            ]
+        }
+    ];
+
+    const features = [
+        { icon: 'fa-comments', title: 'Real-time Chat', desc: 'Secure global and private messaging via Socket.IO.' },
+        { icon: 'fa-video', title: 'HD Voice & Video', desc: 'High-quality WebRTC calls for a personal touch.' },
+        { icon: 'fa-user-friends', title: 'Nearby Peer', desc: 'Find and connect with users in your local network.' },
+        { icon: 'fa-battery-three-quarters', title: 'Live Status', desc: 'Share battery level and online status in real-time.' },
+        { icon: 'fa-palette', title: 'Personalized', desc: 'Custom wallpapers, dark mode, and vibrant themes.' }
+    ];
+
+    return `
+        <div class="updates-page animate__animated animate__fadeIn">
+             <div class="auth-nav">
+                <div class="auth-nav-logo" onclick="window.location.hash=''">OMA</div>
+                <div class="auth-nav-back" onclick="window.history.back()"><i class="fas fa-arrow-left" style="margin-right:8px;"></i>Back</div>
+            </div>
+
+            <div class="updates-content-scroll">
+                <div class="hero-section">
+                    <div class="sparkles-bg"></div>
+                    <h1>What's New <i class="fas fa-sparkles" style="color:#fbbf24;"></i></h1>
+                    <p>Discover the latest enhancements and features in OMA.</p>
+                </div>
+
+                <div class="updates-container">
+                    <h3 class="section-title">Change Log</h3>
+                    ${changelog.map(update => `
+                        <div class="changelog-card">
+                            <div class="changelog-header">
+                                <span class="version-badge">${update.version}</span>
+                                <span class="update-date">${update.date}</span>
+                            </div>
+                            <h4>${update.title}</h4>
+                            <div class="update-tags">
+                                ${update.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                            <ul>
+                                ${update.items.map(item => `<li><i class="fas fa-check-circle"></i> ${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `).join('')}
+
+                    <h3 class="section-title" style="margin-top:40px;">Core Features</h3>
+                    <div class="feature-grid">
+                        ${features.map(f => `
+                            <div class="feature-mini-card">
+                                <div class="f-icon"><i class="fas ${f.icon}"></i></div>
+                                <h5>${f.title}</h5>
+                                <p>${f.desc}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="text-align:center; padding: 40px 0; opacity: 0.5; font-size: 0.8rem;">
+                        OMA Messenger &bull; Crafted with <i class="fas fa-heart" style="color:#ef4444;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderAuthNavbar() {
+    const hash = window.location.hash;
+    const isSubState = hash.includes('/') || hash === '#setup';
+    
+    // Hidden Dev Menu: Click OMA logo 5 times to set custom local IP
+    window.handleLogoClick = () => {
+        window.logoClicks = (window.logoClicks || 0) + 1;
+        if (window.logoClicks >= 5) {
+            const current = localStorage.getItem('oma_dev_ip') || "";
+            const ip = prompt("Dev Mode: Set Backend IP (e.g. http://192.168.1.10:5000)", current);
+            if (ip !== null) {
+                localStorage.setItem('oma_dev_ip', ip);
+                location.reload();
+            }
+            window.logoClicks = 0;
+        } else {
+            window.location.hash = '';
+            // Reset clicks if they stop clicking
+            clearTimeout(window.logoClickTimeout);
+            window.logoClickTimeout = setTimeout(() => { window.logoClicks = 0; }, 2000);
+        }
+    };
+
+    return `
+        <div class="auth-nav">
+            <div class="auth-nav-logo" onclick="window.handleLogoClick()">OMA</div>
+            ${isSubState ? `<div class="auth-nav-back" onclick="window.history.back()"><i class="fas fa-arrow-left" style="margin-right:8px;"></i>Back</div>` : ''}
+        </div>
+    `;
+}
+
 // --- Phone Auth (SMS OTP) ---
 
-window.switchPhoneLogin = () => {
-    const app = document.getElementById('app');
-    app.innerHTML = `
+function renderPhoneLoginContent() {
+    return `
+        ${renderAuthNavbar()}
         <div class="centered-view">
             <div class="auth-box animate__animated animate__fadeIn">
                 <h2>Login with Phone</h2>
                 <p style="color: grey; font-size: 0.85rem; margin-bottom: 20px;">Enter your phone number with country code (e.g. +1...)</p>
                 <form id="phone-login-form">
                     <input type="tel" id="phoneNumber" placeholder="+1..." required>
-                    <div id="recaptcha-container" style="margin: 15px 0; display: flex; justify-content: center;"></div>
                     <button type="submit" id="btn-send-otp">Send OTP</button>
-                    <a href="#login" onclick="window.renderLogin(document.getElementById('app'))">Back to Login</a>
+                    <a href="#login">Back to Login</a>
                     <div id="error-msg" class="error-msg"></div>
                 </form>
             </div>
         </div>
     `;
-    document.getElementById('phone-login-form').onsubmit = handleSendOTP;
+}
+
+window.switchPhoneLogin = () => {
+    window.location.hash = '#login/phone';
 };
 
 window.renderOTPVerify = () => {
@@ -541,9 +794,9 @@ window.renderOTPVerify = () => {
 
 // --- Email Magic Link Auth ---
 
-window.switchEmailLogin = () => {
-    const app = document.getElementById('app');
-    app.innerHTML = `
+function renderEmailLoginContent() {
+    return `
+        ${renderAuthNavbar()}
         <div class="centered-view">
             <div class="auth-box animate__animated animate__fadeIn">
                 <h2>Login with Email</h2>
@@ -551,13 +804,16 @@ window.switchEmailLogin = () => {
                 <form id="email-login-form">
                     <input type="email" id="emailInput" placeholder="name@example.com" required>
                     <button type="submit" id="btn-send-email">Send Link</button>
-                    <a href="#login" onclick="window.renderLogin(document.getElementById('app'))">Back to Login</a>
+                    <a href="#login">Back to Login</a>
                     <div id="error-msg" class="error-msg"></div>
                 </form>
             </div>
         </div>
     `;
-    document.getElementById('email-login-form').onsubmit = handleSendEmailLink;
+}
+
+window.switchEmailLogin = () => {
+    window.location.hash = '#login/email';
 };
 
 async function handleSendEmailLink(e) {
@@ -571,8 +827,10 @@ async function handleSendEmailLink(e) {
     btn.innerText = "Sending...";
 
     const actionCodeSettings = {
-        // Native: Use Prod URL for App Link. Web: Keep current URL (Localhost support)
-        url: Capacitor.isNativePlatform() ? 'https://oma-chat-app-pho0.onrender.com/' : window.location.href,
+        // Use clean origin URL to avoid hash-based parameter issues
+        url: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? (Capacitor.isNativePlatform() ? 'http://localhost:3000/' : window.location.origin + window.location.pathname)
+            : 'https://oma-chat-app-pho0.onrender.com/',
         handleCodeInApp: true
     };
 
@@ -584,7 +842,7 @@ async function handleSendEmailLink(e) {
             <h2>Check your Email</h2>
             <p style="margin: 20px 0;">We sent a login link to <b>${email}</b><br>Click it to finish logging in.</p>
             <p style="font-size:0.8rem; color:grey;">(You can close this tab)</p>
-            <a href="#login" onclick="window.renderLogin(document.getElementById('app'))">Back to Login</a>
+            <a href="#login">Back to Login</a>
         `;
     } catch (error) {
         console.error("Email Link Error:", error);
@@ -639,7 +897,7 @@ async function initFirebaseClient() {
     // In a production app, these should be securely managed or injected during build.
     // If you are testing locally, these can be found in your Firebase Console Project Settings (Web App).
     const config = {
-        apiKey: "AIzaSyDFUVWEfVEDdaT0iDA7_6EqqU6X3377fIE", // Restored original Web Key
+        apiKey: "AIzaSyCayOHaR17jUU2dcKXzq89awvC7avWy06k", // Consistent with google-services.json and user links
         authDomain: "oma-chat-a1b8e.firebaseapp.com",
         projectId: "oma-chat-a1b8e",
         storageBucket: "oma-chat-a1b8e.firebasestorage.app",
@@ -656,8 +914,6 @@ async function initFirebaseClient() {
 
 async function handleSendOTP(e) {
     e.preventDefault();
-    await initFirebaseClient();
-
     const phone = document.getElementById('phoneNumber').value;
     const errorMsg = document.getElementById('error-msg');
     const btn = document.getElementById('btn-send-otp');
@@ -665,12 +921,10 @@ async function handleSendOTP(e) {
     btn.disabled = true;
     btn.innerText = 'Sending...';
 
-    // RATE LIMIT CHECK
+    // RATE LIMIT CHECK (Internal via api.js)
     try {
-        const limitRes = await api.checkSmsLimit(phone);
-        // If we got here, it's allowed (status 200)
+        await api.checkSmsLimit(phone);
     } catch (e) {
-        console.error("Rate Limit Error:", e);
         btn.disabled = false;
         btn.innerText = 'Send OTP';
         errorMsg.innerText = e.message || "Daily SMS limit reached.";
@@ -678,92 +932,12 @@ async function handleSendOTP(e) {
     }
 
     try {
-        // --- NATIVE FLOW (Android) ---
-        if (Capacitor.isNativePlatform()) {
-            console.log("Starting Native Phone Auth flow...");
-
-            // 1. Add listeners BEFORE calling the sign-in method
-            if (!window.phoneAuthListenersInitialized) {
-                await FirebaseAuthentication.addListener('phoneCodeSent', (event) => {
-                    console.log("Native phoneCodeSent event:", event);
-                    window.nativeVerificationId = event.verificationId;
-                    // Log SMS on success (Optimistic)
-                    api.logSms(document.getElementById('phoneNumber').value).catch(console.error);
-                    window.renderOTPVerify();
-                });
-
-                await FirebaseAuthentication.addListener('phoneVerificationFailed', (event) => {
-                    console.error("Native phoneVerificationFailed:", event);
-                    document.getElementById('error-msg').innerText = `Native Error: ${event.message}`;
-                    const btn = document.getElementById('btn-send-otp');
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.innerText = 'Send OTP';
-                    }
-                });
-
-                await FirebaseAuthentication.addListener('phoneVerificationCompleted', async (event) => {
-                    console.log("Native phoneVerificationCompleted (Auto-verify):", event);
-                    try {
-                        // Explicitly fetch the ID token
-                        const tokenResult = await FirebaseAuthentication.getIdToken();
-                        const idToken = tokenResult.token;
-
-                        if (idToken) {
-                            const res = await api.verifyPhone(idToken);
-                            localStorage.setItem('oma_user', JSON.stringify(res));
-                            state.user = res;
-                            initSocket();
-                            if (res.isNew) window.renderNameSetup();
-                            else { window.location.hash = '#chat'; render(); }
-                        } else {
-                            console.warn("Auto-verify: No ID token found");
-                            window.renderOTPVerify();
-                        }
-                    } catch (e) {
-                        console.error("Auto-verify backend error:", e);
-                        window.renderOTPVerify(); // Fallback to manual
-                    }
-                });
-
-                window.phoneAuthListenersInitialized = true;
-            }
-
-            // 2. Trigger the SMS
-            await FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: phone });
-            // The listener above will handle the UI transition
-            return;
-        }
-
-        // --- WEB FLOW (Browser) ---
-        // Fix for auth/argument-error: Clear previous verifier instance if it exists
-        if (window.recaptchaVerifier) {
-            try { window.recaptchaVerifier.clear(); } catch (e) { }
-            window.recaptchaVerifier = null;
-        }
-
-        const container = document.getElementById('recaptcha-container');
-        if (container) container.innerHTML = ''; // Ensure DOM is clean
-
-        // Initialize reCAPTCHA (Visible mode inside the form)
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-            'size': 'normal',
-            'callback': (response) => {
-                console.log("reCAPTCHA solved:", response);
-            }
-        });
-
-        confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
-        // Log SMS on success
-        api.logSms(phone).catch(console.error);
+        await api.sendSmsOTP(phone);
+        state.pendingPhone = phone; // Store for verification
         window.renderOTPVerify();
     } catch (error) {
         console.error("SMS Send Error:", error);
-        // Show full error details for debugging
-        errorMsg.innerText = `Error: ${error.code} - ${error.message} (Origin: ${window.location.origin})`;
-        if (error.customData) {
-            console.log("Error details:", error.customData);
-        }
+        errorMsg.innerText = error.message || "Failed to send OTP";
         btn.disabled = false;
         btn.innerText = 'Send OTP';
     }
@@ -773,52 +947,36 @@ async function handleVerifyOTP(e) {
     e.preventDefault();
     const code = document.getElementById('otpCode').value;
     const errorMsg = document.getElementById('error-msg');
+    const btn = e.target.querySelector('button');
+
+    // Use stored phone number
+    const phone = state.pendingPhone;
+    if (!phone) {
+        errorMsg.innerText = "Session expired. Please request a new OTP.";
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Verifying...";
+    }
 
     try {
-        let idToken;
-
-        if (Capacitor.isNativePlatform()) {
-            console.log("Verifying Native OTP...");
-            await FirebaseAuthentication.confirmVerificationCode({
-                verificationId: window.nativeVerificationId,
-                verificationCode: code
-            });
-            // Fetch ID token after successful code confirmation
-            const tokenResult = await FirebaseAuthentication.getIdToken();
-            idToken = tokenResult.token;
-        } else {
-            console.log("Verifying Web OTP...");
-            const result = await confirmationResult.confirm(code);
-            idToken = await result.user.getIdToken();
-        }
-
-        // Send to backend for JWT
-        const res = await api.verifyPhone(idToken);
-
-        localStorage.setItem('oma_user', JSON.stringify(res));
-        state.user = res;
-        initSocket();
-
-        if (res.isNew) {
-            window.renderNameSetup();
-        } else {
-            window.location.hash = '#chat';
-            render();
-        }
+        const res = await api.verifySmsOTP(phone, code);
+        loginUser(res);
     } catch (error) {
-        console.error("OTP Verification Error:", error);
-        let displayMsg = error.message || 'Verification failed';
-        if (error.code) displayMsg = `[${error.code}] ${displayMsg}`;
-        if (error.response?.data?.details) {
-            displayMsg += `: ${error.response.data.details}`;
+        console.error("OTP Verify Error:", error);
+        errorMsg.innerText = error.message || "Invalid OTP";
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "Verify & Login";
         }
-        errorMsg.innerText = displayMsg;
     }
 }
 
-window.renderNameSetup = () => {
-    const app = document.getElementById('app');
-    app.innerHTML = `
+function renderNameSetupContent() {
+    return `
+        ${renderAuthNavbar()}
         <div class="centered-view">
             <div class="auth-box animate__animated animate__zoomIn">
                 <h2>Welcome!</h2>
@@ -831,34 +989,41 @@ window.renderNameSetup = () => {
             </div>
         </div>
     `;
-    document.getElementById('name-setup-form').onsubmit = async (e) => {
-        e.preventDefault();
-        const name = document.getElementById('displayName').value;
-        const btn = e.target.querySelector('button');
-        btn.disabled = true;
+}
 
-        try {
-            await api.updateProfile({ name });
-            state.user.user.name = name;
-            localStorage.setItem('oma_user', JSON.stringify(state.user));
-            window.location.hash = '#chat';
-            render();
-        } catch (err) {
-            document.getElementById('setup-error').innerText = err.message;
-            btn.disabled = false;
-        }
-    };
+window.renderNameSetup = () => {
+    window.location.hash = '#setup';
 };
+
+async function handleNameSetup(e) {
+    e.preventDefault();
+    const name = document.getElementById('displayName').value;
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+
+    try {
+        await api.updateProfile({ name });
+        state.user.user.name = name;
+        localStorage.setItem('oma_user', JSON.stringify(state.user));
+        window.location.hash = '#chat';
+        render();
+    } catch (err) {
+        document.getElementById('setup-error').innerText = err.message;
+        btn.disabled = false;
+    }
+}
 
 function renderRegister() {
     return `
+        ${renderAuthNavbar()}
         <div class="centered-view">
             <div class="auth-box animate__animated animate__fadeIn">
                 <h2>Sign Up</h2>
                 <form id="signup-form">
                     <input type="text" id="username" placeholder="Username" required>
                     <input type="text" id="name" placeholder="Full Name" required>
-                    <input type="password" id="password" placeholder="Password" required>
+                    <input type="tel" id="signup-phone" placeholder="Phone Number (for recovery)" required>
+                    <input type="password" id="password" placeholder="Password (min 8 chars)" required minlength="8">
                     <button type="submit">Sign Up</button>
                     <a href="#login" style="display:block; margin-top:15px;">Already have an account?</a>
                      <div id="error-msg" class="error-msg"></div>
@@ -870,44 +1035,62 @@ function renderRegister() {
 
 async function handleLogin(e) {
     e.preventDefault();
+    const errorEl = document.getElementById('error-msg');
     try {
         const u = document.getElementById('username').value;
         const p = document.getElementById('password').value;
+        errorEl.innerText = "Connecting...";
         const res = await api.login(u, p);
         loginUser(res);
     } catch (err) {
-        document.getElementById('error-msg').innerText = err.message;
+        console.error("Login Error:", err);
+        // Better error message for the <!DOCTYPE error (which happens if API_BASE is wrong)
+        if (err.message && err.message.includes("Unexpected token '<'")) {
+            errorEl.innerText = "Connection Error: Backend unreachable (Check API URL).";
+        } else {
+            errorEl.innerText = err.message;
+        }
     }
 }
 
 window.handleGoogleLogin = async () => {
     const errorEl = document.getElementById('error-msg');
     errorEl.style.color = 'orange';
-    errorEl.innerText = "Initializing...";
+    errorEl.innerText = "Initializing Firebase...";
 
     try {
         await initFirebaseClient();
     } catch (e) {
         console.error("Firebase Init Failed:", e);
         errorEl.style.color = 'red';
-        errorEl.innerText = "Init Failed: " + e.message;
+        errorEl.innerText = "Firebase Error: Check Internet or Config.";
         return;
     }
 
     try {
         let idToken;
-        errorEl.innerText = "Waiting for Google...";
+        errorEl.innerText = "Opening Google Sign-In...";
 
-        if (Capacitor.isNativePlatform()) {
-            // Native Google Auth
-            const result = await FirebaseAuthentication.signInWithGoogle();
+        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+            // Native Google Auth (Using capacitor-firebase-auth)
+            // Ensure no credentials available error is explained
+            try {
+                const result = await FirebaseAuthentication.signInWithGoogle();
+                
+                if (!result.credential || !result.credential.idToken) {
+                    throw new Error("No Google ID token received. Ensure your SHA-1 is in Firebase Console.");
+                }
 
-            // ERROR CAUSE: result.credential.idToken is GOOGLE token.
-            // We need FIREBASE token. Exchange it:
-            errorEl.innerText = "Exchanging Token...";
-            const credential = firebase.auth.GoogleAuthProvider.credential(result.credential.idToken);
-            const userCredential = await firebase.auth().signInWithCredential(credential);
-            idToken = await userCredential.user.getIdToken();
+                errorEl.innerText = "Exchanging Token...";
+                const credential = firebase.auth.GoogleAuthProvider.credential(result.credential.idToken);
+                const userCredential = await firebase.auth().signInWithCredential(credential);
+                idToken = await userCredential.user.getIdToken();
+            } catch (nativeErr) {
+                if (nativeErr.code === 'no-credentials-available' || nativeErr.message.includes('credentials')) {
+                    throw new Error("Google Error: No accounts found or SHA-1 mismatch in Firebase Console.");
+                }
+                throw nativeErr;
+            }
         } else {
             // Web Google Auth
             const provider = new firebase.auth.GoogleAuthProvider();
@@ -915,16 +1098,13 @@ window.handleGoogleLogin = async () => {
             idToken = await result.user.getIdToken();
         }
 
-        errorEl.innerText = "Got Token. Verifying...";
-        console.log("Token Len:", idToken.length);
-
+        errorEl.innerText = "Verifying with OMA...";
         const res = await api.verifyGoogle(idToken);
 
         errorEl.style.color = 'green';
         errorEl.innerText = "Success! Redirecting...";
 
         if (res.isNew) {
-            // New User: Require Username & Phone Setup
             window.renderGoogleOnboarding(res.user, res.token);
         } else {
             loginUser(res);
@@ -933,7 +1113,7 @@ window.handleGoogleLogin = async () => {
     } catch (e) {
         console.error("Google Login Error:", e);
         errorEl.style.color = 'red';
-        errorEl.innerText = 'Login Failed: ' + (e.message || JSON.stringify(e));
+        errorEl.innerText = 'Login Failed: ' + (e.message || "Unknown Error");
     }
 };
 
@@ -1090,10 +1270,7 @@ function getAvatarUrl(chat) {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(seed)}&background=random`;
 }
 
-window.handleImageError = (img, seed) => {
-    img.onerror = null;
-    img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(seed || 'User')}&background=random`;
-};
+// window.handleImageError moved to index.html head for early failure protection
 
 function renderSidebarMain() {
     let content = '';
@@ -1135,8 +1312,12 @@ function renderMessagesView() {
     if (state.isSearching) {
         chatList = state.searchResults;
     } else {
-        const general = { id: 'general', name: 'General Group', lastMsg: 'Tap to chat', avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', time: '' };
-        chatList = [general, ...state.chats];
+        // WhatsApp Style: Sort EVERYTHING by timestamp descending
+        chatList = [...state.chats].sort((a, b) => {
+            const timeA = a.timestamp || 0;
+            const timeB = b.timestamp || 0;
+            return timeB - timeA;
+        });
     }
 
     return `
@@ -1145,8 +1326,10 @@ function renderMessagesView() {
                 <img src="${getAvatarUrl(state.user?.user || {})}" class="avatar-small">
                  <span style="font-weight:600;">${state.user?.user.name}</span>
             </div>
-            <div style="display:flex;gap:5px;">
+            <div style="display:flex;gap:4px;align-items:center;">
+                 <button class="icon-btn" onclick="window.location.hash='#updates'" title="What's New" style="color:var(--primary-color);"><i class="fas fa-sparkles"></i></button>
                  <button class="icon-btn" onclick="window.openGroupModal()" title="New Group"><i class="fas fa-plus-square"></i></button>
+                 <button class="icon-btn" onclick="window.startNewChat()" title="Start New Chat" style="color:var(--primary-color); background:rgba(79, 70, 229, 0.1);"><i class="fas fa-comment-medical"></i></button>
                  <button class="icon-btn" onclick="window.openSettings('main')" title="Settings"><i class="fas fa-cog"></i></button>
             </div>
         </div>
@@ -1195,7 +1378,8 @@ function renderChatListContent(chatList) {
     }
 
     return chatList.map(chat => {
-        const isUnread = chat.unreadCount > 0;
+        const unread = chat.unread || chat.unreadCount || 0;
+        const isUnread = unread > 0;
         const clickAction = chat.isNearby ? `window.nearby.connect('${chat.id}')` : `window.openChat('${chat.id}')`;
         const avatarUrl = chat.isNearby ? chat.avatar : getAvatarUrl(chat);
 
@@ -1209,14 +1393,14 @@ function renderChatListContent(chatList) {
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <h4 style="${isUnread ? 'font-weight: 800; color: var(--text-primary);' : ''}">${chat.name || chat.username}</h4>
                         <span style="font-size:0.75rem; color: ${isUnread ? 'var(--primary-color)' : 'var(--text-secondary)'};">
-                           ${chat.time ? (chat.isNearby ? chat.time : timeAgo(chat.time)) : ''}
+                           ${chat.time || ''}
                         </span>
                     </div>
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <p style="${isUnread ? 'font-weight: 700; color: var(--text-primary);' : 'color: var(--text-secondary);'}">
                             ${chat.lastMsg || (chat.username ? '@' + chat.username : '')}
                         </p>
-                        ${isUnread ? `<div style="background:var(--primary-color);color:white;border-radius:50%;padding:2px 6px;font-size:0.7rem;">${chat.unreadCount}</div>` : ''}
+                        ${isUnread ? `<div style="background:var(--primary-color);color:white;border-radius:50%;padding:2px 6px;font-size:0.7rem;">${unread}</div>` : ''}
                     </div>
                 </div>
             </div>
@@ -1587,7 +1771,7 @@ function renderSettings() {
         case 'privacy': return renderSettingsPrivacy();
         case 'blocked': return renderSettingsBlocked();
         case 'account': return renderSettingsAccount();
-        // Add other cases here as we build them. Default to main.
+        // Admin Dashboard is now a full-page overlay, not rendered in sidebar
         default: return renderSettingsMain();
     }
 }
@@ -1637,6 +1821,25 @@ function renderSettingsMain() {
                     <i class="fas fa-chevron-right settings-arrow"></i>
                 </div>
 
+                <div class="settings-item" onclick="window.location.hash='#updates'">
+                    <div class="settings-icon-container" style="background:linear-gradient(135deg, #a855f7, #7e22ce);"><i class="fas fa-sparkles" style="color:white;"></i></div>
+                    <div class="settings-text">
+                        <h4>What's New</h4>
+                        <p>Features & Change Log</p>
+                    </div>
+                </div>
+
+                ${state.user?.user?.isAdmin ? `
+                    <div class="settings-item" onclick="window.openSettings('admin')">
+                        <div class="settings-icon-container" style="background:linear-gradient(135deg, #f43f5e, #e11d48);"><i class="fas fa-user-shield" style="color:white;"></i></div>
+                        <div class="settings-text">
+                            <h4>Admin Panel</h4>
+                            <p>Platform Management</p>
+                        </div>
+                        <i class="fas fa-chevron-right settings-arrow"></i>
+                    </div>
+                ` : ''}
+
                  <div class="settings-item" onclick="window.logout()">
                     <div class="settings-icon-container" style="background:linear-gradient(135deg, #ef4444, #dc2626);"><i class="fas fa-sign-out-alt" style="color:white;"></i></div>
                     <div class="settings-text">
@@ -1648,6 +1851,150 @@ function renderSettingsMain() {
         </div>
     `;
 }
+
+let _adminStats = null;
+let _adminUsers = [];
+let _adminLoading = false;
+let _adminSearch = "";
+
+window.fetchAdminData = async () => {
+    if (_adminLoading) return;
+    _adminLoading = true;
+    try {
+        [_adminStats, _adminUsers] = await Promise.all([
+            api.getAdminStats(),
+            api.getAdminUsers()
+        ]);
+        renderAdminDashboard(); // Refresh full-page content
+    } catch (e) {
+        console.error("Admin data fetch failed", e);
+    } finally {
+        _adminLoading = false;
+        const syncBtn = document.querySelector('.admin-sync-btn i');
+        if (syncBtn) syncBtn.classList.remove('fa-spin');
+    }
+}
+
+window.renderAdminDashboard = () => {
+    const container = document.getElementById('admin-dashboard-container');
+    if (!container) return;
+
+    if (!_adminStats && !_adminLoading) {
+        fetchAdminData();
+        container.innerHTML = `<div class="p-8 text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><br>Loading Dashboard...</div>`;
+        return;
+    }
+
+    const stats = _adminStats || { totalUsers: 0, onlineUsers: 0, totalMessages: 0, totalCalls: 0 };
+    const users = (_adminUsers || []).filter(u => 
+        u.name?.toLowerCase().includes(_adminSearch) || 
+        u.username?.toLowerCase().includes(_adminSearch)
+    );
+
+    container.innerHTML = `
+        <div class="admin-dashboard-full animate__animated animate__fadeIn">
+            <header class="admin-header">
+                <div class="admin-header-left">
+                    <button class="icon-btn admin-close-btn" onclick="window.closeAdminDashboard()"><i class="fas fa-times"></i></button>
+                    <div class="admin-title">
+                        <h1>Admin Dashboard</h1>
+                        <p>Manage OMA platform and users</p>
+                    </div>
+                </div>
+                <div class="admin-header-right">
+                    <div class="admin-search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="admin-user-search" placeholder="Search users..." value="${_adminSearch}" oninput="window.handleAdminSearch(this.value)">
+                    </div>
+                    <button class="icon-btn admin-sync-btn" onclick="fetchAdminData()"><i class="fas fa-sync-alt"></i></button>
+                </div>
+            </header>
+
+            <div class="admin-scroll-content">
+                <div class="admin-stats-row">
+                    <div class="admin-stat-card glass">
+                        <div class="stat-icon users"><i class="fas fa-users-medical"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-value">${stats.totalUsers}</span>
+                            <span class="stat-label">Total Registered</span>
+                        </div>
+                    </div>
+                    <div class="admin-stat-card glass online">
+                        <div class="stat-icon online"><i class="fas fa-satellite-dish"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-value pulse">${stats.onlineUsers}</span>
+                            <span class="stat-label">Online Now</span>
+                        </div>
+                    </div>
+                    <div class="admin-stat-card glass messages">
+                        <div class="stat-icon msgs"><i class="fas fa-paper-plane"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-value">${stats.totalMessages}</span>
+                            <span class="stat-label">Messages Sent</span>
+                        </div>
+                    </div>
+                    <div class="admin-stat-card glass calls">
+                        <div class="stat-icon call"><i class="fas fa-phone-laptop"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-value">${stats.totalCalls || 0}</span>
+                            <span class="stat-label">Total Calls</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-main-grid">
+                    <div class="admin-users-section glass">
+                        <div class="section-header">
+                            <h2>User Management</h2>
+                            <span class="user-count">${users.length} users found</span>
+                        </div>
+                        <div class="admin-user-grid">
+                            ${users.map(u => `
+                                <div class="admin-user-tile">
+                                    <div class="user-main">
+                                        <img src="${getAvatarUrl(u)}" class="user-avatar-large">
+                                        <div class="user-details">
+                                            <h3>${u.name}</h3>
+                                            <p>@${u.username}</p>
+                                            <span class="badge ${u.isAdmin ? 'admin' : 'user'}">${u.isAdmin ? 'Administrator' : 'User'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="user-footer">
+                                        <div class="user-meta">
+                                            <span><i class="fas fa-clock"></i> ${u.lastSeen ? new Date(u.lastSeen).toLocaleDateString() : 'Never'}</span>
+                                        </div>
+                                        <div class="user-actions">
+                                            <button class="admin-btn delete" onclick="window.deleteUserAdmin('${u.id}')">
+                                                <i class="fas fa-user-minus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                            ${users.length === 0 ? '<div class="no-results">No users match your search.</div>' : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+window.handleAdminSearch = (val) => {
+    _adminSearch = val.toLowerCase();
+    renderAdminDashboard();
+};
+
+window.deleteUserAdmin = async (userId) => {
+    if (!confirm('Are you ABSOLUTELY sure? This will permanently delete the user and all their chat history.')) return;
+    try {
+        await api.adminAction('delete', userId);
+        showCustomAlert('User deleted successfully', 'success');
+        fetchAdminData();
+    } catch (e) {
+        showCustomAlert(e.message || 'Failed to delete user', 'error');
+    }
+};
 
 function renderSettingsProfile() {
     return `
@@ -1691,15 +2038,45 @@ function renderSettingsPrivacy() {
         <div class="settings-content settings-slide-in">
              <div class="settings-list">
                 
-                <div class="settings-section-header">Last Seen & Status</div>
+                <div class="settings-section-header">Visibility</div>
                 <div class="settings-item">
                     <div class="settings-text" style="flex-direction:row; justify-content:space-between; display:flex; align-items:center; width:100%;">
                         <div>
-                            <h4>Who can see my Last Seen</h4>
+                            <h4>Last Seen</h4>
+                            <p style="font-size:0.8rem; opacity:0.7;">Who can see your last seen status</p>
                         </div>
-                        <select id="privacy-lastseen" onchange="window.savePrivacy()" style="background:#0f172a; color:white; border:1px solid #334155; padding:5px; border-radius:8px;">
-                            <option value="everyone" ${!s.lastSeenPrivacy || s.lastSeenPrivacy === 'everyone' ? 'selected' : ''}>Everyone</option>
+                        <select id="privacy-lastseen" onchange="window.savePrivacy()" class="privacy-select">
+                            <option value="everyone" ${s.lastSeenPrivacy === 'everyone' ? 'selected' : ''}>Everyone</option>
+                            <option value="contacts" ${s.lastSeenPrivacy === 'contacts' ? 'selected' : ''}>My Contacts</option>
                             <option value="nobody" ${s.lastSeenPrivacy === 'nobody' ? 'selected' : ''}>Nobody</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-item">
+                    <div class="settings-text" style="flex-direction:row; justify-content:space-between; display:flex; align-items:center; width:100%;">
+                        <div>
+                            <h4>Profile Photo</h4>
+                            <p style="font-size:0.8rem; opacity:0.7;">Who can see your profile picture</p>
+                        </div>
+                        <select id="privacy-profilephoto" onchange="window.savePrivacy()" class="privacy-select">
+                            <option value="everyone" ${s.profilePhotoPrivacy === 'everyone' ? 'selected' : ''}>Everyone</option>
+                            <option value="contacts" ${s.profilePhotoPrivacy === 'contacts' ? 'selected' : ''}>My Contacts</option>
+                            <option value="nobody" ${s.profilePhotoPrivacy === 'nobody' ? 'selected' : ''}>Nobody</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-item">
+                    <div class="settings-text" style="flex-direction:row; justify-content:space-between; display:flex; align-items:center; width:100%;">
+                        <div>
+                            <h4>About / Bio</h4>
+                            <p style="font-size:0.8rem; opacity:0.7;">Who can see your bio</p>
+                        </div>
+                        <select id="privacy-about" onchange="window.savePrivacy()" class="privacy-select">
+                            <option value="everyone" ${s.aboutPrivacy === 'everyone' ? 'selected' : ''}>Everyone</option>
+                            <option value="contacts" ${s.aboutPrivacy === 'contacts' ? 'selected' : ''}>My Contacts</option>
+                            <option value="nobody" ${s.aboutPrivacy === 'nobody' ? 'selected' : ''}>Nobody</option>
                         </select>
                     </div>
                 </div>
@@ -1711,7 +2088,7 @@ function renderSettingsPrivacy() {
                         <p>If turned off, you won't send or receive read receipts.</p>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" id="privacy-readreceipts" ${s.readReceipts ? 'checked' : ''} onchange="window.savePrivacy()">
+                        <input type="checkbox" id="privacy-readreceipts" ${s.readReceipts !== false ? 'checked' : ''} onchange="window.savePrivacy()">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -2475,77 +2852,12 @@ async function pollMessages(container) {
         // We now use Socket events (typing/stop_typing) to show a Bubble at the bottom.
         // This prevents overwriting the Header Status Carousel.
     } catch (e) {
-        if (e.message === 'Unauthorized' || e.message === 'Invalid Token') window.logout();
+        if (e.message === 'Unauthorized' || e.message === 'Invalid Token') {
+            console.warn("[Polling] Auth error detected. Persistent errors will eventually require re-login.");
+            // REMOVED: immediate window.logout() to prevent logout during server restarts
+        }
     }
 }
-
-window.refreshSidebar = () => {
-    const listContainer = document.getElementById('chat-list');
-    if (!listContainer) return;
-
-    // We need the same logic as renderSidebarMain but just the list part
-    // Actually, renderSidebarMain returns the whole HTML string including header.
-    // Let's just manually rebuild the list HTML here to avoid complex refactors.
-
-    // Wait, reusing renderSidebarMain's logic is safer. 
-    // But renderSidebarMain returns a string.
-    // Let's just extract the list generation logic.
-
-    // Easier: Just look at renderSidebarMain in Step 405.
-    // It maps `chatList`.
-
-    let chatList = [];
-    if (state.isSearching) {
-        chatList = state.searchResults;
-    } else {
-        const general = { id: 'general', name: 'General Group', lastMsg: 'Tap to chat', avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', time: '' };
-        // Determine "General" presence based on preference, but here we just follow renderSidebarMain
-        chatList = [general, ...state.chats];
-    }
-
-    const html = `
-        <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
-        ${chatList.map(chat => {
-        // Calculate Unread (Basic: if bold logic needed, we need 'unread' property.
-        // For now, let's assume 'lastMsg' being BOLD implies unread if we successfully tracked it.
-        // Or we just style it. User asked for "like Instagram".
-        // Bold text + Dot.
-        // We don't have 'unreadCount' in state.chats yet. We need to key it off something.
-        // For now, let's just make the Time/LastMsg bold if it was updated recently?
-        // No, true read state requires backend support.
-        // Let's apply a visual style if it looks "new" (e.g. bold always for now as requested? No that's bad).
-        // Let's checking if we have 'unread' flag. If not, we'll just implement the style CLASS and toggle it later.
-
-        // Actually, Phase 1 just asked for "Bold texts".
-        const isUnread = chat.unreadCount > 0; // We need to populate this
-
-        return `
-            <div class="chat-item ${chat.id === state.activeChatId ? 'active' : ''}" onclick="window.openChat('${chat.id}')">
-                <img src="${chat.avatar || 'https://ui-avatars.com/api/?name=' + chat.username}">
-                <div class="chat-info">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <h4 style="${isUnread ? 'font-weight: 800; color: var(--text-primary);' : ''}">${chat.name || chat.username}</h4>
-                        <span style="font-size:0.75rem; color: ${isUnread ? 'var(--primary-color)' : 'var(--text-secondary)'};">
-                           ${chat.time ? timeAgo(chat.time) : ''}
-                        </span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <p style="${isUnread ? 'font-weight: 700; color: var(--text-primary);' : 'color: var(--text-secondary);'}">
-                            ${chat.lastMsg || (chat.username ? '@' + chat.username : '')}
-                        </p>
-                        ${isUnread ? `<div style="background:var(--primary-color);color:white;border-radius:50%;padding:2px 6px;font-size:0.7rem;">${chat.unreadCount}</div>` : ''}
-                    </div>
-                </div>
-            </div>
-        `}).join('')}
-        ${state.isSearching && chatList.length === 0 ? '<div style="padding:20px;text-align:center;color:grey;">No users found</div>' : ''}
-    `;
-
-    listContainer.innerHTML = html;
-
-    // Re-attach pull listeners
-    setupPullToRefresh();
-};
 
 // Helper for consistent name colors
 function getColorForName(name) {
@@ -3126,6 +3438,17 @@ window.starSelectedMessage = async () => {
 };
 
 
+window.startNewChat = () => {
+    const searchInput = document.getElementById('user-search');
+    if (searchInput) {
+        searchInput.focus();
+        // Optional: clear it
+        searchInput.value = '';
+        state.isSearching = false;
+        render(); // Force sidebar to search mode
+    }
+};
+
 window.handleSearch = async (query) => {
     state.lastSearchQuery = query;
     state.isSearching = query.length >= 2;
@@ -3133,34 +3456,47 @@ window.handleSearch = async (query) => {
 
     if (!state.isSearching) {
         state.searchResults = [];
-        if (listContainer) {
-            const general = { id: 'general', name: 'General Group', lastMsg: 'Tap to chat', avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', time: '' };
-            const chatList = [general, ...state.chats];
-            listContainer.innerHTML = `
-                <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
-                ${renderChatListContent(chatList)}
-            `;
-        }
+        if (window.refreshSidebar) window.refreshSidebar();
         return;
     }
 
     try {
         const results = await api.searchUsers(query);
         state.searchResults = results;
-        if (listContainer) {
-            listContainer.innerHTML = `
-                <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
-                ${renderChatListContent(results)}
-            `;
-        }
+        if (window.refreshSidebar) window.refreshSidebar();
     } catch (e) {
         console.error(e);
     }
 };
 
-window.openSettings = (view = 'main') => {
+window.openSettings = async (view = 'main') => {
+    // Admin is a special full-page view
+    if (view === 'admin') {
+        window.closeSettings();
+        document.getElementById('admin-dashboard-overlay').classList.remove('hidden');
+        renderAdminDashboard();
+        return;
+    }
+
     state.settingsView = view;
     render();
+
+    // Background Sync: Re-fetch profile to pick up changes like isAdmin status
+    try {
+        const freshUser = await api.getMe();
+        if (freshUser && freshUser.id) {
+            state.user.user = freshUser;
+            localStorage.setItem('oma_user', JSON.stringify(state.user));
+            // If we are in main settings, re-render to show/hide Admin Panel based on fresh data
+            if (state.settingsView === 'main') render();
+        }
+    } catch (e) {
+        console.warn("[Settings] Profile sync failed", e);
+    }
+};
+
+window.closeAdminDashboard = () => {
+    document.getElementById('admin-dashboard-overlay').classList.add('hidden');
 };
 
 window.closeSettings = () => {
@@ -3217,21 +3553,29 @@ window.saveProfile = async () => {
 
 window.savePrivacy = async () => {
     const lastSeen = document.getElementById('privacy-lastseen').value;
+    const profilePhoto = document.getElementById('privacy-profilephoto').value;
+    const about = document.getElementById('privacy-about').value;
     const readReceipts = document.getElementById('privacy-readreceipts').checked;
 
-    const settings = {
+    const newSettings = {
         lastSeenPrivacy: lastSeen,
+        profilePhotoPrivacy: profilePhoto,
+        aboutPrivacy: about,
         readReceipts: readReceipts
     };
 
     try {
         // Optimistic UI Update
-        state.user.user.settings = { ...state.user.user.settings, ...settings };
+        state.user.user.settings = { ...state.user.user.settings, ...newSettings };
+        
+        // Sync to local storage
+        localStorage.setItem('oma_user', JSON.stringify(state.user));
 
-        await api.updateProfile({ settings });
+        await api.updateProfile({ settings: newSettings });
+        console.log("[Client] Privacy settings updated successfully");
     } catch (e) {
         console.error("Privacy update failed", e);
-        // Revert? For now just log
+        showCustomAlert('Failed to save privacy settings', 'error');
     }
 };
 
@@ -4030,21 +4374,10 @@ window.loginUser = (data) => {
     window.location.hash = '#chat';
     initSocket();
 
-    // Force Permissions on First Launch / Login
-    if (window.Capacitor && window.Capacitor.Plugins) {
-        // Push Notifications
-        const PushNotifications = window.Capacitor.Plugins.PushNotifications;
-        if (PushNotifications) {
-            PushNotifications.requestPermissions().then(result => {
-                if (result.receive === 'granted') {
-                    PushNotifications.register();
-                }
-            });
-        }
-        // Local Notifications (if used)
-        const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
-        if (LocalNotifications) {
-            LocalNotifications.requestPermissions();
+    // Unified Push Registration for Native
+    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+        if (typeof registerPush === 'function') {
+            registerPush().catch(e => console.error("Push Init Failed on Login:", e));
         }
     }
 };
@@ -4344,7 +4677,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (window.refreshSidebar) window.refreshSidebar();
             }
         }).catch(err => {
-            if (err.message === 'Unauthorized' || err.message === 'Invalid Token') window.logout();
+            if (err.message === 'Unauthorized' || err.message === 'Invalid Token') {
+                console.error("[Sync] Valid session could not be verified. Logging out...");
+                window.logout();
+            }
         });
     }
 
@@ -4381,43 +4717,39 @@ window.addEventListener('DOMContentLoaded', () => {
     if (state.user) {
         Promise.all([api.getGroups(), api.getRecentChats()])
             .then(([groups, recentDMs]) => {
-                let listUpdated = false;
-                const processChat = (item, type) => {
-                    const id = item.id;
-                    const existingIdx = state.chats.findIndex(c => c.id === id);
+                const allFetched = [];
+                
+                // Add "General Group" as a baseline if it doesn't exist
+                allFetched.push({ 
+                    id: 'general', 
+                    name: 'General Group', 
+                    lastMsg: 'Tap to chat', 
+                    avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', 
+                    timestamp: 0,
+                    type: 'group'
+                });
 
-                    // Normalize standard fields
-                    const chatObj = {
-                        id: item.id,
-                        name: item.name,
-                        avatar: item.avatar,
-                        lastMsg: item.lastMsg || (type === 'group' ? 'Group created' : ''),
-                        time: item.timestamp || item.lastTimestamp || item.created || 0,
-                        type: type,
-                        status: item.status || 'offline'
-                    };
-
-                    if (existingIdx !== -1) {
-                        // Update if changed
-                        if (JSON.stringify(state.chats[existingIdx]) !== JSON.stringify(chatObj)) {
-                            state.chats[existingIdx] = chatObj;
-                            listUpdated = true;
-                        }
-                    } else {
-                        state.chats.push(chatObj);
-                        listUpdated = true;
-                    }
-                };
-
-                // Process Both
-                if (Array.isArray(groups)) groups.forEach(g => processChat(g, 'group'));
-                if (Array.isArray(recentDMs)) recentDMs.forEach(d => processChat(d, 'user'));
-
-                if (listUpdated) {
-                    state.chats.sort((a, b) => (b.time || 0) - (a.time || 0));
-                    localStorage.setItem('oma_chats', JSON.stringify(state.chats));
-                    if (window.refreshSidebar) window.refreshSidebar();
+                if (Array.isArray(groups)) {
+                    groups.forEach(g => allFetched.push({ ...g, type: 'group' }));
                 }
+                if (Array.isArray(recentDMs)) {
+                    recentDMs.forEach(d => allFetched.push({ ...d, type: 'user' }));
+                }
+
+                // Standardize fields: ensure timestamp is a number and lastMsg is set
+                const standardized = allFetched.map(c => ({
+                    ...c,
+                    timestamp: Number(c.timestamp || c.lastTimestamp || c.created || 0),
+                    lastMsg: c.lastMsg || (c.type === 'group' ? 'Group created' : ''),
+                    time: c.time || (c.timestamp ? new Date(Number(c.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')
+                }));
+
+                updateStateChats(standardized);
+                
+                // Final sort and save
+                state.chats.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+                if (window.refreshSidebar) window.refreshSidebar();
             })
             .catch(e => console.error("Failed to sync chats:", e));
     }
@@ -4518,12 +4850,29 @@ function initSocket() {
 
     try {
         // Connect to Socket.io
-        // MUST point to the Render Backend, not localhost!
-        socket = io('https://oma-chat-app-pho0.onrender.com', {
+        // MUST point to the Render Backend (or Dev IP) for Native platforms!
+        const getSocketUrl = () => {
+            const manualIp = localStorage.getItem('oma_dev_ip'); // e.g., 'http://192.168.1.10:5000'
+            if (manualIp) return manualIp;
+
+            const isLocalWeb = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
+            if (isNative) {
+                return 'https://oma-chat-app-pho0.onrender.com'; // Native must use absolute prod URL by default
+            }
+            
+            return isLocalWeb ? 'http://localhost:3000' : 'https://oma-chat-app-pho0.onrender.com';
+        };
+
+        const socketUrl = getSocketUrl();
+        console.log("[Client] Connecting Socket to:", socketUrl);
+
+        socket = io(socketUrl, {
             reconnection: true,
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
-            transports: ['websocket'] // Force WebSocket to avoid polling issues
+            transports: ['websocket']
         });
 
         socket.on('connect', () => {
@@ -4534,6 +4883,11 @@ function initSocket() {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(registrations => {
                     for (let registration of registrations) {
+                        // 🛡️ PROTECTION: Do NOT unregister our active notification service worker
+                        if (registration.active && registration.active.scriptURL.includes('sw.js')) {
+                            console.log("[Client] 🛡️ Preserving Active Notification Service Worker");
+                            continue;
+                        }
                         registration.unregister();
                         console.log("[Client] 🧹 Unregistered Ghost Service Worker:", registration);
                     }
@@ -4552,15 +4906,8 @@ function initSocket() {
             state.onlineUsers = new Set(users);
 
             // Re-render sidebar if in messages view
-            if (state.activeTab === 'messages') {
-                const listContainer = document.getElementById('chat-list');
-                if (listContainer) {
-                    const chatList = state.isSearching ? state.searchResults : [{ id: 'general', name: 'General Group', lastMsg: 'Tap to chat', avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', time: '' }, ...state.chats];
-                    listContainer.innerHTML = `
-                        <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
-                        ${renderChatListContent(chatList)}
-                    `;
-                }
+            if (state.activeTab === 'messages' && window.refreshSidebar) {
+                window.refreshSidebar();
             }
         });
 
@@ -4592,7 +4939,7 @@ function initSocket() {
             }
 
             // Update UI dynamically
-            // console.log(`[Client] Received user_status (Cache Updated):`, { userId, online, lastSeen, battery });
+            updateUserStatusUI(userId, online, lastSeen);
         });
 
         socket.on('typing', (data) => {
@@ -4623,18 +4970,18 @@ function initSocket() {
         });
 
         // Incoming Offer (Receive Call)
-        socket.on('offer', async (data) => {
-            console.log('Incoming Offer:', data);
+        window.handleIncomingCall = async (data) => {
+            console.log('Handling Incoming Call:', data);
+
+            // Prevent duplicate handling if already ringing for this call
+            if (window.activeRingtoneCallId === data.callerId) return;
+            window.activeRingtoneCallId = data.callerId;
+
             currentCallTargetId = data.callerId;
             soundManager.play('ringtone'); // Start Ringing
 
             // VIBRATE (Mobile Haptics)
             if (navigator.vibrate) {
-                // Vibrate pattern: 1s ON, 1s OFF, repeat
-                // Note: Web Vibration API doesn't support "infinite" loops nicely without setInterval,
-                // but for now a long pattern is a good start. 
-                // Or we can assume the Ringtone loop handles the "sound", vibration can be one-shot or long.
-                // Let's do a long burst sequence.
                 navigator.vibrate([1000, 1000, 1000, 1000, 1000, 1000, 1000]);
             }
 
@@ -4644,10 +4991,21 @@ function initSocket() {
             if (popup) {
                 popup.classList.remove('hidden');
                 nameEl.textContent = data.callerName || 'Unknown';
-                avatarEl.src = data.callerAvatar || 'https://ui-avatars.com/api/?name=U';
+                const avatarUrl = getAvatarUrl({ name: data.callerName, avatar: data.callerAvatar });
+                avatarEl.src = avatarUrl;
+                avatarEl.onerror = () => window.handleImageError(avatarEl, data.callerName || 'User');
             }
-            window.pendingOffer = data.offer;
-            window.pendingCallType = data.type || 'video';
+            window.pendingOffer = (typeof data.offer === 'string') ? JSON.parse(data.offer) : data.offer;
+            window.pendingCallType = data.callType || data.type || 'video';
+
+            // OS Notification with Actions (Web/PWA backup)
+            if (!window.Capacitor?.isNativePlatform()) {
+                window.showCallNotification(data.callerName, data.callerAvatar, window.pendingCallType, data.callerId);
+            }
+        };
+
+        socket.on('offer', async (data) => {
+            window.handleIncomingCall(data);
         });
 
         // Call Answered
@@ -4763,25 +5121,21 @@ function initSocket() {
                     return;
                 }
 
-                const chat = state.chats.find(c => c.id === chatIdToUpdate);
-                if (chat) {
-                    if (msg.senderId !== state.user.user.id) {
-                        chat.unread = (chat.unread || 0) + 1;
-                    }
-                    chat.lastMsg = msg.type === 'text' ? msg.content : (msg.type === 'image' ? 'Photo' : 'File');
-                    chat.time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const existingChat = state.chats.find(c => c.id === chatIdToUpdate);
+                const updatedChat = {
+                    id: chatIdToUpdate,
+                    lastMsg: msg.type === 'text' ? msg.content : (msg.type === 'image' ? 'Photo' : 'File'),
+                    time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: msg.timestamp,
+                    unread: (existingChat ? (existingChat.unread || 0) : 0) + (msg.senderId !== state.user.user.id ? 1 : 0)
+                };
 
-                    // Refresh Sidebar to show dot
-                    refreshSidebar();
+                updateStateChats(updatedChat);
+                refreshSidebar();
 
-                    // Show Toast
+                // Show Toast only if from others
+                if (msg.senderId !== state.user.user.id) {
                     window.showCustomAlert(`New message from ${msg.senderName}`, 'info');
-                } else {
-                    // New chat? Fetch list
-                    api.getRecentChats().then(chats => {
-                        state.chats = chats;
-                        refreshSidebar();
-                    });
                 }
             }
         });
@@ -4790,6 +5144,58 @@ function initSocket() {
         console.error("Socket Init Failed", e);
     }
 }
+
+// --- Notification Manager ---
+window.initNotificationManager = async () => {
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+        console.warn("Notifications or Service Workers not supported.");
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.register('sw.js');
+        console.log('Service Worker registered for notifications:', registration);
+
+        if (Notification.permission === 'default') {
+            await Notification.requestPermission();
+        }
+
+        // Listen for messages from SW
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'CALL_ACTION') {
+                console.log("Received Call Action from SW:", event.data);
+                if (event.data.action === 'answer') {
+                    window.answerCall();
+                } else if (event.data.action === 'reject') {
+                    window.rejectCall();
+                }
+            }
+        });
+    } catch (e) {
+        console.error("SW Registration failed:", e);
+    }
+};
+
+window.showCallNotification = async (callerName, avatar, type, callerId) => {
+    if (Notification.permission !== 'granted') return;
+
+    const registration = await navigator.serviceWorker.ready;
+    const title = `Incoming ${type === 'video' ? 'Video' : 'Audio'} Call`;
+    const options = {
+        body: `${callerName} is calling you...`,
+        icon: avatar || 'https://ui-avatars.com/api/?name=U',
+        vibrate: [200, 100, 200, 100, 200, 100, 200],
+        tag: 'call-notification',
+        renotify: true,
+        data: { callerId },
+        actions: [
+            { action: 'answer', title: 'Answer', icon: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' },
+            { action: 'reject', title: 'Reject', icon: 'https://cdn-icons-png.flaticon.com/512/753/753345.png' }
+        ]
+    };
+
+    registration.showNotification(title, options);
+};
 
 // Handle Mobile Sleep/Wake
 document.addEventListener('visibilitychange', () => {
@@ -4839,7 +5245,7 @@ window.startCall = async (type = 'video', targetId = null) => {
 
     // Set Avatar for Placeholder (Video & Audio)
     const chat = state.chats.find(c => c.id === state.activeChatId);
-    const targetAvatar = (chat && chat.avatar) ? chat.avatar : 'https://ui-avatars.com/api/?name=User';
+    const targetAvatar = getAvatarUrl(chat || { name: 'User' });
 
     const placeholder = document.getElementById('video-placeholder');
     if (placeholder && type === 'video') {
@@ -4952,15 +5358,8 @@ function timeAgo(timestamp) {
 
 function updateUserStatusUI(userId, online, lastSeen) {
     // 1. Dynamic Sidebar Update
-    if (state.activeTab === 'messages') {
-        const listContainer = document.getElementById('chat-list');
-        if (listContainer) {
-            const chatList = state.isSearching ? state.searchResults : [{ id: 'general', name: 'General Group', lastMsg: 'Tap to chat', avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', time: '' }, ...state.chats];
-            listContainer.innerHTML = `
-                <div class="pull-indicator" id="pull-indicator"><i class="fas fa-spinner"></i></div>
-                ${renderChatListContent(chatList)}
-            `;
-        }
+    if (state.activeTab === 'messages' && window.refreshSidebar) {
+        window.refreshSidebar();
     }
 
     // 2. Header Update
@@ -4973,15 +5372,7 @@ function updateUserStatusUI(userId, online, lastSeen) {
     }
 }
 
-window.savePrivacy = async () => {
-    const lastSeen = document.getElementById('privacy-lastseen').value;
-    const readReceipts = document.getElementById('privacy-readreceipts').checked;
-    state.user.user.settings = { ...state.user.user.settings, lastSeenPrivacy: lastSeen, readReceipts: readReceipts };
-    try {
-        await api.updateProfile({ settings: state.user.user.settings });
-        localStorage.setItem('oma_user', JSON.stringify(state.user));
-    } catch (e) { showCustomAlert("Failed to save privacy settings", "error"); }
-};
+// Redundant savePrivacy removed (already defined at ~line 3360)
 
 
 
@@ -5491,29 +5882,23 @@ async function registerPush() {
             await PushNotifications.addListener('pushNotificationReceived', async (notification) => {
                 console.log('Push received: ', notification);
 
-                // Show Banner even if app is in foreground?
-                // Capacitor automatically shows notification if not handled?
-                // Actually, by default, pushNotificationReceived just catches it.
-                // To show a banner in foreground, we often need LocalNotifications or just rely on OS behavior 
-                // IF we set presentationOptions.
-
-                // BUT user wants banners.
-
-                // Play Sound manually if needed?
-                // If it's a message and we are NOT in that chat, play sound.
-                const data = notification.notification ? notification.notification.data : notification.data;
+                const data = notification.data || (notification.notification ? notification.notification.data : null);
                 const chatId = data?.chatId;
 
-                // If we are active in this chat, maybe don't ding?
+                // WhatsApp-Style Call Wake
+                if (data?.type === 'call_offer') {
+                    console.log('Incoming call via Push Notification', data);
+                    if (window.handleIncomingCall) {
+                        window.handleIncomingCall(data);
+                    }
+                    return;
+                }
+
+                // Standard Message Handling
                 if (state.activeChatId === chatId && document.visibilityState === 'visible') {
                     // Do nothing, we see the message
                 } else {
-                    // Play sound using our SoundManager as backup for foreground
-                    if (data?.type === 'call') {
-                        // Calls usually handled by socket, but push is backup
-                    } else {
-                        soundManager.play('message');
-                    }
+                    soundManager.play('message');
                 }
             });
 
@@ -5726,11 +6111,16 @@ window.applyWallpaperElements = (type) => {
 window.closeUserProfile = () => {
     const modal = document.getElementById('user-profile-modal');
     if (modal) {
+        const content = modal.querySelector('.modal-content');
+        if (content) {
+            content.classList.remove('animate__zoomIn');
+            content.classList.add('animate__zoomOut');
+        }
         modal.classList.remove('animate__fadeIn');
-        modal.classList.add('animate__fadeOutUp'); // "Go up"
+        modal.classList.add('animate__fadeOut');
         setTimeout(() => {
             modal.remove();
-        }, 300);
+        }, 400);
     }
 };
 
@@ -5945,81 +6335,105 @@ window.openUserProfile = async (userId) => {
         const fresh = await api.batchGetUsers([userId]);
         console.log("Fresh Profile Data:", fresh);
         if (fresh && fresh.length > 0) {
-            // Merge fresh data into existing logic
             user = { ...(user || {}), ...fresh[0] };
         }
     } catch (e) {
         console.error("Failed to fetch fresh profile", e);
     }
 
-    if (!user) return; // Should not happen if we came from chat
+    if (!user) return;
 
     const isMe = userId === state.user.user.id;
     const isBlocked = state.user.user.blockedUsers?.includes(userId);
 
     const modalHtml = `
-        <div id="user-profile-modal" class="modal-overlay animate__animated animate__fadeIn" style="display:flex;">
-            <div class="modal-content" style="width:100%; max-width:400px; padding:0; overflow:hidden; display:flex; flex-direction:column; max-height:90vh;">
+        <div id="user-profile-modal" class="modal-overlay animate__animated animate__fadeIn" style="display:flex; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);">
+            <div class="modal-content animate__animated animate__zoomIn" style="width:92%; max-width:420px; padding:0; overflow:hidden; display:flex; flex-direction:column; max-height:85vh; border-radius:32px; border:1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
                 
-                <!-- Header Image/Avatar -->
-                <div style="height:250px; background:var(--sidebar-bg); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
-                   <img src="${getAvatarUrl(user)}" style="width:100%; height:100%; object-fit:cover; cursor:pointer;" onclick="window.openMediaViewer('${getAvatarUrl(user)}', 'image')">
-                   <button class="icon-btn" onclick="window.closeUserProfile()" style="position:absolute; top:15px; left:15px; background:rgba(0,0,0,0.5); color:white; border-radius:50%;"><i class="fas fa-arrow-left"></i></button>
-
+                <!-- Header Image/Avatar Section -->
+                <div style="height:280px; background:var(--sidebar-bg); position:relative; overflow:hidden;">
+                   <img src="${getAvatarUrl(user)}" 
+                        id="profile-large-avatar"
+                        onerror="window.handleImageError(this, '${(user.name || user.username || 'User').replace(/'/g, "\\'")}')"
+                        style="width:100%; height:100%; object-fit:cover; cursor:pointer; transition:transform 0.5s ease;" 
+                        onclick="window.openMediaViewer(this.src, 'image')"
+                        onmouseover="this.style.transform='scale(1.05)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                   
+                   <!-- Gradient Overlay -->
+                   <div style="position:absolute; bottom:0; left:0; width:100%; height:120px; background:linear-gradient(to top, rgba(0,0,0,0.8), transparent); pointer-events:none;"></div>
+                   
+                   <!-- Back Button -->
+                   <button class="icon-btn" onclick="window.closeUserProfile()" style="position:absolute; top:20px; left:20px; background:rgba(0,0,0,0.4); backdrop-filter:blur(10px); color:white; border-radius:50%; width:44px; height:44px; border:1px solid rgba(255,255,255,0.2);"><i class="fas fa-arrow-left"></i></button>
+                   
+                   <!-- User Basic Info Overlaid on Image Bottom -->
+                   <div style="position:absolute; bottom:20px; left:25px; right:25px; color:white; text-shadow:0 2px 4px rgba(0,0,0,0.5);">
+                        <h2 style="margin:0; font-size:1.8rem; font-weight:800; letter-spacing:-0.5px;">${user.name}</h2>
+                        <div style="display:flex; align-items:center; gap:8px; opacity:0.9; margin-top:4px;">
+                            <span style="font-size:1rem;">@${user.username || 'unknown'}</span>
+                            ${user.battery ? `
+                                <span style="background:rgba(16, 185, 129, 0.2); color:#10b981; padding:2px 10px; border-radius:20px; font-size:0.75rem; border:1px solid rgba(16, 185, 129, 0.3); backdrop-filter:blur(5px);">
+                                    <i class="fas fa-battery-${user.battery.level > 90 ? 'full' : user.battery.level > 50 ? 'half' : 'quarter'}" style="margin-right:4px;"></i>${user.battery.level}%
+                                </span>
+                            ` : ''}
+                        </div>
+                   </div>
                 </div>
 
-                <div style="padding:20px; flex:1; overflow-y:auto; background:var(--bg-color);">
-                    <div style="text-align:center; margin-bottom:20px;">
-                        <h2 style="margin:0; font-size:1.8rem; color:var(--text-primary);">${user.name}</h2>
-                        <p style="margin:5px 0; color:var(--text-secondary);">@${user.username || 'unknown'}</p>
-                        <p style="margin:2px 0; color:var(--text-secondary); font-size:0.9rem;"><i class="fas fa-phone-alt" style="font-size:0.8rem; margin-right:5px;"></i> ${user.phone || 'No phone linked'}</p>
-                        
-                        <!-- Battery Badge -->
-                        ${user.battery ? `
-                            <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(16, 185, 129, 0.1); color:#10b981; padding:4px 12px; border-radius:20px; font-size:0.85rem; margin-top:10px;">
-                                <i class="fas fa-battery-${user.battery.level > 90 ? 'full' : user.battery.level > 50 ? 'half' : 'quarter'}"></i>
-                                ${user.battery.level}% ${user.battery.charging ? '<i class="fas fa-bolt"></i>' : ''}
-                            </div>
-                        ` : ''}
-                    </div>
-
-                    <!-- Actions -->
+                <div style="padding:25px; flex:1; overflow-y:auto; background:var(--bg-color);">
+                    
+                    <!-- Action Buttons -->
                     ${!isMe ? `
-                        <div style="display:flex; justify-content:center; gap:20px; margin-bottom:30px;">
-                            <div onclick="window.closeUserProfile(); window.openChat('${user.id}')" style="display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; color:var(--primary-color);">
-                                <div style="width:50px; height:50px; border-radius:50%; background:rgba(79, 70, 229, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.2rem;"><i class="fas fa-comment"></i></div>
-                                <span style="font-size:0.8rem; font-weight:600;">Message</span>
+                        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:15px; margin-bottom:30px;">
+                            <div onclick="window.closeUserProfile(); window.openChat('${user.id}')" class="profile-action-btn" style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; background:var(--sidebar-bg); padding:15px 10px; border-radius:20px; border:1px solid var(--border-color); transition:all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                                <div style="width:46px; height:46px; border-radius:50%; background:rgba(79, 70, 229, 0.1); color:var(--primary-color); display:flex; align-items:center; justify-content:center; font-size:1.3rem;"><i class="fas fa-comment"></i></div>
+                                <span style="font-size:0.8rem; font-weight:700; color:var(--text-secondary);">Message</span>
                             </div>
-                            <div onclick="window.startCall('audio')" style="display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; color:#10b981;">
-                                <div style="width:50px; height:50px; border-radius:50%; background:rgba(16, 185, 129, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.2rem;"><i class="fas fa-phone"></i></div>
-                                <span style="font-size:0.8rem; font-weight:600;">Audio</span>
+                            <div onclick="window.startCall('audio')" class="profile-action-btn" style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; background:var(--sidebar-bg); padding:15px 10px; border-radius:20px; border:1px solid var(--border-color); transition:all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                                <div style="width:46px; height:46px; border-radius:50%; background:rgba(16, 185, 129, 0.1); color:#10b981; display:flex; align-items:center; justify-content:center; font-size:1.3rem;"><i class="fas fa-phone-alt"></i></div>
+                                <span style="font-size:0.8rem; font-weight:700; color:var(--text-secondary);">Audio</span>
                             </div>
-                            <div onclick="window.startCall('video')" style="display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; color:#f43f5e;">
-                                <div style="width:50px; height:50px; border-radius:50%; background:rgba(244, 63, 94, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.2rem;"><i class="fas fa-video"></i></div>
-                                <span style="font-size:0.8rem; font-weight:600;">Video</span>
+                            <div onclick="window.startCall('video')" class="profile-action-btn" style="display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; background:var(--sidebar-bg); padding:15px 10px; border-radius:20px; border:1px solid var(--border-color); transition:all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                                <div style="width:46px; height:46px; border-radius:50%; background:rgba(244, 63, 94, 0.1); color:#f43f5e; display:flex; align-items:center; justify-content:center; font-size:1.3rem;"><i class="fas fa-video"></i></div>
+                                <span style="font-size:0.8rem; font-weight:700; color:var(--text-secondary);">Video</span>
                             </div>
                         </div>
                     ` : ''}
 
-                    <!-- Info Section -->
-                    <div style="background:var(--sidebar-bg); border-radius:12px; padding:16px; margin-bottom:20px; box-shadow:var(--shadow-sm);">
-                        <h4 style="margin:0 0 10px 0; color:var(--text-secondary); font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;">About</h4>
-                        <p style="margin:0; font-size:1rem; color:var(--text-primary); line-height:1.5;">${user.bio || 'No bio available.'}</p>
+                    <!-- Contact Details Card -->
+                    <div style="background:var(--sidebar-bg); border-radius:24px; padding:20px; margin-bottom:24px; border:1px solid var(--border-color); box-shadow:var(--shadow-sm);">
+                        <div style="margin-bottom:20px;">
+                            <h4 style="margin:0 0 8px 0; color:var(--text-secondary); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; font-weight:700;">About</h4>
+                            <p style="margin:0; font-size:1rem; color:var(--text-primary); line-height:1.6;">${user.bio || 'No bio available.'}</p>
+                        </div>
+                        <div style="padding-top:15px; border-top:1px solid var(--border-color); display:flex; align-items:center; gap:12px;">
+                            <div style="width:40px; height:40px; border-radius:12px; background:rgba(var(--primary-color-rgb), 0.1); color:var(--primary-color); display:flex; align-items:center; justify-content:center; font-size:1rem;"><i class="fas fa-phone"></i></div>
+                            <div>
+                                <p style="margin:0; font-size:0.75rem; color:var(--text-secondary); font-weight:600;">Phone Number</p>
+                                <p style="margin:2px 0 0 0; font-size:1rem; color:var(--text-primary); font-weight:500;">${user.phone || 'Private'}</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Danger Zone -->
+                    <!-- Danger Zone Section -->
                     ${!isMe ? `
-                        <div style="background:var(--sidebar-bg); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-sm);">
-                             <div onclick="window.blockCurrentUser('${user.id}')" style="padding:16px; display:flex; align-items:center; gap:15px; cursor:pointer; border-bottom:1px solid var(--border-color); color:#ef4444 transition:background 0.2s;">
-                                <i class="fas fa-ban" style="color:#ef4444; width:20px;"></i>
-                                <span style="color:#ef4444; font-weight:600;">${isBlocked ? 'Unblock User' : 'Block User'}</span>
+                        <div style="background:var(--sidebar-bg); border-radius:24px; overflow:hidden; border:1px solid var(--border-color); box-shadow:var(--shadow-sm);">
+                             <div onclick="window.blockCurrentUser('${user.id}')" style="padding:18px 20px; display:flex; align-items:center; gap:15px; cursor:pointer; border-bottom:1px solid var(--border-color); transition:background 0.2s;">
+                                <div style="width:36px; height:36px; border-radius:10px; background:rgba(239, 68, 68, 0.1); color:#ef4444; display:flex; align-items:center; justify-content:center;"><i class="fas fa-ban"></i></div>
+                                <span style="color:#ef4444; font-weight:700; flex:1;">${isBlocked ? 'Unblock User' : 'Block Current User'}</span>
+                                <i class="fas fa-chevron-right" style="font-size:0.8rem; opacity:0.3;"></i>
                             </div>
-                            <div onclick="window.reportCurrentUser('${user.id}')" style="padding:16px; display:flex; align-items:center; gap:15px; cursor:pointer; color:#f59e0b;">
-                                <i class="fas fa-flag" style="width:20px;"></i>
-                                <span style="font-weight:600;">Report User</span>
+                            <div onclick="window.reportCurrentUser('${user.id}')" style="padding:18px 20px; display:flex; align-items:center; gap:15px; cursor:pointer; transition:background 0.2s;">
+                                <div style="width:36px; height:36px; border-radius:10px; background:rgba(245, 158, 11, 0.1); color:#f59e0b; display:flex; align-items:center; justify-content:center;"><i class="fas fa-flag"></i></div>
+                                <span style="color:#f59e0b; font-weight:700; flex:1;">Report Activity</span>
+                                <i class="fas fa-chevron-right" style="font-size:0.8rem; opacity:0.3;"></i>
                             </div>
                         </div>
                     ` : ''}
+                    
+                    <div style="text-align:center; padding: 25px 0 10px; color:var(--text-secondary); font-size:0.75rem; opacity:0.6;">
+                        Secure Peer Connection &bull; OMA v2.8.5
+                    </div>
                 </div>
             </div>
         </div>

@@ -23,10 +23,23 @@ module.exports = async (req, res) => {
         }
 
         const db = await connectToDatabase();
+        const usersCollection = db.collection('users');
         const messagesCollection = db.collection('messages');
 
+        // Privacy Check: Read Receipts Reciprocity
+        // 1. Check Me (The reader)
+        const me = await usersCollection.findOne({ id: user.id });
+        if (me && me.settings && me.settings.readReceipts === false) {
+            return res.status(200).json({ success: true, updated: 0, reason: 'privacy_disabled_by_me' });
+        }
+
+        // 2. Check Partner (The sender)
+        const partner = await usersCollection.findOne({ id: chatId });
+        if (partner && partner.settings && partner.settings.readReceipts === false) {
+            return res.status(200).json({ success: true, updated: 0, reason: 'privacy_disabled_by_partner' });
+        }
+
         // Update messages sent BY the partner (chatId) TO current user (user.id)
-        // Set status to 'seen'
         const result = await messagesCollection.updateMany(
             {
                 senderId: chatId,
