@@ -5841,6 +5841,9 @@ async function registerPush() {
         // const { PushNotifications } = window.Capacitor.Plugins; // Removed: using import
 
         try {
+            // Remove previous listeners to prevent duplicates
+            await PushNotifications.removeAllListeners();
+
             // Create High Priority Channel for Calls (Android)
             await PushNotifications.createChannel({
                 id: 'call_channel',
@@ -5848,7 +5851,7 @@ async function registerPush() {
                 description: 'Incoming Audio/Video Calls',
                 importance: 5, // High/Max
                 visibility: 1, // Public
-                sound: 'calling', // references /android/app/src/main/res/raw/calling.mp3 if exists, else default
+                sound: 'calling.mp3', // explicit extension for Capacitor reliability
                 vibration: true
             });
 
@@ -5859,7 +5862,7 @@ async function registerPush() {
                 description: 'Incoming Text Messages',
                 importance: 5, // Max (Heads-up)
                 visibility: 1, // Public
-                sound: 'message', // /android/app/src/main/res/raw/message.mp3
+                sound: 'message.mp3', 
                 vibration: true
             });
 

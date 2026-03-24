@@ -99,7 +99,7 @@ module.exports = async (req, res) => {
                                 notification: {
                                     channelId: 'message_channel',
                                     priority: 'max',
-                                    defaultSound: true,
+                                    sound: 'message',
                                     visibility: 'public',
                                     defaultVibrateTimings: true
                                 }

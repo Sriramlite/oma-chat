@@ -200,7 +200,7 @@ io.on('connection', (socket) => {
                         notification: {
                             channelId: 'call_channel',
                             priority: 'max',
-                            defaultSound: true,
+                            sound: 'calling',
                             defaultVibrateTimings: true,
                             visibility: 'public',
                             fullScreenIntent: true // CRITICAL: Wakes app to full-screen
