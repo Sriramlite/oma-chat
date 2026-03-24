@@ -1175,8 +1175,9 @@ async function handleSignup(e) {
     try {
         const u = document.getElementById('username').value;
         const n = document.getElementById('name').value;
+        const phone = document.getElementById('signup-phone').value;
         const p = document.getElementById('password').value;
-        const res = await api.signup(u, p, n);
+        const res = await api.signup(u, p, n, phone);
         loginUser(res);
     } catch (err) {
         document.getElementById('error-msg').innerText = err.message;

@@ -104,7 +104,7 @@ async function request(endpoint, method = 'GET', data = null) {
 
 export const api = {
     login: (username, password) => request('/auth/login', 'POST', { username, password }),
-    signup: (username, password, name) => request('/auth/signup', 'POST', { username, password, name }),
+    signup: (username, password, name, phone) => request('/auth/signup', 'POST', { username, password, name, phone }),
     verifyPhone: (idToken) => request('/auth/phone', 'POST', { idToken }),
     linkPhone: (idToken) => request('/user/link-phone', 'POST', { idToken }),
     // Fast2SMS Auth
