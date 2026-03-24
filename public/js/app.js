@@ -5817,119 +5817,96 @@ function createPeerConnection() {
 // Hook into Login
 // Hook into Login
 // (Combined into main loginUser function above)
-// --- Push Notification Logic ---
+// --- Diagnostics Logging ---
+window.omaLogs = window.omaLogs || [];
+window.logToDebug = (msg) => {
+    const entry = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    window.omaLogs.push(entry);
+    console.log(entry);
+    const list = document.getElementById('dev-log-list');
+    if (list) {
+        list.insertAdjacentHTML('beforeend', `<div style="padding:4px 0; border-bottom:1px solid #333; font-size:0.75rem; font-family:monospace;">${entry}</div>`);
+        list.scrollTop = list.scrollHeight;
+    }
+};
 
 async function registerPush() {
-    alert("Push: registerPush() called");
+    window.logToDebug("Push: registerPush() called");
     const hasCap = !!window.Capacitor;
     const isNative = hasCap && window.Capacitor.isNativePlatform();
-    alert("Push: isNative=" + isNative);
+    window.logToDebug("Push: isNative=" + isNative);
 
-    // Only run on mobile (Capacitor)
     if (isNative) {
-        // const { PushNotifications } = window.Capacitor.Plugins; // Removed: using import
-
         try {
-            // Enable system-level alerts while the app is in foreground
             await PushNotifications.setPresentationOptions({
                 presentationOptions: ['badge', 'sound', 'alert'],
             });
 
-            // Remove previous listeners to prevent duplicates
             await PushNotifications.removeAllListeners();
 
-            // Create High Priority Channel for Calls (Android)
             await PushNotifications.createChannel({
                 id: 'call_channel',
                 name: 'Call Notifications',
-                description: 'Incoming Audio/Video Calls',
-                importance: 5, // High/Max
-                visibility: 1, // Public
-                sound: 'calling.mp3', // explicit extension for Capacitor reliability
+                importance: 5,
+                visibility: 1,
+                sound: 'calling.mp3',
                 vibration: true
             });
 
-            // Create High Priority Channel for Messages (Android) - Enables Banners
             await PushNotifications.createChannel({
                 id: 'message_channel',
                 name: 'Message Notifications',
-                description: 'Incoming Text Messages',
-                importance: 5, // Max (Heads-up)
-                visibility: 1, // Public
-                sound: 'message.mp3', 
+                importance: 5,
+                visibility: 1,
+                sound: 'message.mp3',
                 vibration: true
             });
 
-            // alert('Push: Initializing...'); // Removed Debug Alert
             await PushNotifications.addListener('registration', async ({ value }) => {
-                alert('Push Token Received: ' + value.substring(0, 10) + '...'); 
-                console.log('Mobile Push Token:', value);
+                window.logToDebug('Push Token Received: ' + value.substring(0, 15) + '...'); 
                 localStorage.setItem('oma_push_token', value);
                 try {
                     await api.updatePushToken(value);
-                    console.log('Push Token sent to server');
+                    window.logToDebug('Push Token synced to server');
                 } catch (e) {
-                    console.error('Failed to send push token', e);
+                    window.logToDebug('Failed to sync token: ' + e.message);
                 }
             });
 
             await PushNotifications.addListener('registrationError', (error) => {
-                alert('Push: Registration Error: ' + JSON.stringify(error));
-                console.error('Error on registration: ' + JSON.stringify(error));
+                window.logToDebug('Push: Registration Error: ' + JSON.stringify(error));
             });
 
             await PushNotifications.addListener('pushNotificationReceived', async (notification) => {
-                console.log('Push received: ', notification);
-
+                window.logToDebug('Push Received: ' + notification.title);
                 const data = notification.data || (notification.notification ? notification.notification.data : null);
-                const chatId = data?.chatId;
-
-                // WhatsApp-Style Call Wake
                 if (data?.type === 'call_offer') {
-                    console.log('Incoming call via Push Notification', data);
-                    if (window.handleIncomingCall) {
-                        window.handleIncomingCall(data);
-                    }
+                    if (window.handleIncomingCall) window.handleIncomingCall(data);
                     return;
                 }
-
-                // Standard Message Handling
-                if (state.activeChatId === chatId && document.visibilityState === 'visible') {
-                    // Do nothing, we see the message
-                } else {
-                    soundManager.play('message');
-                }
+                if (state.activeChatId !== data?.chatId) soundManager.play('message');
             });
 
-            await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-                const data = notification.notification.data;
-                console.log('Push action performed:', data);
-                if (data.chatId) {
-                    window.openChat(data.chatId);
-                }
-            });
-
-            // Request permission
-            alert("Push: Checking permissions..."); 
+            window.logToDebug("Push: Checking permissions..."); 
             let permStatus = await PushNotifications.checkPermissions();
             if (permStatus.receive === 'prompt') {
-                alert("Push: Requesting permissions...");
+                window.logToDebug("Push: Requesting permissions...");
                 permStatus = await PushNotifications.requestPermissions();
             }
 
             if (permStatus.receive === 'granted') {
-                alert("Push: Calling register()...");
+                window.logToDebug("Push: Calling register()...");
                 await PushNotifications.register();
-                alert("Push: register() called. Awaiting token...");
+                window.logToDebug("Push: register() called. Awaiting token...");
             } else {
-                alert("Push: Permission denied (" + permStatus.receive + ")");
+                window.logToDebug("Push: Permission denied (" + permStatus.receive + ")");
             }
         } catch (e) {
-            alert("Push: Global Failure: " + e.message);
+            window.logToDebug("Push: Global Failure: " + e.message);
             console.error("Push registration failed", e);
         }
     } else {
-        console.log("Web Push not implemented yet (requires Service Worker)");
+        window.logToDebug("Push: Skipping (Non-Native)");
     }
 }
 
@@ -5946,27 +5923,47 @@ window.showDiagnostics = () => {
     const userId = state.user?.user?.id || 'Not Logged In';
     const apiBase = api.getApiBase();
     const pushToken = localStorage.getItem('oma_push_token') || 'None';
+    const logsHtml = window.omaLogs.map(l => `<div style="padding:4px 0; border-bottom:1px solid #333; font-size:0.75rem; font-family:monospace;">${l}</div>`).join('');
     
     const menu = `
-        <div id="dev-menu-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:20000; color:white; padding:40px; box-sizing:border-box; overflow-y:auto; font-family: 'Inter', sans-serif; backdrop-filter: blur(10px);">
-            <h2 style="margin-bottom:20px; color:#3b82f6;">OMA Diagnostics</h2>
-            <div style="background:#1e1e1e; padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #333;">
-                <p style="margin-bottom:8px;"><b>User ID:</b> <span style="opacity:0.8;">${userId}</span></p>
-                <p style="margin-bottom:8px;"><b>API Base:</b> <span style="opacity:0.8;">${apiBase}</span></p>
-                <p style="margin-bottom:0;"><b>Push Token:</b> <br><span style="font-size:0.75rem; color:#10b981; word-break:break-all;">${pushToken}</span></p>
-            </div>
-            
-            <div style="display:flex; flex-direction:column; gap:12px;">
-                <button onclick="window.setDevIp()" style="width:100%; padding:14px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; cursor:pointer;">Set Backend IP</button>
-                <button onclick="window.forcePushRegister()" style="width:100%; padding:14px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; cursor:pointer;">Force Token Refresh</button>
-                <button onclick="window.sendDiagnosticPush()" style="width:100%; padding:14px; border-radius:10px; background:#3b82f6; color:white; border:none; font-weight:600; cursor:pointer;">Send Test Notification</button>
-                <button onclick="document.getElementById('dev-menu-modal').remove()" style="width:100%; padding:14px; border-radius:10px; background:#ef4444; color:white; border:none; font-weight:600; cursor:pointer; margin-top:20px;">Close Diagnostics</button>
+        <div id="dev-menu-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:20000; color:white; padding:20px; box-sizing:border-box; overflow-y:auto; font-family: 'Inter', sans-serif; backdrop-filter: blur(10px);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="color:#3b82f6; margin:0;">OMA Diagnostics</h2>
+                <button onclick="document.getElementById('dev-menu-modal').remove()" style="background:none; border:none; color:white; font-size:1.5rem;"><i class="fas fa-times"></i></button>
             </div>
 
-            <p style="margin-top:20px; font-size:0.8rem; opacity:0.6; text-align:center;">OMA v1.0.0 Debug Suite</p>
+            <div style="background:#1e1e1e; padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #333;">
+                <p style="margin-bottom:8px; font-size:0.9rem;"><b>User ID:</b> <span style="opacity:0.8; float:right;">${userId}</span></p>
+                <p style="margin-bottom:8px; font-size:0.9rem;"><b>API Base:</b> <span style="opacity:0.8; float:right;">${apiBase}</span></p>
+                <div style="margin-top:10px;">
+                    <b>Push Token:</b>
+                    <div style="font-size:0.7rem; color:#10b981; word-break:break-all; background:#000; padding:10px; border-radius:8px; margin-top:5px; border:1px solid #222;">${pushToken}</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="margin:0; opacity:0.7;">Event Logs</h4>
+                    <button onclick="window.omaLogs=[]; document.getElementById('dev-log-list').innerHTML=''" style="background:none; border:none; color:#3b82f6; font-size:0.8rem; cursor:pointer;">Clear Logs</button>
+                </div>
+                <div id="dev-log-list" style="height:200px; background:#000; border-radius:12px; border:1px solid #333; padding:10px; overflow-y:auto; color:#aaa;">
+                    ${logsHtml || '<div style="opacity:0.4; text-align:center; padding-top:80px;">No logs yet...</div>'}
+                </div>
+            </div>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button onclick="window.setDevIp()" style="padding:15px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; font-size:0.85rem;">Set API IP</button>
+                <button onclick="window.forcePushRegister()" style="padding:15px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; font-size:0.85rem;">Refresh Push</button>
+                <button onclick="window.sendDiagnosticPush()" style="grid-column: span 2; padding:15px; border-radius:10px; background:#3b82f6; color:white; border:none; font-weight:600; font-size:0.9rem;">Send Test Notification</button>
+            </div>
+
+            <p style="margin-top:30px; font-size:0.75rem; opacity:0.4; text-align:center;">OMA Engineering v1.1.0 • Ready</p>
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', menu);
+    // Scroll logs to bottom
+    const list = document.getElementById('dev-log-list');
+    if (list) list.scrollTop = list.scrollHeight;
 };
 
 window.handleLogoClick = () => {
