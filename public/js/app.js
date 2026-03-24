@@ -722,74 +722,6 @@ function renderAuthNavbar() {
     const hash = window.location.hash;
     const isSubState = hash.includes('/') || hash === '#setup';
     
-    // Hidden Dev Menu: Click OMA logo 5 times to set custom local IP
-    window.showDiagnostics = () => {
-        const userId = state.user?.user?.id || 'Not Logged In';
-        const apiBase = getApiBase();
-        const pushToken = localStorage.getItem('oma_push_token') || 'None';
-        
-        const menu = `
-            <div id="dev-menu-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:20000; color:white; padding:40px; box-sizing:border-box; overflow-y:auto; font-family: 'Inter', sans-serif; backdrop-filter: blur(10px);">
-                <h2 style="margin-bottom:20px; color:#3b82f6;">OMA Diagnostics</h2>
-                <div style="background:#1e1e1e; padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #333;">
-                    <p style="margin-bottom:8px;"><b>User ID:</b> <span style="opacity:0.8;">${userId}</span></p>
-                    <p style="margin-bottom:8px;"><b>API Base:</b> <span style="opacity:0.8;">${apiBase}</span></p>
-                    <p style="margin-bottom:0;"><b>Push Token:</b> <br><span style="font-size:0.75rem; color:#10b981; word-break:break-all;">${pushToken}</span></p>
-                </div>
-                
-                <div style="display:flex; flex-direction:column; gap:12px;">
-                    <button onclick="window.setDevIp()" style="width:100%; padding:14px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; cursor:pointer;">Set Backend IP</button>
-                    <button onclick="window.forcePushRegister()" style="width:100%; padding:14px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; cursor:pointer;">Force Token Refresh</button>
-                    <button onclick="window.sendDiagnosticPush()" style="width:100%; padding:14px; border-radius:10px; background:#3b82f6; color:white; border:none; font-weight:600; cursor:pointer;">Send Test Notification</button>
-                    <button onclick="document.getElementById('dev-menu-modal').remove()" style="width:100%; padding:14px; border-radius:10px; background:#ef4444; color:white; border:none; font-weight:600; cursor:pointer; margin-top:20px;">Close Diagnostics</button>
-                </div>
-
-                <p style="margin-top:20px; font-size:0.8rem; opacity:0.6; text-align:center;">OMA v1.0.0 Debug Suite</p>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', menu);
-    };
-
-    window.handleLogoClick = () => {
-        window.logoClicks = (window.logoClicks || 0) + 1;
-        if (window.logoClicks >= 5) {
-            window.logoClicks = 0;
-            window.showDiagnostics();
-        } else {
-            // Reset clicks if they stop clicking
-            clearTimeout(window.logoClickTimeout);
-            window.logoClickTimeout = setTimeout(() => { window.logoClicks = 0; }, 2000);
-        }
-    };
-
-    window.setDevIp = () => {
-        const current = localStorage.getItem('oma_dev_ip') || "";
-        const ip = prompt("Dev Mode: Set Backend IP (e.g. http://192.168.1.10:5000)", current);
-        if (ip !== null) {
-            localStorage.setItem('oma_dev_ip', ip);
-            location.reload();
-        }
-    };
-
-    window.forcePushRegister = async () => {
-        if (window.registerPush) {
-            alert("Triggering Push Registration...");
-            await window.registerPush();
-            alert("Done! Check Push Token above.");
-            location.reload();
-        }
-    };
-
-    window.sendDiagnosticPush = async () => {
-        try {
-            alert("Requesting backend to send push...");
-            const res = await api.sendTestNotification();
-            alert("Success! Check your notification tray.");
-        } catch (e) {
-            alert("Failed: " + e.message);
-        }
-    };
-
     return `
         <div class="auth-nav">
             <div class="auth-nav-logo" onclick="window.handleLogoClick()">OMA</div>
@@ -5998,6 +5930,74 @@ async function registerPush() {
 window.registerPush = registerPush;
 window.checkCapacitor = () => {
     alert(`Capacitor: ${!!window.Capacitor}\nNative: ${window.Capacitor ? window.Capacitor.isNativePlatform() : 'N/A'}`);
+};
+
+
+// --- Diagnostics & Debug Tool (Global Scope) ---
+window.showDiagnostics = () => {
+    const userId = state.user?.user?.id || 'Not Logged In';
+    const apiBase = getApiBase();
+    const pushToken = localStorage.getItem('oma_push_token') || 'None';
+    
+    const menu = `
+        <div id="dev-menu-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:20000; color:white; padding:40px; box-sizing:border-box; overflow-y:auto; font-family: 'Inter', sans-serif; backdrop-filter: blur(10px);">
+            <h2 style="margin-bottom:20px; color:#3b82f6;">OMA Diagnostics</h2>
+            <div style="background:#1e1e1e; padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #333;">
+                <p style="margin-bottom:8px;"><b>User ID:</b> <span style="opacity:0.8;">${userId}</span></p>
+                <p style="margin-bottom:8px;"><b>API Base:</b> <span style="opacity:0.8;">${apiBase}</span></p>
+                <p style="margin-bottom:0;"><b>Push Token:</b> <br><span style="font-size:0.75rem; color:#10b981; word-break:break-all;">${pushToken}</span></p>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <button onclick="window.setDevIp()" style="width:100%; padding:14px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; cursor:pointer;">Set Backend IP</button>
+                <button onclick="window.forcePushRegister()" style="width:100%; padding:14px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; cursor:pointer;">Force Token Refresh</button>
+                <button onclick="window.sendDiagnosticPush()" style="width:100%; padding:14px; border-radius:10px; background:#3b82f6; color:white; border:none; font-weight:600; cursor:pointer;">Send Test Notification</button>
+                <button onclick="document.getElementById('dev-menu-modal').remove()" style="width:100%; padding:14px; border-radius:10px; background:#ef4444; color:white; border:none; font-weight:600; cursor:pointer; margin-top:20px;">Close Diagnostics</button>
+            </div>
+
+            <p style="margin-top:20px; font-size:0.8rem; opacity:0.6; text-align:center;">OMA v1.0.0 Debug Suite</p>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', menu);
+};
+
+window.handleLogoClick = () => {
+    window.logoClicks = (window.logoClicks || 0) + 1;
+    if (window.logoClicks >= 5) {
+        window.logoClicks = 0;
+        window.showDiagnostics();
+    } else {
+        clearTimeout(window.logoClickTimeout);
+        window.logoClickTimeout = setTimeout(() => { window.logoClicks = 0; }, 2000);
+    }
+};
+
+window.setDevIp = () => {
+    const current = localStorage.getItem('oma_dev_ip') || "";
+    const ip = prompt("Dev Mode: Set Backend IP (e.g. http://192.168.1.10:5000)", current);
+    if (ip !== null) {
+        localStorage.setItem('oma_dev_ip', ip);
+        location.reload();
+    }
+};
+
+window.forcePushRegister = async () => {
+    if (window.registerPush) {
+        alert("Triggering Push Registration...");
+        await window.registerPush();
+        alert("Done! Check Push Token above.");
+        location.reload();
+    }
+};
+
+window.sendDiagnosticPush = async () => {
+    try {
+        alert("Requesting backend to send push...");
+        const res = await api.sendTestNotification();
+        alert("Success! Check your notification tray.");
+    } catch (e) {
+        alert("Failed: " + e.message);
+    }
 };
 
 // Ensure init is called
