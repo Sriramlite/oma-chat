@@ -5882,7 +5882,8 @@ async function registerPush() {
             });
 
             await PushNotifications.addListener('registrationError', (error) => {
-                window.logToDebug('Push: Registration Error: ' + JSON.stringify(error));
+                window.logToDebug('Push: Registration Error: ' + JSON.stringify(error, Object.getOwnPropertyNames(error)));
+                alert('Push ERROR: ' + (error.message || JSON.stringify(error)));
             });
 
             await PushNotifications.addListener('pushNotificationReceived', async (notification) => {
@@ -5920,6 +5921,17 @@ async function registerPush() {
         window.logToDebug("Push: Skipping (Non-Native)");
     }
 }
+
+window.checkPluginStatus = () => {
+    try {
+        const keys = Object.keys(PushNotifications || {});
+        window.logToDebug("Plugin Keys: " + JSON.stringify(keys));
+        alert("PushNotifications Keys: " + (keys.length ? keys.join(', ') : 'NONE/EMPTY'));
+    } catch (e) {
+        window.logToDebug("Check failed: " + e.message);
+        alert("Check failed: " + e.message);
+    }
+};
 
 
 // Expose checks and function for manual debugging
@@ -5965,7 +5977,8 @@ window.showDiagnostics = () => {
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <button onclick="window.setDevIp()" style="padding:15px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; font-size:0.85rem;">Set API IP</button>
                 <button onclick="window.forcePushRegister()" style="padding:15px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; font-size:0.85rem;">Refresh Push</button>
-                <button onclick="window.sendDiagnosticPush()" style="grid-column: span 2; padding:15px; border-radius:10px; background:#3b82f6; color:white; border:none; font-weight:600; font-size:0.9rem;">Send Test Notification</button>
+                <button onclick="window.checkPluginStatus()" style="grid-column: span 2; padding:15px; border-radius:10px; background:#111; color:#aaa; border:1px solid #333; font-weight:600; font-size:0.85rem; margin-top:5px;">Check Plugin Status</button>
+                <button onclick="window.sendDiagnosticPush()" style="grid-column: span 2; padding:15px; border-radius:10px; background:#3b82f6; color:white; border:none; font-weight:600; font-size:0.9rem; margin-top:5px;">Send Test Notification</button>
             </div>
 
             <p style="margin-top:30px; font-size:0.75rem; opacity:0.4; text-align:center;">OMA Engineering v1.1.0 • Ready</p>
