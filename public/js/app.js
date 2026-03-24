@@ -5832,26 +5832,36 @@ window.logToDebug = (msg) => {
 
 async function registerPush() {
     window.logToDebug("Push: registerPush() called");
+    
+    // Robust Plugin Detection
+    let Push = PushNotifications;
+    if (!Push || !Push.register) {
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
+            Push = window.Capacitor.Plugins.PushNotifications;
+            window.logToDebug("Push: Using window.Capacitor.Plugins fallback");
+        }
+    }
+
     const hasCap = !!window.Capacitor;
     const isNative = hasCap && window.Capacitor.isNativePlatform();
-    window.logToDebug("Push: isNative=" + isNative);
+    window.logToDebug("Push: isNative=" + isNative + ", HasPlugin=" + !!(Push && Push.register));
 
-    if (isNative) {
+    if (isNative && Push && Push.register) {
         // Individual Try/Catch blocks for resilience
         try {
-            await PushNotifications.removeAllListeners();
+            await Push.removeAllListeners();
             window.logToDebug("Push: Listeners cleared.");
         } catch (e) { window.logToDebug("Push: removeAllListeners skipped: " + e.message); }
 
         try {
-            await PushNotifications.setPresentationOptions({
+            await Push.setPresentationOptions({
                 presentationOptions: ['badge', 'sound', 'alert'],
             });
             window.logToDebug("Push: Presentation options set.");
         } catch (e) { window.logToDebug("Push: setPresentationOptions failed: " + e.message); }
 
         try {
-            await PushNotifications.createChannel({
+            await Push.createChannel({
                 id: 'call_channel',
                 name: 'Call Notifications',
                 importance: 5,
@@ -5859,7 +5869,7 @@ async function registerPush() {
                 sound: 'calling.mp3',
                 vibration: true
             });
-            await PushNotifications.createChannel({
+            await Push.createChannel({
                 id: 'message_channel',
                 name: 'Message Notifications',
                 importance: 5,
@@ -5872,7 +5882,7 @@ async function registerPush() {
 
         // Setup Result Listeners
         try {
-            await PushNotifications.addListener('registration', async ({ value }) => {
+            await Push.addListener('registration', async ({ value }) => {
                 window.logToDebug('Push Token Received: ' + value.substring(0, 15) + '...'); 
                 localStorage.setItem('oma_push_token', value);
                 try {
@@ -5881,12 +5891,12 @@ async function registerPush() {
                 } catch (e) { window.logToDebug('Failed to sync token: ' + e.message); }
             });
 
-            await PushNotifications.addListener('registrationError', (error) => {
+            await Push.addListener('registrationError', (error) => {
                 window.logToDebug('Push: Registration Error: ' + JSON.stringify(error, Object.getOwnPropertyNames(error)));
                 alert('Push ERROR: ' + (error.message || JSON.stringify(error)));
             });
 
-            await PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+            await Push.addListener('pushNotificationReceived', async (notification) => {
                 window.logToDebug('Push Received: ' + (notification.title || "Message"));
                 const data = notification.data || (notification.notification ? notification.notification.data : null);
                 if (data?.type === 'call_offer') {
@@ -5901,15 +5911,15 @@ async function registerPush() {
         // Final Permission & Registration
         try {
             window.logToDebug("Push: Checking permissions..."); 
-            let permStatus = await PushNotifications.checkPermissions();
+            let permStatus = await Push.checkPermissions();
             if (permStatus.receive === 'prompt') {
                 window.logToDebug("Push: Requesting permissions...");
-                permStatus = await PushNotifications.requestPermissions();
+                permStatus = await Push.requestPermissions();
             }
 
             if (permStatus.receive === 'granted') {
                 window.logToDebug("Push: Calling register()...");
-                await PushNotifications.register();
+                await Push.register();
                 window.logToDebug("Push: register() called. Awaiting token...");
             } else {
                 window.logToDebug("Push: Permission denied (" + permStatus.receive + ")");
@@ -5918,15 +5928,24 @@ async function registerPush() {
             window.logToDebug("Push: Final Stage Failure: " + e.message);
         }
     } else {
-        window.logToDebug("Push: Skipping (Non-Native)");
+        if (isNative && (!Push || !Push.register)) {
+            window.logToDebug("Push: CRITICAL - Plugin object found but register() method is missing.");
+        }
+        window.logToDebug("Push: Skipping registration.");
     }
 }
 
 window.checkPluginStatus = () => {
     try {
-        const keys = Object.keys(PushNotifications || {});
-        window.logToDebug("Plugin Keys: " + JSON.stringify(keys));
-        alert("PushNotifications Keys: " + (keys.length ? keys.join(', ') : 'NONE/EMPTY'));
+        const imported = PushNotifications ? Object.keys(PushNotifications) : 'NULL';
+        const globalPlat = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) 
+            ? Object.keys(window.Capacitor.Plugins.PushNotifications) : 'NULL';
+            
+        window.logToDebug("Imported Plugin Keys: " + JSON.stringify(imported));
+        window.logToDebug("Global Plugin Keys: " + JSON.stringify(globalPlat));
+        
+        alert("Imported: " + (imported === 'NULL' ? 'NULL' : imported.join(', ')) + 
+              "\n\nGlobal: " + (globalPlat === 'NULL' ? 'NULL' : globalPlat.join(', ')));
     } catch (e) {
         window.logToDebug("Check failed: " + e.message);
         alert("Check failed: " + e.message);
