@@ -103,6 +103,7 @@ async function request(endpoint, method = 'GET', data = null) {
 }
 
 export const api = {
+    getApiBase,
     login: (username, password) => request('/auth/login', 'POST', { username, password }),
     signup: (username, password, name, phone) => request('/auth/signup', 'POST', { username, password, name, phone }),
     verifyPhone: (idToken) => request('/auth/phone', 'POST', { idToken }),

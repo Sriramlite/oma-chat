@@ -5936,7 +5936,7 @@ window.checkCapacitor = () => {
 // --- Diagnostics & Debug Tool (Global Scope) ---
 window.showDiagnostics = () => {
     const userId = state.user?.user?.id || 'Not Logged In';
-    const apiBase = getApiBase();
+    const apiBase = api.getApiBase();
     const pushToken = localStorage.getItem('oma_push_token') || 'None';
     
     const menu = `
