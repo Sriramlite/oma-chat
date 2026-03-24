@@ -5937,15 +5937,18 @@ async function registerPush() {
 
 window.checkPluginStatus = () => {
     try {
+        const allPlugins = (window.Capacitor && window.Capacitor.Plugins) ? Object.keys(window.Capacitor.Plugins) : [];
         const imported = PushNotifications ? Object.keys(PushNotifications) : 'NULL';
         const globalPlat = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) 
             ? Object.keys(window.Capacitor.Plugins.PushNotifications) : 'NULL';
             
-        window.logToDebug("Imported Plugin Keys: " + JSON.stringify(imported));
-        window.logToDebug("Global Plugin Keys: " + JSON.stringify(globalPlat));
+        window.logToDebug("TOTAL Registered Plugins: " + JSON.stringify(allPlugins));
+        window.logToDebug("Imported Push Keys: " + JSON.stringify(imported));
+        window.logToDebug("Global Push Keys: " + JSON.stringify(globalPlat));
         
-        alert("Imported: " + (imported === 'NULL' ? 'NULL' : imported.join(', ')) + 
-              "\n\nGlobal: " + (globalPlat === 'NULL' ? 'NULL' : globalPlat.join(', ')));
+        alert("ALL PLUGINS: " + allPlugins.join(', ') + 
+              "\n\nImported Push: " + (imported === 'NULL' ? 'NULL' : imported.join(', ')) + 
+              "\n\nGlobal Push: " + (globalPlat === 'NULL' ? 'NULL' : globalPlat.join(', ')));
     } catch (e) {
         window.logToDebug("Check failed: " + e.message);
         alert("Check failed: " + e.message);
