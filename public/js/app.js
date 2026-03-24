@@ -5841,6 +5841,11 @@ async function registerPush() {
         // const { PushNotifications } = window.Capacitor.Plugins; // Removed: using import
 
         try {
+            // Enable system-level alerts while the app is in foreground
+            await PushNotifications.setPresentationOptions({
+                presentationOptions: ['badge', 'sound', 'alert'],
+            });
+
             // Remove previous listeners to prevent duplicates
             await PushNotifications.removeAllListeners();
 

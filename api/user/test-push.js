@@ -33,7 +33,18 @@ module.exports = async (req, res) => {
             userData.pushToken,
             "Test Notification 🔔",
             "This is your test message from OMA!",
-            { type: 'test' }
+            { type: 'test' },
+            {
+                android: {
+                    priority: 'high',
+                    notification: {
+                        channelId: 'message_channel',
+                        priority: 'max',
+                        sound: 'message',
+                        visibility: 'public'
+                    }
+                }
+            }
         );
 
         res.json({ success: true, message: 'Notification Sent' });
