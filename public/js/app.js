@@ -5837,13 +5837,20 @@ async function registerPush() {
     window.logToDebug("Push: isNative=" + isNative);
 
     if (isNative) {
+        // Individual Try/Catch blocks for resilience
+        try {
+            await PushNotifications.removeAllListeners();
+            window.logToDebug("Push: Listeners cleared.");
+        } catch (e) { window.logToDebug("Push: removeAllListeners skipped: " + e.message); }
+
         try {
             await PushNotifications.setPresentationOptions({
                 presentationOptions: ['badge', 'sound', 'alert'],
             });
+            window.logToDebug("Push: Presentation options set.");
+        } catch (e) { window.logToDebug("Push: setPresentationOptions failed: " + e.message); }
 
-            await PushNotifications.removeAllListeners();
-
+        try {
             await PushNotifications.createChannel({
                 id: 'call_channel',
                 name: 'Call Notifications',
@@ -5852,7 +5859,6 @@ async function registerPush() {
                 sound: 'calling.mp3',
                 vibration: true
             });
-
             await PushNotifications.createChannel({
                 id: 'message_channel',
                 name: 'Message Notifications',
@@ -5861,16 +5867,18 @@ async function registerPush() {
                 sound: 'message.mp3',
                 vibration: true
             });
+            window.logToDebug("Push: Channels created.");
+        } catch (e) { window.logToDebug("Push: createChannel failed: " + e.message); }
 
+        // Setup Result Listeners
+        try {
             await PushNotifications.addListener('registration', async ({ value }) => {
                 window.logToDebug('Push Token Received: ' + value.substring(0, 15) + '...'); 
                 localStorage.setItem('oma_push_token', value);
                 try {
                     await api.updatePushToken(value);
                     window.logToDebug('Push Token synced to server');
-                } catch (e) {
-                    window.logToDebug('Failed to sync token: ' + e.message);
-                }
+                } catch (e) { window.logToDebug('Failed to sync token: ' + e.message); }
             });
 
             await PushNotifications.addListener('registrationError', (error) => {
@@ -5878,7 +5886,7 @@ async function registerPush() {
             });
 
             await PushNotifications.addListener('pushNotificationReceived', async (notification) => {
-                window.logToDebug('Push Received: ' + notification.title);
+                window.logToDebug('Push Received: ' + (notification.title || "Message"));
                 const data = notification.data || (notification.notification ? notification.notification.data : null);
                 if (data?.type === 'call_offer') {
                     if (window.handleIncomingCall) window.handleIncomingCall(data);
@@ -5886,7 +5894,11 @@ async function registerPush() {
                 }
                 if (state.activeChatId !== data?.chatId) soundManager.play('message');
             });
+            window.logToDebug("Push: Listeners attached.");
+        } catch (e) { window.logToDebug("Push: addListener failed: " + e.message); }
 
+        // Final Permission & Registration
+        try {
             window.logToDebug("Push: Checking permissions..."); 
             let permStatus = await PushNotifications.checkPermissions();
             if (permStatus.receive === 'prompt') {
@@ -5902,8 +5914,7 @@ async function registerPush() {
                 window.logToDebug("Push: Permission denied (" + permStatus.receive + ")");
             }
         } catch (e) {
-            window.logToDebug("Push: Global Failure: " + e.message);
-            console.error("Push registration failed", e);
+            window.logToDebug("Push: Final Stage Failure: " + e.message);
         }
     } else {
         window.logToDebug("Push: Skipping (Non-Native)");
