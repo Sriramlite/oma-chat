@@ -38,8 +38,8 @@ module.exports = async (req, res) => {
                 android: {
                     priority: 'high',
                     notification: {
-                        channel_id: 'message_channel',
-                        priority: 'high',
+                        channelId: 'message_channel',
+                        priority: 'max',
                         sound: 'message',
                         visibility: 'public'
                     }
@@ -50,7 +50,11 @@ module.exports = async (req, res) => {
         res.json({ success: true, message: 'Notification Sent' });
 
     } catch (e) {
-        console.error("Test Push Error:", e);
-        res.status(500).json({ error: 'Server Error: ' + e.message });
+        console.error("Google Auth Verification FULL ERROR:", e);
+        console.error("Token Snippet:", idToken ? idToken.substring(0, 50) : 'NONE');
+        res.status(401).json({
+            error: `Verification failed: ${e.message}`,
+            details: e.message
+        });
     }
 };

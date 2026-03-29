@@ -82,21 +82,20 @@ function updateStateChats(newChatsOrSingle) {
     state.chats = Array.from(chatMap.values());
 }
 
-// --- CACHE HELPERS ---
-const CHAT_CACHE_KEY = 'oma_chat_cache_v1';
+// --- CACHE HELPERS (Optimized: Per-Chat Keys) ---
 function saveChatToCache(chatId, messages) {
+    if (!chatId) return;
     try {
-        const fullCache = JSON.parse(localStorage.getItem(CHAT_CACHE_KEY) || '{}');
-        // Limit to last 50 messages to save space
-        fullCache[chatId] = messages.slice(-50);
-        localStorage.setItem(CHAT_CACHE_KEY, JSON.stringify(fullCache));
+        // Only save last 50 to keep storage small and fast
+        localStorage.setItem(`oma_msg_${chatId}`, JSON.stringify(messages.slice(-50)));
     } catch (e) { console.error("Cache Save Error:", e); }
 }
 
 function loadChatFromCache(chatId) {
+    if (!chatId) return null;
     try {
-        const fullCache = JSON.parse(localStorage.getItem(CHAT_CACHE_KEY) || '{}');
-        return fullCache[chatId] || null;
+        const data = localStorage.getItem(`oma_msg_${chatId}`);
+        return data ? JSON.parse(data) : null;
     } catch (e) { return null; }
 }
 

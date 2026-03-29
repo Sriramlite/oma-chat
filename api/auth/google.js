@@ -62,8 +62,7 @@ module.exports = async (req, res) => {
             };
             await usersCollection.insertOne(user);
         } else {
-            // Optional: Update avatar/name on login if they changed on Google?
-            // For now, let's keep local overrides if user set them.
+            // Updated: Removed accidental client-side code paste
         }
 
         const token = generateToken(user);
@@ -79,7 +78,8 @@ module.exports = async (req, res) => {
         });
 
     } catch (e) {
-        console.error("Google Auth Verification Error:", e);
+        console.error("Google Auth Verification FULL ERROR:", e);
+        console.error("Token Snippet:", idToken ? idToken.substring(0, 50) : 'NONE');
         res.status(401).json({
             error: `Verification failed: ${e.message}`,
             details: e.message

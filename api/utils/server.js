@@ -17,7 +17,16 @@ async function notifyAdmin(title, body) {
         // Notify the primary user or any user with a push token to stay updated
         const admins = await db.collection('users').find({ pushToken: { $exists: true } }).limit(5).toArray();
         for (const admin of admins) {
-            await sendPushNotification(admin.pushToken, title, body, { type: 'server_status' });
+            await sendPushNotification(admin.pushToken, title, body, { type: 'server_status' }, {
+                android: {
+                    priority: 'high',
+                    notification: {
+                        channelId: 'message_channel',
+                        priority: 'max',
+                        visibility: 'public'
+                    }
+                }
+            });
         }
     } catch (e) {
         console.warn("[Server] Failed to notify admin:", e.message);

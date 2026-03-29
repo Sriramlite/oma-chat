@@ -97,8 +97,8 @@ module.exports = async (req, res) => {
                             android: {
                                 priority: 'high',
                                 notification: {
-                                    channelId: 'messages',
-                                    priority: 'high',
+                                    channelId: 'message_channel',
+                                    priority: 'max',
                                     sound: 'message',
                                     visibility: 'public',
                                     defaultVibrateTimings: true
