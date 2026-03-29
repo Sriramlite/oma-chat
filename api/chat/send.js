@@ -104,7 +104,8 @@ module.exports = async (req, res) => {
                                     defaultVibrateTimings: true
                                 }
                             }
-                        }
+                        },
+                        db
                     ).catch(e => console.error("Push Error", e));
                 }
             } catch (notifyErr) {

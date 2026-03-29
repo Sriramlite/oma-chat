@@ -209,11 +209,28 @@ async function init() {
         sync.init();
 
         // One-time Native Permission Request (Android/iOS)
+        // We use standard web APIs which Capacitor bridges to native prompts.
+        // This 'warms up' the permissions so they don't pop up mid-call.
         if (Capacitor.isNativePlatform()) {
-            const Permissions = registerPlugin('Permissions');
-            if (Permissions && Permissions.requestPermissions) {
-                Permissions.requestPermissions(['camera', 'microphone', 'photos']).catch(() => {});
-            }
+            navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+                .then(stream => {
+                    stream.getTracks().forEach(t => t.stop()); // Stop immediately
+                    window.logToDebug("Permissions: Camera/Mic granted and warmed up.");
+                })
+                .catch(err => {
+                    window.logToDebug("Permissions: Hardware check skipped or denied: " + err.message);
+                });
+        }
+
+        // Refresh Push Token on App Resume
+        const App = registerPlugin('App');
+        if (App && App.addListener) {
+            App.addListener('appStateChange', ({ isActive }) => {
+                if (isActive && state.user) {
+                    window.logToDebug("App Resumed: Refreshing Push Token...");
+                    registerPush();
+                }
+            });
         }
 
         // Initialize State defaults

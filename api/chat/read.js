@@ -51,6 +51,9 @@ module.exports = async (req, res) => {
             }
         );
 
+        if (result.modifiedCount > 0) {
+            console.log(`[Read] Chat ${chatId} marked ${result.modifiedCount} messages as SEEN for ${user.username}`);
+        }
         res.status(200).json({ success: true, updated: result.modifiedCount });
     } catch (e) {
         console.error("Read Mark Error:", e);

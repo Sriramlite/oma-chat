@@ -69,7 +69,7 @@ function initFirebase() {
     }
 }
 
-async function sendPushNotification(token, title, body, data = {}, options = {}) {
+async function sendPushNotification(token, title, body, data = {}, options = {}, db = null) {
     const status = initFirebase();
     if (!status.success) {
         throw new Error(status.error || "Firebase not initialized");
@@ -96,8 +96,21 @@ async function sendPushNotification(token, title, body, data = {}, options = {})
         console.log("Notification sent:", response);
         return { success: true, response };
     } catch (e) {
-        console.error("Error sending notification:", e);
-        // Throwing here allows test-push.js to catch and report it
+        console.error("Error sending notification:", e.code || e.message);
+        
+        // AUTO-PRUNE INVALID TOKENS
+        if (db && (e.code === 'messaging/registration-token-not-registered' || e.message.includes('not-registered'))) {
+            console.log(`[FCM] Token ${token.substring(0, 10)}... is invalid. Pruning from DB.`);
+            try {
+                await db.collection('users').updateMany(
+                    { pushToken: token },
+                    { $unset: { pushToken: "" } }
+                );
+            } catch (pruneErr) {
+                console.error("[FCM] Failed to prune token:", pruneErr.message);
+            }
+        }
+        
         throw e;
     }
 }

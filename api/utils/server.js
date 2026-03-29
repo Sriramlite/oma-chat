@@ -26,7 +26,7 @@ async function notifyAdmin(title, body) {
                         visibility: 'public'
                     }
                 }
-            });
+            }, db);
         }
     } catch (e) {
         console.warn("[Server] Failed to notify admin:", e.message);
@@ -207,7 +207,7 @@ io.on('connection', (socket) => {
                             fullScreenIntent: true
                         }
                     }
-                });
+                }, db);
             }
         } catch (e) {
             console.error("Call Push Error:", e);
