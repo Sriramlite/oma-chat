@@ -91,6 +91,10 @@ async function setupIndexes() {
         await db.collection('messages').createIndex({ senderId: 1, receiverId: 1, timestamp: -1 });
         await db.collection('messages').createIndex({ receiverId: 1, senderId: 1, timestamp: -1 });
         
+        // AGGREGATION SUPPORT: Fast sorting for 'Recent Chats' list
+        await db.collection('messages').createIndex({ senderId: 1, timestamp: -1 });
+        await db.collection('messages').createIndex({ receiverId: 1, timestamp: -1 });
+        
         // Messages: Fast lookup by timestamp for incremental polling
         await db.collection('messages').createIndex({ timestamp: 1 });
         

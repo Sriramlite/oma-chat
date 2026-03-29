@@ -87,23 +87,18 @@ module.exports = async (req, res) => {
         // Optimization: Sort by timestamp
         let cursor = messagesCollection.find(query).sort({ timestamp: 1 });
 
-        // Limit if no 'since' provided? (Previous code limited to last 50)
-        // MongoDB implementation: if no since, we probably want the *latest* 50.
-        // So we might need to sort desc, limit 50, then reverse.
-        // Limit if no 'since' provided? (Previous code limited to last 50)
-        // MongoDB implementation: if no since, we probably want the *latest* 50.
-        // So we might need to sort desc, limit 50, then reverse.
+        // Optimized Retrieval: Fetch latest 50 messages directly if no 'since' is provided.
+        // This avoids the 'countDocuments' bottleneck which is slow on large collections.
         let messages = [];
         if (!since) {
-            const count = await messagesCollection.countDocuments(query);
-            if (count > 50) {
-                messages = await messagesCollection.find(query).sort({ timestamp: -1 }).limit(50).toArray();
-                messages.reverse(); // Standard chronological order
-            } else {
-                messages = await messagesCollection.find(query).sort({ timestamp: 1 }).toArray();
-            }
+             // For a fresh chat load, we want the *LATEST* 50 messages.
+             // We sort Descending, take 50, then reverse them for chronological UI.
+             messages = await messagesCollection.find(query).sort({ timestamp: -1 }).limit(50).toArray();
+             messages.reverse();
         } else {
-            messages = await messagesCollection.find(query).sort({ timestamp: 1 }).toArray();
+            // For incremental polling, we want everything *SINCE* the last timestamp.
+            // We limit to 100 to prevent memory spikes if the user was offline for a long time.
+            messages = await messagesCollection.find(query).sort({ timestamp: 1 }).limit(100).toArray();
         }
 
         // Population Logic for Replies

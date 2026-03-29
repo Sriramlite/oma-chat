@@ -254,12 +254,28 @@ async function init() {
 
         // Try loading from DB if empty
         if (state.chats.length === 0) {
+            const overlay = document.getElementById('restoration-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+
             db.getChats().then(c => {
                 if (c && c.length > 0) {
                     state.chats = c;
                     render();
                 }
+            }).finally(() => {
+                if (overlay) {
+                    overlay.style.opacity = '0';
+                    setTimeout(() => overlay.classList.add('hidden'), 500);
+                }
             });
+
+            // Watchdog Timer (Safety)
+            setTimeout(() => {
+                if (overlay && !overlay.classList.contains('hidden')) {
+                    console.warn("Restoration overlay watchdog triggered.");
+                    overlay.classList.add('hidden');
+                }
+            }, 10000); // 10s max
         }
 
         render(); // Initial Render
@@ -895,7 +911,7 @@ async function initFirebaseClient() {
     // In a production app, these should be securely managed or injected during build.
     // If you are testing locally, these can be found in your Firebase Console Project Settings (Web App).
     const config = {
-        apiKey: "AIzaSyDFUVWVEfVEDdaT0idA7_6Eqqu6X337fIE", // Updated from screenshot to ensure Web/Auth parity
+        apiKey: "AIzaSyDFUVWEfVEDdaT0iDA7_6EqqU6X3377fIE",
         authDomain: "oma-chat-a1b8e.firebaseapp.com",
         projectId: "oma-chat-a1b8e",
         storageBucket: "oma-chat-a1b8e.firebasestorage.app",
@@ -2374,11 +2390,10 @@ async function setupChatLogic() {
     if (pollingInterval) clearInterval(pollingInterval);
     if (state.settingsView) return;
 
-    // Start Polling ALWAYS (for Sidebar updates)
+    // Start Polling (with Adaptive Interval)
     const container = document.getElementById('messages-container');
     const form = document.getElementById('msg-form');
-
-    pollingInterval = setInterval(() => pollMessages(container), 3000);
+    window.adjustPolling(container);
 
     const inputEl = document.getElementById('msg-input');
     if (inputEl) {
@@ -2530,11 +2545,26 @@ async function setupChatLogic() {
 
     // Initial Load: Specific Chat History
     try {
+        // SHOW SPINNER if no messages exist yet (fresh load)
+        if (state.messages.length === 0) {
+            container.innerHTML = `
+                <div class="chat-loading-container animate__animated animate__fadeIn">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Fetching messages...</p>
+                </div>`;
+        }
+
         const initialMessages = await api.getHistory(0, state.activeChatId);
         const shouldAnimate = !state.animatedChats.has(state.activeChatId);
 
+        // ALWAYS clear the spinner if we got a response or it's been handled
+        if (state.messages.length === 0) container.innerHTML = '';
+
         if (Array.isArray(initialMessages)) {
             initialMessages.forEach(msg => {
+                // Ensure we don't duplicate if poller beat us
+                if (state.messages.find(m => m.id === msg.id)) return;
+
                 state.messages.push(msg);
 
                 const msgDate = new Date(msg.timestamp).toDateString();
@@ -2556,6 +2586,9 @@ async function setupChatLogic() {
         scrollToBottom(container);
     } catch (e) {
         console.error("Initial load failed", e);
+        if (state.messages.length === 0) {
+            container.innerHTML = `<div style="padding:20px;text-align:center;color:red;">Error loading messages</div>`;
+        }
     }
 
     // Start Polling for New Updates (Global)
@@ -4927,6 +4960,9 @@ function initSocket() {
                 console.log('[Client] Joining Room:', state.user.user.id);
                 socket.emit('join', state.user.user.id);
             }
+            
+            // Adaptive Polling: Slow down when connected
+            window.adjustPolling();
         });
 
         // Online Status Events
@@ -4991,6 +5027,9 @@ function initSocket() {
         socket.on('disconnect', () => {
             console.log('Socket Disconnected');
             document.documentElement.style.setProperty('--connection-status', '#ef4444'); // Red
+            
+            // Adaptive Polling: Speed up for recovery
+            window.adjustPolling();
         });
 
         socket.on('connect_error', (err) => {
@@ -5173,6 +5212,21 @@ function initSocket() {
         console.error("Socket Init Failed", e);
     }
 }
+
+// Adaptive Polling Logic for Mobile Performance
+window.adjustPolling = (specificContainer = null) => {
+    if (pollingInterval) clearInterval(pollingInterval);
+    
+    const isSocketConnected = socket && socket.connected;
+    const interval = isSocketConnected ? 30000 : 3000; // 30s if connected, 3s if disconnected
+    
+    console.log(`[Sync] Adjusting polling interval to ${interval}ms (Socket connected: ${isSocketConnected})`);
+
+    pollingInterval = setInterval(() => {
+        const container = specificContainer || document.getElementById('messages-container');
+        pollMessages(container);
+    }, interval);
+};
 
 // --- Notification Manager ---
 window.initNotificationManager = async () => {

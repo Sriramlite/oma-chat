@@ -1,0 +1,18 @@
+Implement Call notifications with answer/end buttons (like whatsapp)
+Fix emoji button in chat like it wont show the emoji picker.
+GIF sends twices in messages.
+Video call ui (in app answer/dicline) not showing , maybe its showing behind the view ,check voice call for reference.
+make sure all photos sent in the chat are shown with in the display area. (like in whatsapp)
+also for videos , in app video player.
+Check all posibile navigations that works correctly with android back button.
+check all login related things.
+check all account creation things.
+make sure email login works correctly , implement a option (Magic Link or Otp via email)
+Make the project folder structure more organized.
+make sure all the features are working correctly.
+Get permission for notification,camera,storage,bluetooth,location,microphone.
+after opening chat ,it wont mark the chat as read.
+the downloaded media file have to save in the device data , can be reopened when needed , when redownload when the file gets deleted from the device
+chat can be deleted independently.
+refine call controls , earpiece default in voice call , speaker in video call. (speaker can be switchable)
+High quality voice call.

@@ -1,0 +1,17 @@
+PS D:\Program Files\Xampp\htdocs\oma\android> keytool -list -v -keystore $HOME/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+Alias name: androiddebugkey
+Creation date: 24 Mar 2026
+Entry type: PrivateKeyEntry
+Certificate chain length: 1
+Certificate[1]:
+Owner: C=US, O=Android, CN=Android Debug
+Issuer: C=US, O=Android, CN=Android Debug
+Serial number: 1
+Valid from: Tue Mar 24 10:10:48 IST 2026 until: Thu Mar 16 10:10:48 IST 2056
+Certificate fingerprints:
+         SHA1: C1:7A:B6:06:DF:27:0F:77:B6:46:F5:0F:4C:F8:7B:41:86:7F:3F:CA
+         SHA256: 3B:8C:27:16:68:1E:3F:50:58:FD:5E:51:AE:D2:39:0D:CB:09:8A:22:56:18:E8:98:25:16:33:DA:F1:11:CB:6F
+Signature algorithm name: SHA256withRSA
+Subject Public Key Algorithm: 2048-bit RSA key
+Version: 1
+PS D:\Program Files\Xampp\htdocs\oma\android> 
