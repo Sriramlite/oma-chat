@@ -212,14 +212,18 @@ async function init() {
         // We use standard web APIs which Capacitor bridges to native prompts.
         // This 'warms up' the permissions so they don't pop up mid-call.
         if (Capacitor.isNativePlatform()) {
-            navigator.mediaDevices.getUserMedia({ audio: true, video: true })
-                .then(stream => {
-                    stream.getTracks().forEach(t => t.stop()); // Stop immediately
-                    window.logToDebug("Permissions: Camera/Mic granted and warmed up.");
-                })
-                .catch(err => {
-                    window.logToDebug("Permissions: Hardware check skipped or denied: " + err.message);
-                });
+            // Simplified check: only request if the browser doesn't already have them for this session
+            navigator.mediaDevices.getUserMedia({ 
+                audio: true, 
+                video: { width: 10, height: 10 } // low res dummy for small footprint
+            })
+            .then(stream => {
+                stream.getTracks().forEach(t => t.stop()); // Stop immediately
+                window.logToDebug("Permissions: Camera/Mic granted and warmed up.");
+            })
+            .catch(err => {
+                window.logToDebug("Permissions: Hardware check skipped: " + err.message);
+            });
         }
 
         // Refresh Push Token on App Resume
@@ -4406,11 +4410,13 @@ window.openChat = async (chatId) => {
     // Just update hash, let render() handle state
     window.location.hash = '#chat/' + chatId;
 
-    // Mark as Read in State
+    // Mark as Read in State (INSTANT UI CLEAR)
     const chatIndex = state.chats.findIndex(c => c.id === chatId);
     if (chatIndex !== -1) {
         state.chats[chatIndex].unreadCount = 0;
+        state.chats[chatIndex].unread = false;
         localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+        render(); // Re-render sidebar to clear the dot instantly
     }
 
     // Mark as Read in Backend
