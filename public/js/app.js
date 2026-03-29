@@ -82,6 +82,24 @@ function updateStateChats(newChatsOrSingle) {
     state.chats = Array.from(chatMap.values());
 }
 
+// --- CACHE HELPERS ---
+const CHAT_CACHE_KEY = 'oma_chat_cache_v1';
+function saveChatToCache(chatId, messages) {
+    try {
+        const fullCache = JSON.parse(localStorage.getItem(CHAT_CACHE_KEY) || '{}');
+        // Limit to last 50 messages to save space
+        fullCache[chatId] = messages.slice(-50);
+        localStorage.setItem(CHAT_CACHE_KEY, JSON.stringify(fullCache));
+    } catch (e) { console.error("Cache Save Error:", e); }
+}
+
+function loadChatFromCache(chatId) {
+    try {
+        const fullCache = JSON.parse(localStorage.getItem(CHAT_CACHE_KEY) || '{}');
+        return fullCache[chatId] || null;
+    } catch (e) { return null; }
+}
+
 const soundManager = {
     sounds: {
         ringtone: new Audio(`sounds/ringtone.mp3?v=${Date.now()}`),
@@ -2380,9 +2398,20 @@ async function setupChatLogic() {
     }
 
     if (!form || !container) return; // If no chat UI, stop here (don't bind form)
+    
+    // 1. INSTANT RENDER FROM CACHE
+    const cached = loadChatFromCache(state.activeChatId);
+    if (cached && cached.length > 0) {
+        state.messages = cached;
+        container.innerHTML = '';
+        state.messages.forEach(msg => appendMessage(msg, container));
+        scrollToBottom(container);
+        window.logToDebug("Chat: Loaded from cache (" + cached.length + ")");
+    }
 
-    // Render local messages if any (rare since we clear state.messages, but ok)
-    state.messages.forEach(msg => appendMessage(msg, container));
+    // 2. Initial Fetch (already happens in setupChatLogic usually, but optimized here if needed)
+    // Actually, pollMessages will run immediately and sync the rest.
+
     scrollToBottom(container);
 
     let isSending = false; // Prevents double sending
@@ -2481,6 +2510,8 @@ async function setupChatLogic() {
                     if (tick) tick.innerHTML = '<i class="fas fa-check" style="color:rgba(255,255,255,0.5);"></i>';
                 }
             }
+            // Update Cache
+            saveChatToCache(state.activeChatId, state.messages);
         } catch (e) {
             console.error("Send failed", e);
             // Optionally remove temp message or show error
@@ -2515,6 +2546,8 @@ async function setupChatLogic() {
 
                 if (msg.timestamp > lastTimestamp) lastTimestamp = msg.timestamp;
             });
+            // Update Cache
+            saveChatToCache(state.activeChatId, state.messages);
         }
 
         if (initialMessages.length > 0) {
@@ -2638,6 +2671,11 @@ async function pollMessages(container) {
                         needsReadAck = true;
                     }
                 });
+                
+                if (activeUpdates && activeUpdates.length > 0) {
+                    // Update Cache
+                    saveChatToCache(state.activeChatId, state.messages);
+                }
 
                 if (activeContainer) {
                     // Only scroll if we added new messages
