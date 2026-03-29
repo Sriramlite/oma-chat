@@ -208,6 +208,14 @@ async function init() {
         // Initialize Offline Sync
         sync.init();
 
+        // One-time Native Permission Request (Android/iOS)
+        if (Capacitor.isNativePlatform()) {
+            const Permissions = registerPlugin('Permissions');
+            if (Permissions && Permissions.requestPermissions) {
+                Permissions.requestPermissions(['camera', 'microphone', 'photos']).catch(() => {});
+            }
+        }
+
         // Initialize State defaults
         state.chatFilter = 'global';
         state.nearby = state.nearby || { peers: [], messages: [] };
@@ -2764,22 +2772,8 @@ async function pollMessages(container) {
                 }
 
                 // 1. Logic for Active Chat Window
-                // Show if it belongs to current active chat OR if it's general and we are in general
-                const isForActiveChat =
-                    (state.activeChatId === 'general' && msg.receiverId === 'general') ||
-                    (state.activeChatId !== 'general' && (
-                        (msg.senderId == state.activeChatId && msg.receiverId == state.user.user.id) ||
-                        (msg.senderId == state.user.user.id && msg.receiverId == state.activeChatId)
-                    ));
-
-                if (isForActiveChat) {
-                    if (!state.messages.find(m => m.id == msg.id)) {
-                        state.messages.push(msg);
-                        // Robustness: Get fresh container reference
-                        const activeContainer = document.getElementById('messages-container');
-                        if (activeContainer) appendMessage(msg, activeContainer);
-                    }
-                }
+                // [DEPRECATED] Moved to dedicated Active Poll for strict context protection.
+                // We NO LONGER append to messages-container here to prevent cross-chat leakage.
 
                 // 2. Logic for Sidebar (Recent Chats)
                 const isGroupMsg = msg.receiverId !== state.user.user.id && msg.receiverId !== 'general' && msg.senderId !== state.user.user.id;
@@ -2953,6 +2947,16 @@ function getChatDateHeader(timestamp) {
 
 function appendMessage(msg, container, dateHeader = null, animate = true) {
     if (!container) return;
+
+    // [STRICT CONTEXT] Ensure we don't leak messages between chats
+    // Compare sender/receiver against active state
+    const isGeneral = state.activeChatId === 'general';
+    const msgBelongsHere = isGeneral ? (msg.receiverId === 'general') : (msg.senderId === state.activeChatId || msg.receiverId === state.activeChatId);
+    
+    if (!msgBelongsHere) {
+        console.warn("[Context] Prevented cross-chat leakage for msg:", msg.id);
+        return;
+    }
 
     // Render Date Header
     if (dateHeader) {
@@ -5141,8 +5145,20 @@ function initSocket() {
             // 2. Active Chat Update
             if (state.activeChatId === msg.receiverId || state.activeChatId === msg.senderId || (msg.receiverId === 'general' && state.activeChatId === 'general')) {
                 // We are looking at this chat
-                const container = document.getElementById('messages-container');
                 if (container) {
+                    // [STRICT CONTEXT] Verify this message actually belongs to the OPEN chat
+                    const isForActiveChat = 
+                        (state.activeChatId === 'general' && msg.receiverId === 'general') ||
+                        (state.activeChatId !== 'general' && (
+                            (msg.senderId == state.activeChatId && msg.receiverId == state.user.user.id) ||
+                            (msg.senderId == state.user.user.id && msg.receiverId == state.activeChatId) ||
+                            (msg.receiverId === state.activeChatId) // Group support
+                        ));
+
+                    if (!isForActiveChat) {
+                        console.log("[Socket] Ignoring message for inactive chat:", msg.senderId);
+                        return;
+                    }
                     // DUPLICATION FIX:
                     // If I sent this, check if we have a pending/optimistic message for it via Content/Timestamp linkage?
                     // Or simpler: If I am the sender, and I see a "sending" bubble, assumes it's this one.
