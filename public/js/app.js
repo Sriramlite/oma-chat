@@ -2975,9 +2975,11 @@ function appendMessage(msg, container, dateHeader = null, animate = true) {
 
     let contentHtml = `<div class="msg-content">${msg.content}</div>`;
     if (msg.type === 'image') {
-        contentHtml = `<img src="${msg.content}" class="msg-image" onclick="window.openMediaViewer('${msg.content}', 'image')" style="cursor:pointer;">`;
+        const cachedUrl = window.getCachedMediaUrlSync ? window.getCachedMediaUrlSync(msg.content) : msg.content;
+        contentHtml = `<img src="${cachedUrl}" data-original="${msg.content}" class="msg-image cached-media" onclick="window.openMediaViewer('${msg.content}', 'image')" style="cursor:pointer;">`;
     } else if (msg.type === 'video') {
-        contentHtml = `<video src="${msg.content}" controls class="msg-video"></video>`;
+        const cachedUrl = window.getCachedMediaUrlSync ? window.getCachedMediaUrlSync(msg.content) : msg.content;
+        contentHtml = `<video src="${cachedUrl}" data-original="${msg.content}" controls class="msg-video cached-media"></video>`;
     } else if (msg.type === 'file') {
         let fileData = {};
         try {
@@ -3000,6 +3002,7 @@ function appendMessage(msg, container, dateHeader = null, animate = true) {
     } else if (msg.type === 'audio') {
         // Voice Message
         const audioId = 'audio-' + msg.id;
+        const cachedUrl = window.getCachedMediaUrlSync ? window.getCachedMediaUrlSync(msg.content) : msg.content;
         contentHtml = `
             <div class="voice-msg" id="vm-${msg.id}">
                 <button class="play-voice-btn" onclick="window.playVoice('${audioId}', '${msg.id}')">
@@ -3009,13 +3012,14 @@ function appendMessage(msg, container, dateHeader = null, animate = true) {
                     <div class="voice-progress-bar" id="vp-${msg.id}"></div>
                 </div>
                 <span class="voice-duration" id="vd-${msg.id}">0:00</span>
-                <audio id="${audioId}" src="${msg.content}" preload="metadata"
+                <audio id="${audioId}" src="${cachedUrl}" data-original="${msg.content}" preload="metadata" class="cached-media"
                     onloadedmetadata="window.setVoiceDuration('${msg.id}', this.duration)"></audio>
             </div>
         `;
     } else if (msg.type === 'gif') {
         // GIF Message
-        contentHtml = `<img src="${msg.content}" class="msg-gif" onclick="window.openMediaViewer('${msg.content}', 'image')" style="cursor:pointer;">`;
+        const cachedUrl = window.getCachedMediaUrlSync ? window.getCachedMediaUrlSync(msg.content) : msg.content;
+        contentHtml = `<img src="${cachedUrl}" data-original="${msg.content}" class="msg-gif cached-media" onclick="window.openMediaViewer('${msg.content}', 'image')" style="cursor:pointer;">`;
     } else if (msg.type === 'call_log') {
         // Call Status Message — render as centered system-style message with icon
         let callIcon = 'fa-phone';
