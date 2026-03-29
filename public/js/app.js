@@ -2537,23 +2537,22 @@ async function setupChatLogic() {
         }
     };
 
+    // 1. CLEAR ONLY IF EMPTY (Reset state for the new chat, unless we have cache)
     lastTimestamp = 0;
-    state.messages = [];
-    container.innerHTML = '';
-
     let lastRenderedDate = '';
+
+    // If we have messages already (from Cache-First at line 2417), we DON'T clear the container.
+    // If we DON'T have messages, we show the Fetching spinner.
+    if (state.messages.length === 0) {
+        container.innerHTML = `
+            <div class="chat-loading-container animate__animated animate__fadeIn">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Fetching messages...</p>
+            </div>`;
+    }
 
     // Initial Load: Specific Chat History
     try {
-        // SHOW SPINNER if no messages exist yet (fresh load)
-        if (state.messages.length === 0) {
-            container.innerHTML = `
-                <div class="chat-loading-container animate__animated animate__fadeIn">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Fetching messages...</p>
-                </div>`;
-        }
-
         const initialMessages = await api.getHistory(0, state.activeChatId);
         const shouldAnimate = !state.animatedChats.has(state.activeChatId);
 
@@ -5178,8 +5177,10 @@ function initSocket() {
                     }
 
                     // Check if already exists (my own message via optimism that already finished)
-                    const existing = document.getElementById(`msg-${msg.id}`);
                     if (!existing) {
+                        state.messages.push(msg);
+                        saveChatToCache(state.activeChatId, state.messages); // Persist immediately
+                        
                         appendMessage(msg, container);
                         scrollToBottom(container);
 
