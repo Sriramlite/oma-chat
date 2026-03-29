@@ -26,6 +26,7 @@
     "@capacitor/core": "^8.0.1",
     "@capacitor/device": "^8.0.0",
     "@capacitor/haptics": "^8.0.0",
+    "@capacitor/local-notifications": "^8.0.2",
     "@capacitor/push-notifications": "^8.0.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",

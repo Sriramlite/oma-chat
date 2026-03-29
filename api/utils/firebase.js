@@ -29,12 +29,22 @@ function initFirebase() {
             // FALLBACK TO JSON STRING
             console.log("Using JSON Firebase Environment Variable");
             try {
-                serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+                // Strip surrounding single or double quotes if present (common .env mistake)
+                let rawJson = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
+                if ((rawJson.startsWith("'") && rawJson.endsWith("'")) ||
+                    (rawJson.startsWith('"') && rawJson.endsWith('"'))) {
+                    rawJson = rawJson.slice(1, -1);
+                }
+                serviceAccount = JSON.parse(rawJson);
                 if (serviceAccount.private_key) {
-                    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+                    // Handle both single-escaped \n and double-escaped \\n
+                    serviceAccount.private_key = serviceAccount.private_key
+                        .replace(/\\\\n/g, '\n')  // double-escaped: \\n -> newline
+                        .replace(/\\n/g, '\n');    // single-escaped: \n -> newline
                 }
             } catch (parseErr) {
-                initError = "Configuration Error: Invalid JSON in FIREBASE_SERVICE_ACCOUNT.";
+                initError = "Configuration Error: Invalid JSON in FIREBASE_SERVICE_ACCOUNT. Raw: " + 
+                    (process.env.FIREBASE_SERVICE_ACCOUNT || '').substring(0, 50);
                 console.error(parseErr);
                 return { success: false, error: initError };
             }
@@ -66,12 +76,18 @@ async function sendPushNotification(token, title, body, data = {}, options = {})
     }
 
     try {
+        // FCM requires all data values to be strings
+        const stringifiedData = {};
+        for (const [key, val] of Object.entries(data || {})) {
+            stringifiedData[key] = String(val);
+        }
+
         const message = {
             notification: {
                 title: title,
                 body: body
             },
-            data: data,
+            data: stringifiedData,
             token: token,
             ...options // Mix in android/apns specific options
         };

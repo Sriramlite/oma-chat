@@ -80,4 +80,28 @@ function getDb() {
     return dbInstance;
 }
 
-module.exports = { connectToDatabase, getDb, client };
+async function setupIndexes() {
+    if (!dbInstance) await connectToDatabase();
+    
+    try {
+        console.log("Setting up MongoDB Indexes...");
+        const db = dbInstance;
+        
+        // Messages: Compound index for history lookup (sender + receiver + time)
+        await db.collection('messages').createIndex({ senderId: 1, receiverId: 1, timestamp: -1 });
+        await db.collection('messages').createIndex({ receiverId: 1, senderId: 1, timestamp: -1 });
+        
+        // Messages: Fast lookup by timestamp for incremental polling
+        await db.collection('messages').createIndex({ timestamp: 1 });
+        
+        // Users: Lookup by ID and Username (removed unique to avoid blocking on duplicates)
+        await db.collection('users').createIndex({ id: 1 });
+        await db.collection('users').createIndex({ username: 1 });
+        
+        console.log("MongoDB Indexes verified/created successfully.");
+    } catch (e) {
+        console.error("Index Setup Warning (some may already exist or contain duplicates):", e.message);
+    }
+}
+
+module.exports = { connectToDatabase, getDb, setupIndexes, client };

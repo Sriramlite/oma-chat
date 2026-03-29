@@ -5,7 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const { connectToDatabase } = require('./db'); // Import DB connection
+const { connectToDatabase, setupIndexes } = require('./db'); // Import DB connection
 const rateLimit = require('express-rate-limit');
 
 const app = express();
@@ -321,14 +321,18 @@ const gracefulShutdown = async (signal) => {
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
-connectToDatabase().then(() => {
-    server.listen(PORT, () => {
-        console.log(`\nLocal Development Server Running!`);
-        console.log(`- Frontend: http://localhost:${PORT}`);
-        console.log(`- API:      http://localhost:${PORT}/api/...`);
-        console.log(`- MongoDB:  Connected`);
+// Connect to MongoDB
+connectToDatabase()
+    .then(() => setupIndexes()) // Ensure indexes are ready
+    .then(() => {
+        server.listen(PORT, () => {
+            console.log(`\nLocal Development Server Running!`);
+            console.log(`- Frontend: http://localhost:${PORT}`);
+            console.log(`- API:      http://localhost:${PORT}/api/...`);
+            console.log(`- MongoDB:  Connected`);
+        });
+    })
+    .catch(err => {
+        console.error("Critical MongoDB failure:", err);
+        process.exit(1);
     });
-}).catch(err => {
-    console.error("Failed to connect to MongoDB, exiting...", err);
-    process.exit(1);
-});

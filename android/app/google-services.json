@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "836902266336-15p7t6rca7q30pn9v17e0r7rssp16e22.apps.googleusercontent.com",
+          "client_id": "836902266336-5u9ddb0kj4seq05uknmm029tlbjvpjtv.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.oma.chat",
-            "certificate_hash": "1b63de1932526461b83582a8a4424f3dbd26e467"
+            "certificate_hash": "c17ab606df270f77b646f50f4cf87b41867f3fca"
           }
         },
         {

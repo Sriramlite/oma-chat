@@ -878,7 +878,7 @@ async function initFirebaseClient() {
     // In a production app, these should be securely managed or injected during build.
     // If you are testing locally, these can be found in your Firebase Console Project Settings (Web App).
     const config = {
-        apiKey: "AIzaSyCayOHaR17jUU2dcKXzq89awvC7avWy06k", // Consistent with google-services.json and user links
+        apiKey: "AIzaSyDFUVWVEfVEDdaT0idA7_6Eqqu6X337fIE", // Updated from screenshot to ensure Web/Auth parity
         authDomain: "oma-chat-a1b8e.firebaseapp.com",
         projectId: "oma-chat-a1b8e",
         storageBucket: "oma-chat-a1b8e.firebasestorage.app",
@@ -2503,17 +2503,19 @@ async function setupChatLogic() {
         const initialMessages = await api.getHistory(0, state.activeChatId);
         const shouldAnimate = !state.animatedChats.has(state.activeChatId);
 
-        initialMessages.forEach(msg => {
-            state.messages.push(msg);
+        if (Array.isArray(initialMessages)) {
+            initialMessages.forEach(msg => {
+                state.messages.push(msg);
 
-            const msgDate = new Date(msg.timestamp).toDateString();
-            const header = msgDate !== lastRenderedDate ? getChatDateHeader(msg.timestamp) : null;
-            if (header) lastRenderedDate = msgDate; // Update tracker
+                const msgDate = new Date(msg.timestamp).toDateString();
+                const header = msgDate !== lastRenderedDate ? getChatDateHeader(msg.timestamp) : null;
+                if (header) lastRenderedDate = msgDate; // Update tracker
 
-            appendMessage(msg, container, header, shouldAnimate);
+                appendMessage(msg, container, header, shouldAnimate);
 
-            if (msg.timestamp > lastTimestamp) lastTimestamp = msg.timestamp;
-        });
+                if (msg.timestamp > lastTimestamp) lastTimestamp = msg.timestamp;
+            });
+        }
 
         if (initialMessages.length > 0) {
             state.animatedChats.add(state.activeChatId);
@@ -2587,9 +2589,9 @@ async function pollMessages(container) {
         // 1. DEDICATED ACTIVE CHAT POLL (Auto-Refresh)
         // This ensures the current view is always up to date relative to itself.
         if (state.activeChatId) {
-            // BRUTE FORCE SYNC: Always fetch last 50 messages to ensure we don't miss anything due to timestamp skew
-            // Deduplication below handles the rest.
-            const since = 0;
+            // INCREMENTAL SYNC: Only fetch messages newer than what we have.
+            // If we have no messages, fetch everything (since=0).
+            const since = (state.messages.length > 0) ? Math.max(...state.messages.map(m => m.timestamp)) : 0;
 
             // Explicitly fetch ONLY generic or direct messages for this chat
             // Note: getHistory handles the 'general' vs ID logic
@@ -5904,6 +5906,28 @@ async function registerPush() {
             await Push.addListener('pushNotificationReceived', async (notification) => {
                 window.logToDebug('Push Received: ' + (notification.title || "Message"));
                 const data = notification.data || (notification.notification ? notification.notification.data : null);
+
+                // CROSS-PLATFORM FOREGROUND BANNERS:
+                // Android doesn't show banners natively when app is in foreground.
+                // We use LocalNotifications plugin to "relay" the push into a visible banner.
+                try {
+                    const Loc = window.Capacitor.Plugins.LocalNotifications;
+                    if (Loc) {
+                        await Loc.schedule({
+                            notifications: [{
+                                title: notification.title || "New Message",
+                                body: notification.body || "You have a new message",
+                                id: Math.floor(Date.now() / 1000),
+                                schedule: { at: new Date(Date.now() + 100) }, // basically now
+                                extra: data,
+                                channelId: 'message_channel',
+                                smallIcon: 'ic_stat_name' // or similar
+                            }]
+                        });
+                        window.logToDebug('Push: Foreground banner scheduled.');
+                    }
+                } catch (e) { window.logToDebug('Push: Local relay failed: ' + e.message); }
+
                 if (data?.type === 'call_offer') {
                     if (window.handleIncomingCall) window.handleIncomingCall(data);
                     return;
@@ -5926,6 +5950,13 @@ async function registerPush() {
                 window.logToDebug("Push: Calling register()...");
                 await Push.register();
                 window.logToDebug("Push: register() called. Awaiting token...");
+
+                // Also Ensure LocalNotifications permit for foreground banners
+                try {
+                    const Loc = window.Capacitor.Plugins.LocalNotifications;
+                    if (Loc) await Loc.requestPermissions();
+                } catch (pe) { window.logToDebug("Push: Loc perm request failed: " + pe.message); }
+
             } else {
                 window.logToDebug("Push: Permission denied (" + permStatus.receive + ")");
             }

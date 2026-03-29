@@ -121,7 +121,7 @@ module.exports = async (req, res) => {
                 m.replyTo = replyMap[m.replyToId];
             }
             // Calculate Starred for this user
-            m.isStarred = m.starredBy && m.starredBy.includes(user.id);
+            m.isStarred = Array.isArray(m.starredBy) && m.starredBy.includes(user.id);
         });
 
         res.status(200).json(messages);
