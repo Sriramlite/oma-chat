@@ -1558,30 +1558,47 @@ window.loadCallHistory = async () => {
 };
 
 function renderContactsView() {
-    // Placeholder for Contacts (Reuse Search Logic potentially?)
+    // If we have no users yet, fetch them (silent background fetch)
+    if (!state.allUsers || state.allUsers.length === 0) {
+        if (!state.isFetchingUsers) {
+            state.isFetchingUsers = true;
+            api.getUsers().then(users => {
+                state.allUsers = users;
+                state.isFetchingUsers = false;
+                render(); // Re-render with users
+            }).catch(e => {
+                console.error("Failed to load contacts", e);
+                state.isFetchingUsers = false;
+            });
+        }
+        return `<div style="padding:40px;text-align:center;color:grey;">
+            <div class="pull-indicator" style="display:block;opacity:1;margin-bottom:10px;"><i class="fas fa-spinner fa-spin"></i></div>
+            Loading contacts...
+        </div>`;
+    }
+
+    const listToRender = state.isSearching ? state.searchResults : state.allUsers;
+
     return `
         <div class="sidebar-header"><h3>Contacts</h3></div>
         <div class="sidebar-search">
              <div class="search-wrapper">
                 <i class="fas fa-search search-icon"></i>
-                <input type="text" placeholder="Search users..." oninput="window.handleSearch(this.value)">
+                <input type="text" placeholder="Search users..." value="${state.lastSearchQuery || ''}" oninput="window.handleSearch(this.value)">
              </div>
         </div>
          <div class="chat-list" id="chat-list">
-            ${state.isSearching ?
-            state.searchResults.map(u => `
+            ${listToRender.length > 0 ?
+            listToRender.map(u => `
                     <div class="chat-item" onclick="window.openChat('${u.id}')">
                          <img src="${getAvatarUrl(u)}" onerror="window.handleImageError(this, '${(u.name || u.username || 'User').replace(/'/g, "\\'")}')">
-                            <div class="msg-image-container" onclick="window.openMediaViewer('${u.avatar}', 'image')">
-                                <img src="${u.avatar}" alt="Image" style="cursor:pointer;">
-                            </div>
                         <div class="chat-info">
                             <h4>${u.name}</h4>
                             <p>@${u.username}</p>
                         </div>
                     </div>
                 `).join('')
-            : `<div style="padding:40px;text-align:center;color:grey;">Start typing to find people...</div>`
+            : `<div style="padding:40px;text-align:center;color:grey;">${state.isSearching ? 'No users found' : 'No contacts yet'}</div>`
         }
          </div>
     `;
@@ -3553,7 +3570,11 @@ window.handleSearch = async (query) => {
     try {
         const results = await api.searchUsers(query);
         state.searchResults = results;
-        if (window.refreshSidebar) window.refreshSidebar();
+        // Optimization: Ensure we are still searching when result arrives
+        if (state.isSearching) {
+            if (window.refreshSidebar) window.refreshSidebar();
+            else render();
+        }
     } catch (e) {
         console.error(e);
     }

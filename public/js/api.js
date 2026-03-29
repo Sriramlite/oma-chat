@@ -149,7 +149,8 @@ export const api = {
         }
         return res;
     },
-    searchUsers: (q) => request(`/users/search?q=${encodeURIComponent(q)}`, 'GET'),
+    searchUsers: (q) => request(`/user/search?q=${encodeURIComponent(q)}`, 'GET'),
+    getUsers: () => request('/user/list', 'GET'),
     updateProfile: (data) => request('/user/update', 'POST', data),
 
     async deleteChat(chatId) {
