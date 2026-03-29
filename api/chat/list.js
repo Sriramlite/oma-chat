@@ -67,7 +67,14 @@ module.exports = async (req, res) => {
             { $limit: 40 } // Limit to 40 recent partners for initial load
         ];
 
+        const startTime = Date.now();
         const results = await messagesCollection.aggregate(pipeline).toArray();
+        const duration = Date.now() - startTime;
+        
+        if (duration > 100) {
+            console.warn(`[Performance] Chat List Aggregation took ${duration}ms for User ${user.id}`);
+        }
+
         res.status(200).json(results);
     } catch (e) {
         console.error("Chat List Error:", e);
