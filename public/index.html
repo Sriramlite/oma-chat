@@ -20,6 +20,62 @@
             const seed = name || 'User';
             img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(seed)}&background=random`;
         };
+
+        window.syncChats = () => {
+            const statusEl = document.getElementById('restoration-status');
+            if (statusEl) statusEl.textContent = "Connecting to secure message vault...";
+
+            Promise.all([api.getGroups(), api.getRecentChats()])
+                .then(([groups, recentDMs]) => {
+                    if (statusEl) statusEl.textContent = "Decrypting conversation headers...";
+                    const allFetched = [];
+                    
+                    // Add "General Group" as a baseline if it doesn't exist
+                    allFetched.push({ 
+                        id: 'general', 
+                        name: 'General Group', 
+                        lastMsg: 'Tap to chat', 
+                        avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', 
+                        timestamp: 0,
+                        type: 'group'
+                    });
+
+                    if (Array.isArray(groups)) {
+                        groups.forEach(g => allFetched.push({ ...g, type: 'group' }));
+                    }
+                    if (Array.isArray(recentDMs)) {
+                        recentDMs.forEach(d => allFetched.push({ ...d, type: 'user' }));
+                    }
+
+                    // Standardize fields: ensure timestamp is a number and lastMsg is set
+                    const standardized = allFetched.map(c => ({
+                        ...c,
+                        timestamp: Number(c.timestamp || c.lastTimestamp || c.created || 0),
+                        lastMsg: c.lastMsg || (c.type === 'group' ? 'Group created' : ''),
+                        time: c.time || (c.timestamp ? new Date(Number(c.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')
+                    }));
+
+                    updateStateChats(standardized);
+                    
+                    // Final sort and save
+                    state.chats.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+                    if (window.refreshSidebar) window.refreshSidebar();
+                })
+                .catch(e => {
+                    console.error("Failed to sync chats:", e);
+                    // Even on error, ensure General is there
+                    updateStateChats([{ 
+                        id: 'general', 
+                        name: 'General Group', 
+                        lastMsg: 'Chat online', 
+                        avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', 
+                        timestamp: 0,
+                        type: 'group'
+                    }]);
+                    render();
+                });
+        };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.18.3/index.js" type="module"></script>
 </head>
@@ -133,8 +189,8 @@
     <div id="restoration-overlay" class="restoration-overlay hidden">
         <div class="restoration-content">
             <i class="fas fa-sync fa-spin"></i>
-            <h2>Restoring Your Data</h2>
-            <p>Syncing your encrypted messages from the secure database. This will only take a moment...</p>
+            <h2>Restoring Your Messages</h2>
+            <p id="restoration-status">Syncing your encrypted data from the secure database. This will only take a moment...</p>
         </div>
     </div>
     <!-- Firebase SDKs -->

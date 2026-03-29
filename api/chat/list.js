@@ -42,7 +42,7 @@ module.exports = async (req, res) => {
                     as: "partner"
                 }
             },
-            { $unwind: "$partner" },
+            { $unwind: { path: "$partner", preserveNullAndEmptyArrays: true } },
             { 
                 $project: {
                     _id: 0,
@@ -56,11 +56,11 @@ module.exports = async (req, res) => {
                     },
                     timestamp: "$lastMsgObj.timestamp",
                     type: { $literal: "user" },
-                    name: "$partner.name",
-                    username: "$partner.username",
-                    avatar: "$partner.avatar",
-                    status: "$partner.status",
-                    lastSeen: "$partner.lastSeen"
+                    name: { $ifNull: ["$partner.name", "Oma User"] },
+                    username: { $ifNull: ["$partner.username", "oma.user"] },
+                    avatar: { $ifNull: ["$partner.avatar", "https://ui-avatars.com/api/?name=User&background=6366f1&color=fff"] },
+                    status: { $ifNull: ["$partner.status", "offline"] },
+                    lastSeen: { $ifNull: ["$partner.lastSeen", 0] }
                 }
             },
             { $sort: { timestamp: -1 } },

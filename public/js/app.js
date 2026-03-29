@@ -4781,8 +4781,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Fetch Groups and Recent DMs from Server
     if (state.user) {
+        const statusEl = document.getElementById('restoration-status');
+        if (statusEl) statusEl.textContent = "Connecting to secure message vault...";
+
         Promise.all([api.getGroups(), api.getRecentChats()])
             .then(([groups, recentDMs]) => {
+                if (statusEl) statusEl.textContent = "Decrypting conversation headers...";
                 const allFetched = [];
                 
                 // Add "General Group" as a baseline if it doesn't exist
@@ -4817,7 +4821,19 @@ window.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('oma_chats', JSON.stringify(state.chats));
                 if (window.refreshSidebar) window.refreshSidebar();
             })
-            .catch(e => console.error("Failed to sync chats:", e));
+            .catch(e => {
+                console.error("Failed to sync chats:", e);
+                // Even on error, ensure General is there
+                updateStateChats([{ 
+                    id: 'general', 
+                    name: 'General Group', 
+                    lastMsg: 'Chat online', 
+                    avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', 
+                    timestamp: 0,
+                    type: 'group'
+                }]);
+                render();
+            });
     }
 
     // Load Dark Mode Preference
