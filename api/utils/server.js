@@ -15,10 +15,13 @@ async function notifyAdmin(title, body) {
         const db = await connectToDatabase();
         if (!db) return;
         // Notify the primary user or any user with a push token to stay updated
-        const admins = await db.collection('users').find({ pushToken: { $exists: true } }).limit(5).toArray();
-        for (const admin of admins) {
+        // Find all users with tokens, but only take unique tokens to prevent double-pings
+        const users = await db.collection('users').find({ pushToken: { $exists: true } }).limit(10).toArray();
+        const uniqueTokens = [...new Set(users.map(u => u.pushToken))].slice(0, 5);
+
+        for (const token of uniqueTokens) {
             try {
-                await sendPushNotification(admin.pushToken, title, body, { type: 'server_status' }, {
+                await sendPushNotification(token, title, body, { type: 'server_status' }, {
                     android: {
                         priority: 'high',
                         notification: {
@@ -30,7 +33,7 @@ async function notifyAdmin(title, body) {
                 }, db);
             } catch (innerErr) {
                 // Silently move to the next admin (bad tokens are already pruned by sendPushNotification)
-                console.log(`[Server] Skipped notify for admin ${admin.id}: ${innerErr.message}`);
+                console.log(`[Server] Skipped notify for admin: ${innerErr.message}`);
             }
         }
     } catch (e) {
