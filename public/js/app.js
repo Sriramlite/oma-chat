@@ -453,6 +453,16 @@ async function syncProfile() {
 window.switchTab = async (tab) => {
     state.activeTab = tab;
     state.settingsView = null; // Close settings if open
+    
+    // Reset Search State on Tab switch to ensure everything is clean
+    state.isSearching = false;
+    state.lastSearchQuery = '';
+    state.searchResults = [];
+    
+    // Force a Full Sidebar redraw on the next render cycle 
+    // by resetting the 'lastRenderedTab' tracker
+    state.lastRenderedTab = null;
+
     render();
     if (tab === 'profile') {
         syncProfile();
@@ -1240,22 +1250,25 @@ function renderChatLayout(container) {
     const hasSidebar = !!sidebarElement;
 
     if (hasSidebar && !state.settingsView) {
-        // Safe Update: Only refresh the messages area and then the list content.
-        // This stops the search input from dying.
+        // Safe Update: Only refresh the messages area. 
+        // We defer sidebar logic entirely to refreshSidebar for cleaner state control.
         const chatMain = document.querySelector('.chat-main');
         if (chatMain) chatMain.innerHTML = renderMainChatArea();
-        window.refreshSidebar(); // Use our 'partial' sidebar update
+        window.refreshSidebar();
     } else {
+        // Full Render: Used for switching to Settings or Initial Load
         container.innerHTML = `
             <div class="chat-layout">
                 <div class="sidebar" id="sidebar">
-                    ${sidebarContent}
+                    ${state.settingsView ? renderSettings() : renderSidebarMain()}
                 </div>
-                <div class="chat-main">
-                    ${renderMainChatArea()}
+                <div class="chat-main" id="chat-main">
+                    ${state.activeChatId ? renderMainChatArea() : renderEmptyChatView()}
                 </div>
             </div>
         `;
+        // Manually trigger the initial rendered tab store
+        if (!state.settingsView) state.lastRenderedTab = state.activeTab;
     }
 
     setupChatLogic();
@@ -1353,7 +1366,7 @@ function renderSidebarMain() {
         `;
     }
 
-    state.lastRenderedTab = state.activeTab;
+    // Decoupled state track: will be set in refreshSidebar
     return `
         ${content}
         ${renderBottomNav()}
@@ -1640,9 +1653,9 @@ window.refreshSidebar = () => {
     // we only update the list to avoid destroying the search input/keyboard focus.
     const chatList = document.getElementById('chat-list');
     
-    // NEW: Smart-Switch logic. 
-    // We only take the 'Optimized' partial path if we are on the SAME tab as before.
-    // If you clicked a DIFFERENT tab (e.g. Messages -> Contacts), we MUST do a full render to update the header.
+    // Smart-Switch logic: Only take the 'Optimized' partial path 
+    // if we are STILL on the same tab we previously rendered.
+    // If the active tab changed, we MUST do a full render to change the header/filters.
     if (chatList && !state.settingsView && (state.activeTab === 'messages' || state.activeTab === 'contacts') && state.activeTab === state.lastRenderedTab) {
         let content = '';
         if (state.activeTab === 'messages') {
@@ -1650,18 +1663,20 @@ window.refreshSidebar = () => {
             content = renderChatListContent(list);
         } else if (state.activeTab === 'contacts') {
             const listToRender = state.isSearching ? state.searchResults : state.allUsers;
-            content = listToRender.map(u => renderSidebarUser(u)).join('') || 
+            content = (listToRender || []).map(u => renderSidebarUser(u)).join('') || 
                 `<div style="padding:40px;text-align:center;color:grey;">${state.isSearching ? 'No users found' : 'No contacts yet'}</div>`;
         }
         chatList.innerHTML = content;
         return;
     }
 
-    // Full Refresh (Only for switching between major views or settings)
+    // FULL REFRESH: If we switched tabs (activeTab !== lastRenderedTab), 
+    // OR we are in settings, we MUST redraw the entire sidebar header/nav.
     if (state.settingsView) {
         sidebar.innerHTML = renderSettings();
     } else {
         sidebar.innerHTML = renderSidebarMain();
+        state.lastRenderedTab = state.activeTab;
     }
 };
 
@@ -2320,6 +2335,21 @@ function renderSettingsAppearance() {
                     </div>
                 </div>
              </div>
+        </div>
+    `;
+}
+
+function renderEmptyChatView() {
+    return `
+        <div class="empty-chat-view" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--text-secondary); text-align:center; padding:20px;">
+            <div class="welcome-logo" style="width:120px; height:120px; background:rgba(79,70,229,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:24px;">
+                <i class="fas fa-comments" style="font-size:3rem; color:var(--primary-color);"></i>
+            </div>
+            <h2 style="color:var(--text-primary); margin-bottom:12px;">Welcome to OMA</h2>
+            <p style="max-width:300px; line-height:1.6; margin-bottom:32px;">Select a chat from the sidebar or start a new conversation to begin messaging.</p>
+            <div style="display:flex; gap:12px;">
+                <button class="primary-btn" onclick="window.startNewChat()" style="padding:10px 24px; border-radius:20px; font-weight:600;">Find Peeps</button>
+            </div>
         </div>
     `;
 }
