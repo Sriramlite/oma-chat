@@ -17,16 +17,21 @@ async function notifyAdmin(title, body) {
         // Notify the primary user or any user with a push token to stay updated
         const admins = await db.collection('users').find({ pushToken: { $exists: true } }).limit(5).toArray();
         for (const admin of admins) {
-            await sendPushNotification(admin.pushToken, title, body, { type: 'server_status' }, {
-                android: {
-                    priority: 'high',
-                    notification: {
-                        channelId: 'message_channel',
-                        priority: 'max',
-                        visibility: 'public'
+            try {
+                await sendPushNotification(admin.pushToken, title, body, { type: 'server_status' }, {
+                    android: {
+                        priority: 'high',
+                        notification: {
+                            channelId: 'message_channel',
+                            priority: 'max',
+                            visibility: 'public'
+                        }
                     }
-                }
-            }, db);
+                }, db);
+            } catch (innerErr) {
+                // Silently move to the next admin (bad tokens are already pruned by sendPushNotification)
+                console.log(`[Server] Skipped notify for admin ${admin.id}: ${innerErr.message}`);
+            }
         }
     } catch (e) {
         console.warn("[Server] Failed to notify admin:", e.message);
@@ -299,7 +304,10 @@ connectToDatabase()
             console.log(`- API:      http://localhost:${PORT}/api/...`);
             console.log(`- MongoDB:  Connected`);
             
-            notifyAdmin("🚀 OMA Server", "System is ONLINE and ready!");
+            // 5-second Grace Period to allow clients to sync new tokens
+            setTimeout(() => {
+                notifyAdmin("🚀 OMA Server", "System is ONLINE and ready!");
+            }, 5000);
         });
     })
     .catch(err => {
