@@ -61,8 +61,7 @@ const state = {
     pendingPhone: null,
     settingsView: null, // null, 'profile', 'appearance', etc.
     activeTab: 'messages', // 'messages', 'calls', 'contacts', 'profile'
-    // onlineUsers: new Set(), 
-    activeTab: 'messages', // 'messages', 'calls', 'contacts', 'profile'
+    lastRenderedTab: null, // Tracks the last tab fully rendered in the sidebar
     onlineUsers: new Set(), // Set of user IDs
     userStatuses: {}, // Map of userId -> { online, lastSeen }
     animatedChats: new Set() // Track chats that have already played initial animation
@@ -1354,6 +1353,7 @@ function renderSidebarMain() {
         `;
     }
 
+    state.lastRenderedTab = state.activeTab;
     return `
         ${content}
         ${renderBottomNav()}
@@ -1613,6 +1613,18 @@ function renderContactsView() {
     `;
 }
 
+function renderSidebarUser(u) {
+    return `
+        <div class="chat-item" onclick="window.openChat('${u.id}')">
+             <img src="${getAvatarUrl(u)}" onerror="window.handleImageError(this, '${(u.name || u.username || 'User').replace(/'/g, "\\'")}')">
+            <div class="chat-info">
+                <h4>${u.name}</h4>
+                <p>@${u.username}</p>
+            </div>
+        </div>
+    `;
+}
+
 // Profile Edit State Management
 window.toggleProfileEdit = (isEdit) => {
     console.log("toggleProfileEdit Called:", isEdit);
@@ -1628,7 +1640,10 @@ window.refreshSidebar = () => {
     // we only update the list to avoid destroying the search input/keyboard focus.
     const chatList = document.getElementById('chat-list');
     
-    if (chatList && !state.settingsView && (state.activeTab === 'messages' || state.activeTab === 'contacts')) {
+    // NEW: Smart-Switch logic. 
+    // We only take the 'Optimized' partial path if we are on the SAME tab as before.
+    // If you clicked a DIFFERENT tab (e.g. Messages -> Contacts), we MUST do a full render to update the header.
+    if (chatList && !state.settingsView && (state.activeTab === 'messages' || state.activeTab === 'contacts') && state.activeTab === state.lastRenderedTab) {
         let content = '';
         if (state.activeTab === 'messages') {
             const list = state.isSearching ? state.searchResults : [...state.chats].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
