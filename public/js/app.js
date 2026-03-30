@@ -2306,6 +2306,11 @@ function renderMainChatArea() {
     }
 
     if (!activeChat) {
+        // Finally check the full Contact List (state.allUsers)
+        activeChat = (state.allUsers || []).find(u => u.id === state.activeChatId);
+    }
+
+    if (!activeChat) {
         // Fallback since we might have opened via URL
         activeChat = { name: 'Chat', avatar: 'https://ui-avatars.com/api/?name=?' };
     }
@@ -3570,10 +3575,16 @@ window.handleSearch = async (query) => {
     try {
         const results = await api.searchUsers(query);
         state.searchResults = results;
-        // Optimization: Ensure we are still searching when result arrives
+        // Optimization: Efficient Search Rendering (Prevents Keyboard Closing)
         if (state.isSearching) {
-            if (window.refreshSidebar) window.refreshSidebar();
-            else render();
+            const listContainer = document.getElementById('chat-list');
+            if (listContainer) {
+                // We only replace the list content, sparing the search input above it
+                listContainer.innerHTML = state.searchResults.map(u => renderSidebarUser(u)).join('') || 
+                    `<div style="padding:40px;text-align:center;color:grey;">No users found</div>`;
+            } else {
+                render(); // Fallback if sidebar isn't currently showing
+            }
         }
     } catch (e) {
         console.error(e);
