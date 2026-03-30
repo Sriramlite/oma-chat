@@ -1237,18 +1237,27 @@ function renderChatLayout(container) {
     } else {
         sidebarContent = renderSidebarMain();
     }
+    const sidebarElement = document.getElementById('sidebar');
+    const hasSidebar = !!sidebarElement;
 
-    container.innerHTML = `
-        <div class="chat-layout">
-            <div class="sidebar" id="sidebar">
-                ${sidebarContent}
+    if (hasSidebar && !state.settingsView) {
+        // Safe Update: Only refresh the messages area and then the list content.
+        // This stops the search input from dying.
+        const chatMain = document.querySelector('.chat-main');
+        if (chatMain) chatMain.innerHTML = renderMainChatArea();
+        window.refreshSidebar(); // Use our 'partial' sidebar update
+    } else {
+        container.innerHTML = `
+            <div class="chat-layout">
+                <div class="sidebar" id="sidebar">
+                    ${sidebarContent}
+                </div>
+                <div class="chat-main">
+                    ${renderMainChatArea()}
+                </div>
             </div>
-            <div class="chat-main">
-                ${renderMainChatArea()}
-            </div>
-        </div>
-    `;
-
+        `;
+    }
 
     setupChatLogic();
     setupPullToRefresh();
@@ -1613,12 +1622,31 @@ window.toggleProfileEdit = (isEdit) => {
 
 window.refreshSidebar = () => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        if (state.settingsView) {
-            sidebar.innerHTML = renderSettings();
-        } else {
-            sidebar.innerHTML = renderSidebarMain();
+    if (!sidebar) return;
+
+    // If we're already showing the main sidebar (Messages/Contacts/Calls), 
+    // we only update the list to avoid destroying the search input/keyboard focus.
+    const chatList = document.getElementById('chat-list');
+    
+    if (chatList && !state.settingsView && (state.activeTab === 'messages' || state.activeTab === 'contacts')) {
+        let content = '';
+        if (state.activeTab === 'messages') {
+            const list = state.isSearching ? state.searchResults : [...state.chats].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            content = renderChatListContent(list);
+        } else if (state.activeTab === 'contacts') {
+            const listToRender = state.isSearching ? state.searchResults : state.allUsers;
+            content = listToRender.map(u => renderSidebarUser(u)).join('') || 
+                `<div style="padding:40px;text-align:center;color:grey;">${state.isSearching ? 'No users found' : 'No contacts yet'}</div>`;
         }
+        chatList.innerHTML = content;
+        return;
+    }
+
+    // Full Refresh (Only for switching between major views or settings)
+    if (state.settingsView) {
+        sidebar.innerHTML = renderSettings();
+    } else {
+        sidebar.innerHTML = renderSidebarMain();
     }
 };
 
