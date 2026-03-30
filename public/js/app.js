@@ -6141,7 +6141,20 @@ async function registerPush() {
                 vibration: true
             });
             window.logToDebug("Push: Channels created.");
-        } catch (e) { window.logToDebug("Push: createChannel failed: " + e.message); }
+            // Register ACTION TYPES (Buttons)
+            await Push.registerActionTypes({
+                types: [
+                    {
+                        id: 'CALL_CATEGORY',
+                        actions: [
+                            { id: 'accept', title: 'Accept', foreground: true },
+                            { id: 'decline', title: 'Decline', foreground: false, destructive: true }
+                        ]
+                    }
+                ]
+            });
+            window.logToDebug("Push: Action types registered.");
+        } catch (e) { window.logToDebug("Push: Setup Actions/Channels failed: " + e.message); }
 
         // Setup Result Listeners
         try {
@@ -6190,6 +6203,24 @@ async function registerPush() {
                 }
                 if (state.activeChatId !== data?.chatId) soundManager.play('message');
             });
+
+            await Push.addListener('pushNotificationActionPerformed', async (notification) => {
+                const data = notification.notification.data;
+                window.logToDebug('Push Action Performed: ' + notification.actionId);
+
+                if (notification.actionId === 'accept') {
+                    // Logic to accept call
+                    if (window.handleIncomingCall) {
+                        window.handleIncomingCall(data);
+                    }
+                } else if (notification.actionId === 'decline') {
+                    // Logic to decline call
+                    if (socket) {
+                        socket.emit('end-call', { targetId: data.callerId });
+                    }
+                }
+            });
+
             window.logToDebug("Push: Listeners attached.");
         } catch (e) { window.logToDebug("Push: addListener failed: " + e.message); }
 

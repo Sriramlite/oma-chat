@@ -212,7 +212,8 @@ io.on('connection', (socket) => {
                             sound: 'calling',
                             defaultVibrateTimings: true,
                             visibility: 'public',
-                            fullScreenIntent: true
+                            fullScreenIntent: true,
+                            clickAction: 'CALL_CATEGORY'
                         }
                     }
                 }, db);
