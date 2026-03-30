@@ -5035,7 +5035,9 @@ const rtcConfig = {
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
         { urls: 'stun:global.stun.twilio.com:3478' }
-    ]
+    ],
+    iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle'
 };
 
 
@@ -6000,8 +6002,18 @@ async function setupLocalMedia(videoEnabled = true) {
     try {
         // Use currentFacingMode for constraints
         const constraints = {
-            video: videoEnabled ? { facingMode: { ideal: window.currentFacingMode || 'user' } } : false,
-            audio: true
+            video: videoEnabled ? { 
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 },
+                facingMode: { ideal: window.currentFacingMode || 'user' } 
+            } : false,
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+                latency: 0
+            }
         };
 
         localStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -6052,6 +6064,13 @@ function createPeerConnection() {
     // Add Local Tracks
     localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
+    // WebRTC Optimization: Bitrate & Quality Control
+    peerConnection.onconnectionstatechange = () => {
+        if (peerConnection.connectionState === 'connected') {
+            setBitrate(2500000); // Set max bitrate to 2.5 Mbps
+        }
+    };
+
     // Handle ICE Candidates
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
@@ -6070,6 +6089,37 @@ function createPeerConnection() {
         const placeholder = document.getElementById('video-placeholder');
         if (placeholder) placeholder.classList.add('hidden');
     };
+}
+
+/**
+ * Force High Quality Bitrate on established connection
+ */
+async function setBitrate(maxBitrate) {
+    if (!peerConnection) return;
+    const senders = peerConnection.getSenders();
+    senders.forEach(async (sender) => {
+        if (sender.track && (sender.track.kind === 'video' || sender.track.kind === 'audio')) {
+            const parameters = sender.getParameters();
+            if (!parameters.encodings) parameters.encodings = [{}];
+            
+            parameters.encodings.forEach(encoding => {
+                if (sender.track.kind === 'video') {
+                    encoding.maxBitrate = maxBitrate;
+                    encoding.priority = 'high';
+                    encoding.networkPriority = 'high';
+                } else {
+                    encoding.maxBitrate = 64000; // 64kbps for high fidelity audio
+                }
+            });
+            
+            try {
+                await sender.setParameters(parameters);
+                console.log(`[WebRTC] Bitrate Locked: ${sender.track.kind} -> ${maxBitrate/1000}kbps`);
+            } catch (e) {
+                console.warn(`[WebRTC] Set Bitrate Error for ${sender.track.kind}:`, e);
+            }
+        }
+    });
 }
 
 // Hook into Login
