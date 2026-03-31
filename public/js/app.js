@@ -5110,9 +5110,9 @@ function initSocket() {
 
         socket = io(socketUrl, {
             reconnection: true,
-            reconnectionAttempts: 5,
+            reconnectionAttempts: 10,
             reconnectionDelay: 1000,
-            transports: ['websocket']
+            transports: ['polling', 'websocket']
         });
 
         socket.on('connect', () => {
@@ -5300,6 +5300,7 @@ function initSocket() {
             // 2. Active Chat Update
             if (state.activeChatId === msg.receiverId || state.activeChatId === msg.senderId || (msg.receiverId === 'general' && state.activeChatId === 'general')) {
                 // We are looking at this chat
+                const container = document.getElementById('messages-container');
                 if (container) {
                     // [STRICT CONTEXT] Verify this message actually belongs to the OPEN chat
                     const isForActiveChat = 
@@ -5738,6 +5739,7 @@ window.rejectCall = () => {
     // Log "Declined" (guard against duplicate from endCallCleanup)
     if (currentCallTargetId && !window._callLogSent) {
         window._callLogSent = true;
+        window._isManualDecline = true; // Mark as intentional
         api.sendMessage(`Declined`, 'call_log', currentCallTargetId).catch(console.error);
     }
 
@@ -5808,7 +5810,9 @@ function endCallCleanup(isRemote = false) {
                 if (window.isCaller) {
                     logMessage = "No Answer";
                 } else {
-                    logMessage = "Declined";
+                    // It was an incoming call for us.
+                    // If we didn't explicitly decline it, it's a "Missed Call"
+                    logMessage = window._isManualDecline ? "Declined" : "Missed Call";
                 }
                 if (logMessage) {
                     api.sendMessage(logMessage, 'call_log', target).catch(console.error);
@@ -5821,6 +5825,7 @@ function endCallCleanup(isRemote = false) {
     currentCallTargetId = null;
     window.activeRingtoneCallId = null;
     window.pendingOffer = null;
+    window._isManualDecline = false; // Reset for next call
     stopCallTimer();
     wasConnected = false;
     window.isCaller = false;
@@ -6280,6 +6285,14 @@ async function registerPush() {
                     if (window.handleIncomingCall) window.handleIncomingCall(data);
                     return;
                 }
+                
+                // PUSH-TO-SYNC RELAY (Fixes message delay)
+                if (window.pollMessages) {
+                    const container = document.getElementById('messages-container');
+                    window.pollMessages(container); 
+                    window.logToDebug('Push: Message poll triggered by incoming push notification.');
+                }
+                
                 if (state.activeChatId !== data?.chatId) soundManager.play('message');
             });
 
