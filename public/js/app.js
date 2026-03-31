@@ -205,9 +205,10 @@ window.setChatFilter = (mode) => {
     }
 };
 
-// --- Initialization ---
+// (Cleaned up: Always Active Mode no longer needed with native FCMService)
 
-async function init() {
+// --- Initialization Logic ---
+const loadState = () => {
     await initFirebaseClient(); // Ensure Firebase is ready
 
     // Check for Email Magic Link (Must be first)
