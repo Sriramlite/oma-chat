@@ -21,7 +21,30 @@ import { sync } from './sync.js';
 import { nearby } from './nearby.js'; // BLE Module
 import { Device } from './capacitor-device/index.js'; // Ensure correct path/export
 
+// --- Initialization & Logging (Global Scope First) ---
+window.omaLogs = window.omaLogs || [];
+window.logToDebug = (msg) => {
+    const entry = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    window.omaLogs.push(entry);
+    console.log(entry);
+    const list = document.getElementById('dev-log-list');
+    if (list) {
+        const div = document.createElement('div');
+        div.style.cssText = 'padding:4px 0; border-bottom:1px solid #333; font-size:0.75rem; font-family:monospace; color:#ccc;';
+        div.textContent = entry;
+        list.appendChild(div);
+        list.scrollTop = list.scrollHeight;
+    }
+};
 
+// Global Error Catchers for Diagnostics
+window.onerror = (msg, url, line, col, error) => {
+    window.logToDebug(`[UNCAUGHT] ${msg} at ${line}:${col}`);
+    return false;
+};
+window.onunhandledrejection = (event) => {
+    window.logToDebug(`[PROMISE REJECTION] ${event.reason}`);
+};
 
 window.showCustomAlert = function (msg, type = 'error') {
     const existing = document.querySelector('.custom-alert');
@@ -44,7 +67,7 @@ window.showCustomAlert = function (msg, type = 'error') {
             alertEl.classList.replace('animate__fadeInDown', 'animate__fadeOutUp');
             setTimeout(() => alertEl.remove(), 500);
         }
-    }, 4000);
+    }, 7000); // 7 Seconds
 };
 
 // Override default alert
@@ -6129,12 +6152,7 @@ async function setBitrate(maxBitrate) {
 // Hook into Login
 // (Combined into main loginUser function above)
 // --- Diagnostics Logging ---
-window.omaLogs = window.omaLogs || [];
-window.logToDebug = (msg) => {
-    const entry = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    window.omaLogs.push(entry);
-    console.log(entry);
-    const list = document.getElementById('dev-log-list');
+// (Removed old init - now at top of file)
     if (list) {
         list.insertAdjacentHTML('beforeend', `<div style="padding:4px 0; border-bottom:1px solid #333; font-size:0.75rem; font-family:monospace;">${entry}</div>`);
         list.scrollTop = list.scrollHeight;
