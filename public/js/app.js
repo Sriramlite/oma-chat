@@ -6151,13 +6151,7 @@ async function setBitrate(maxBitrate) {
 // Hook into Login
 // Hook into Login
 // (Combined into main loginUser function above)
-// --- Diagnostics Logging ---
-// (Removed old init - now at top of file)
-    if (list) {
-        list.insertAdjacentHTML('beforeend', `<div style="padding:4px 0; border-bottom:1px solid #333; font-size:0.75rem; font-family:monospace;">${entry}</div>`);
-        list.scrollTop = list.scrollHeight;
-    }
-};
+// --- Diagnostics Logging (Moved to top) ---
 
 async function registerPush() {
     window.logToDebug("Push: registerPush() called");
