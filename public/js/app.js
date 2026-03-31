@@ -5347,6 +5347,8 @@ function initSocket() {
                         }
                     }
 
+                    const existing = state.messages && state.messages.find(m => m.id === msg.id);
+
                     // Check if already exists (my own message via optimism that already finished)
                     if (!existing) {
                         state.messages.push(msg);
