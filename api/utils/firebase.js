@@ -93,7 +93,7 @@ async function sendPushNotification(token, title, body, data = {}, options = {},
         };
 
         const response = await admin.messaging().send(message);
-        console.log("Notification sent:", response);
+        console.log(`[FCM SUCCESS] Message ID: ${response} -> Token: ${token.substring(0, 5)}... -> Tag: ${options?.android?.notification?.tag || 'none'}`);
         return { success: true, response };
     } catch (e) {
         console.error("Error sending notification:", e.code || e.message);

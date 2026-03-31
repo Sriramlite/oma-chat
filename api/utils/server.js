@@ -210,10 +210,13 @@ io.on('connection', (socket) => {
                             channelId: 'call_channel_v3',
                             priority: 'max',
                             sound: 'calling',
-                            defaultVibrateTimings: true,
+                            tag: 'incoming_call', // Prevent multiple notifications for same call
+                            color: '#f43f5e',
+                            icon: 'ic_stat_name', 
                             visibility: 'public',
                             fullScreenIntent: true,
-                            clickAction: 'CALL_CATEGORY'
+                            notification_priority: 'PRIORITY_MAX',
+                            vibrateConfig: [1000, 1000, 1000, 1000, 1000] // 5 seconds pulse
                         }
                     }
                 }, db);

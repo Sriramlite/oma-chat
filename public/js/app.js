@@ -6251,7 +6251,11 @@ async function registerPush() {
                 } catch (e) { window.logToDebug('Push: Local relay failed: ' + e.message); }
 
                 if (data?.type === 'call_offer') {
-                    if (window.handleIncomingCall) window.handleIncomingCall(data);
+                    if (window.handleIncomingCall) {
+                        // Force foreground ring for call_offer type
+                        window.logToDebug('Push: Foreground call_offer detected. Forcing ringer.');
+                        window.handleIncomingCall(data);
+                    }
                     return;
                 }
                 if (state.activeChatId !== data?.chatId) soundManager.play('message');
