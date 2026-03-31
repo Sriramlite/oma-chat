@@ -5632,6 +5632,7 @@ window.answerCall = async () => {
     if (navigator.vibrate) navigator.vibrate(0); // Stop Vibration immediately
     document.getElementById('incoming-call-popup').classList.add('hidden');
     document.getElementById('video-call-modal').classList.remove('hidden');
+    window.activeRingtoneCallId = null; 
     // Clear legacy call status
     const statusEl = document.getElementById('call-status');
     if (statusEl) {
@@ -5714,6 +5715,7 @@ window.rejectCall = () => {
     }
 
     currentCallTargetId = null;
+    window.activeRingtoneCallId = null;
     window.pendingOffer = null;
     setTimeout(() => { window._callLogSent = false; }, 2000);
 };
@@ -5790,6 +5792,7 @@ function endCallCleanup(isRemote = false) {
     }
 
     currentCallTargetId = null;
+    window.activeRingtoneCallId = null;
     window.pendingOffer = null;
     stopCallTimer();
     wasConnected = false;
@@ -6260,13 +6263,13 @@ async function registerPush() {
 
                 if (notification.actionId === 'accept') {
                     // Logic to accept call
-                    if (window.handleIncomingCall) {
-                        window.handleIncomingCall(data);
+                    if (window.answerCall) {
+                        window.answerCall();
                     }
                 } else if (notification.actionId === 'decline') {
                     // Logic to decline call
-                    if (socket) {
-                        socket.emit('end-call', { targetId: data.callerId });
+                    if (window.rejectCall) {
+                        window.rejectCall();
                     }
                 }
             });
