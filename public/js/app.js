@@ -6178,19 +6178,19 @@ async function registerPush() {
 
         try {
             await Push.createChannel({
-                id: 'call_channel',
-                name: 'Call Notifications',
+                id: 'call_channel_v3',
+                name: 'Incoming Calls',
                 importance: 5,
                 visibility: 1,
-                sound: 'calling.mp3',
+                sound: 'calling', // References calling.mp3 in res/raw (no extension)
                 vibration: true
             });
             await Push.createChannel({
-                id: 'message_channel',
-                name: 'Message Notifications',
+                id: 'message_channel_v2',
+                name: 'New Messages',
                 importance: 5,
                 visibility: 1,
-                sound: 'message.mp3',
+                sound: 'message', // References message.mp3 in res/raw (no extension)
                 vibration: true
             });
             window.logToDebug("Push: Channels created.");

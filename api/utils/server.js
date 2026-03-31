@@ -207,7 +207,7 @@ io.on('connection', (socket) => {
                         priority: 'high',
                         ttl: 0,
                         notification: {
-                            channelId: 'call_channel',
+                            channelId: 'call_channel_v3',
                             priority: 'max',
                             sound: 'calling',
                             defaultVibrateTimings: true,
