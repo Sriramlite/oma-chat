@@ -6200,11 +6200,11 @@ async function registerPush() {
                 vibration: true
             });
             await Push.createChannel({
-                id: 'message_channel_v2',
-                name: 'New Messages',
+                id: 'message_channel_v3',
+                name: 'High Priority Messages',
                 importance: 5,
                 visibility: 1,
-                sound: 'message', // References message.mp3 in res/raw (no extension)
+                sound: 'message',
                 vibration: true
             });
             window.logToDebug("Push: Channels created.");
@@ -6254,10 +6254,10 @@ async function registerPush() {
                                 title: notification.title || "New Message",
                                 body: notification.body || "You have a new message",
                                 id: Math.floor(Date.now() / 1000),
-                                schedule: { at: new Date(Date.now() + 100) }, // basically now
+                                schedule: { at: new Date(Date.now() + 100) },
                                 extra: data,
-                                channelId: 'message_channel',
-                                smallIcon: 'ic_stat_name' // or similar
+                                channelId: 'message_channel_v3',
+                                smallIcon: 'ic_stat_name'
                             }]
                         });
                         window.logToDebug('Push: Foreground banner scheduled.');
@@ -6265,11 +6265,17 @@ async function registerPush() {
                 } catch (e) { window.logToDebug('Push: Local relay failed: ' + e.message); }
 
                 if (data?.type === 'call_offer') {
-                    if (window.handleIncomingCall) {
-                        // Force foreground ring for call_offer type
-                        window.logToDebug('Push: Foreground call_offer detected. Forcing ringer.');
-                        window.handleIncomingCall(data);
+                    window.logToDebug('Push: Incoming Call detected. Triggering Native Bridge.');
+                    const Calls = window.Capacitor.Plugins.OMACalls;
+                    if (Calls) {
+                        try {
+                            await Calls.showIncomingCall({
+                                name: data.callerName || "Someone",
+                                id: data.callerId || "0"
+                            });
+                        } catch (e) { window.logToDebug('Native Call Bridge failed: ' + e.message); }
                     }
+                    if (window.handleIncomingCall) window.handleIncomingCall(data);
                     return;
                 }
                 if (state.activeChatId !== data?.chatId) soundManager.play('message');
