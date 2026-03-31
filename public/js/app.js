@@ -106,18 +106,19 @@ function updateStateChats(newChatsOrSingle) {
 
 // --- CACHE HELPERS (Optimized: Per-Chat Keys) ---
 function saveChatToCache(chatId, messages) {
-    if (!chatId) return;
+    if (!chatId || !state.user) return;
     try {
         // Only save last 50 to keep storage small and fast
-        localStorage.setItem(`oma_msg_${chatId}`, JSON.stringify(messages.slice(-50)));
+        // [PRIVACY] Scope by current user ID to prevent data leakage
+        localStorage.setItem(`oma_msg_${state.user.user.id}_${chatId}`, JSON.stringify(messages.slice(-50)));
     } catch (e) { console.error("Cache Save Error:", e); }
 }
 
 function loadChatFromCache(chatId) {
-    if (!chatId) return null;
+    if (!chatId || !state.user) return null;
     try {
-        const data = localStorage.getItem(`oma_msg_${chatId}`);
-        return data ? JSON.parse(data) : null;
+        const cached = localStorage.getItem(`oma_msg_${state.user.user.id}_${chatId}`);
+        return cached ? JSON.parse(cached) : null;
     } catch (e) { return null; }
 }
 
@@ -4582,8 +4583,7 @@ window.closeChat = () => {
 window.logout = () => {
     state.user = null;
     state.chats = []; // Clear chats on logout
-    localStorage.removeItem('oma_user');
-    localStorage.removeItem('oma_chats');
+    localStorage.clear(); // Nuclear Logout
     window.location.hash = '#login';
     window.location.reload();
 };
@@ -4906,7 +4906,9 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const chats = localStorage.getItem('oma_chats');
+    if (!state.user) return;
+    const cacheKey = `oma_chats_${state.user.user.id}`;
+    const chats = localStorage.getItem(cacheKey);
     if (chats) {
         state.chats = JSON.parse(chats);
 
@@ -5413,7 +5415,7 @@ window.adjustPolling = (specificContainer = null) => {
     if (pollingInterval) clearInterval(pollingInterval);
     
     const isSocketConnected = socket && socket.connected;
-    const interval = isSocketConnected ? 30000 : 3000; // 30s if connected, 3s if disconnected
+    const interval = isSocketConnected ? 5000 : 1000; // 5s if connected (sync check), 1s if disconnected (recovery)
     
     console.log(`[Sync] Adjusting polling interval to ${interval}ms (Socket connected: ${isSocketConnected})`);
 
