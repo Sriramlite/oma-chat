@@ -2545,22 +2545,6 @@ async function setupChatLogic() {
     const form = document.getElementById('msg-form');
     window.adjustPolling(container);
 
-    const inputEl = document.getElementById('msg-input');
-    if (inputEl) {
-        inputEl.addEventListener('input', () => {
-            // Emit Typing
-            if (state.activeChatId !== 'general') {
-                socket.emit('typing', { receiverId: state.activeChatId, senderId: state.user.user.id });
-
-                // Debounce Stop
-                clearTimeout(window.typingTimeout);
-                window.typingTimeout = setTimeout(() => {
-                    socket.emit('stop_typing', { receiverId: state.activeChatId, senderId: state.user.user.id });
-                }, 3000);
-            }
-        });
-    }
-
     if (!form || !container) return; // If no chat UI, stop here (don't bind form)
     
     // 1. INSTANT RENDER FROM CACHE
@@ -2588,7 +2572,7 @@ async function setupChatLogic() {
         const content = input.value.trim();
 
         // Stop Typing immediately upon send
-        if (state.activeChatId !== 'general') {
+        if (state.activeChatId !== 'general' && socket && socket.connected) {
             socket.emit('stop_typing', { receiverId: state.activeChatId, senderId: state.user.user.id });
         }
 
@@ -5580,14 +5564,16 @@ window.startCall = async (type = 'video', targetId = null) => {
     await peerConnection.setLocalDescription(offer);
 
     // Send Offer
-    socket.emit('offer', {
-        targetId: currentCallTargetId,
-        callerId: state.user.user.id,
-        callerName: state.user.user.name,
-        callerAvatar: state.user.user.avatar,
-        offer: offer,
-        type: type
-    });
+    if (socket && socket.connected) {
+        socket.emit('offer', {
+            targetId: currentCallTargetId,
+            callerId: state.user.user.id,
+            callerName: state.user.user.name,
+            callerAvatar: state.user.user.avatar,
+            offer: offer,
+            type: type
+        });
+    }
 
 };
 
@@ -5723,10 +5709,12 @@ window.answerCall = async () => {
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
 
-    socket.emit('answer', {
-        targetId: currentCallTargetId,
-        answer: answer
-    });
+    if (socket && socket.connected) {
+        socket.emit('answer', {
+            targetId: currentCallTargetId,
+            answer: answer
+        });
+    }
 
     startCallTimer(); // Start timer for callee
     wasConnected = true;
@@ -5736,7 +5724,9 @@ window.rejectCall = () => {
     soundManager.stop('ringtone'); // Stop Ringing
     if (navigator.vibrate) navigator.vibrate(0); // Stop Vibration immediately
     document.getElementById('incoming-call-popup').classList.add('hidden');
-    socket.emit('end-call', { targetId: currentCallTargetId });
+    if (socket && socket.connected) {
+        socket.emit('end-call', { targetId: currentCallTargetId });
+    }
 
     // Log "Declined" (guard against duplicate from endCallCleanup)
     if (currentCallTargetId && !window._callLogSent) {
@@ -5752,7 +5742,7 @@ window.rejectCall = () => {
 };
 
 window.endCall = () => {
-    if (currentCallTargetId) {
+    if (currentCallTargetId && socket && socket.connected) {
         socket.emit('end-call', { targetId: currentCallTargetId });
     }
     endCallCleanup(false);
@@ -6110,7 +6100,7 @@ function createPeerConnection() {
 
     // Handle ICE Candidates
     peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
+        if (event.candidate && socket && socket.connected) {
             socket.emit('ice-candidate', {
                 targetId: currentCallTargetId,
                 candidate: event.candidate
