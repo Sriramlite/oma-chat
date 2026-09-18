@@ -906,9 +906,11 @@ async function handleSendEmailLink(e) {
 
     const actionCodeSettings = {
         // Use clean origin URL to avoid hash-based parameter issues
-        url: (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? (Capacitor.isNativePlatform() ? 'http://localhost:3000/' : window.location.origin + window.location.pathname)
-            : 'https://oma-chat-app-pho0.onrender.com/',
+        url: (!window.Capacitor?.isNativePlatform())
+            ? (window.location.origin + window.location.pathname)
+            : ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'http://localhost:3000/'
+                : 'https://api.pdktdev.in/'),
         handleCodeInApp: true
     };
 
@@ -5076,7 +5078,7 @@ function initSocket() {
 
     try {
         // Connect to Socket.io
-        // MUST point to the Render Backend (or Dev IP) for Native platforms!
+        // MUST point to the Northflank Backend (or Dev IP) for Native platforms!
         const getSocketUrl = () => {
             const manualIp = localStorage.getItem('oma_dev_ip'); // e.g., 'http://192.168.1.10:5000'
             if (manualIp) return manualIp;
@@ -5085,10 +5087,10 @@ function initSocket() {
             const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
 
             if (isNative) {
-                return 'https://oma-chat-app-pho0.onrender.com'; // Native must use absolute prod URL by default
+                return 'https://api.pdktdev.in'; // Native must use absolute prod URL by default
             }
             
-            return isLocalWeb ? 'http://localhost:3000' : 'https://oma-chat-app-pho0.onrender.com';
+            return isLocalWeb ? 'http://localhost:3000' : 'https://api.pdktdev.in';
         };
 
         const socketUrl = getSocketUrl();

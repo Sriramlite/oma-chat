@@ -1,7 +1,7 @@
 import { db } from './db.js';
 import { sync } from './sync.js';
 
-// Dynamic API Base: Use local server if running on localhost (Web), otherwise use production Render URL
+// Dynamic API Base: Use local server if running on localhost (Web), otherwise use production Northflank URL
 // NOTE: Capacitor/Native environments MUST use absolute URLs (relative '/api' points to local app files).
 const getApiBase = () => {
     // Check if overridden in localStorage (useful for local dev on mobile device)
@@ -12,10 +12,10 @@ const getApiBase = () => {
     const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
 
     if (isNative) {
-        return 'https://oma-chat-app-pho0.onrender.com/api'; // Native must use absolute prod URL by default
+        return 'https://api.pdktdev.in/api'; // Native must use absolute prod URL by default
     }
     
-    return isLocalWeb ? '/api' : 'https://oma-chat-app-pho0.onrender.com/api';
+    return isLocalWeb ? '/api' : 'https://api.pdktdev.in/api';
 };
 
 const API_BASE = getApiBase();

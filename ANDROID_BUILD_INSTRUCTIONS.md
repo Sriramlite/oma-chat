@@ -17,5 +17,5 @@
     -   Once done, click **"locate"** in the popup to find your `.apk` file.
 
 ## Troubleshooting
--   **White Screen?** Check your internet. The app needs to connect to the Render Backend.
--   **Login Issues?** Ensure the `api.js` file has the correct `API_BASE` (I set it to your Render URL).
+-   **White Screen?** Check your internet. The app needs to connect to the Northflank Backend (`https://api.pdktdev.in`).
+-   **Login Issues?** Ensure the `api.js` file has the correct `API_BASE` (set to `https://api.pdktdev.in/api`).

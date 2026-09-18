@@ -73,7 +73,7 @@ export const sync = {
                 // Dynamic API Base for Sync
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? '/api' 
-    : 'https://oma-chat-app-pho0.onrender.com/api';
+    : 'https://api.pdktdev.in/api';
 
                 const res = await fetch(`${API_BASE}${req.endpoint}`, config);
 
