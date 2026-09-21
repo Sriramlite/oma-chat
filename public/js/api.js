@@ -73,8 +73,12 @@ async function request(endpoint, method = 'GET', data = null) {
                     }
                 }
                 if (endpoint.includes('/chat/list')) { // Recent Chats
-                    const cached = await db.getChats();
-                    if (cached && cached.length > 0) return cached;
+                    const userObj = userStr ? JSON.parse(userStr) : null;
+                    const userId = userObj?.user?.id;
+                    if (userId) {
+                        const cached = await db.getChats(userId);
+                        if (cached && cached.length > 0) return cached;
+                    }
                 }
             }
 
@@ -176,7 +180,12 @@ export const api = {
     getRecentChats: async () => {
         const res = await request('/chat/list', 'GET');
         if (Array.isArray(res)) {
-            await db.saveChats(res);
+            const userStr = localStorage.getItem('oma_user');
+            const userObj = userStr ? JSON.parse(userStr) : null;
+            const userId = userObj?.user?.id;
+            if (userId) {
+                await db.saveChats(res, userId);
+            }
         }
         return res;
     },

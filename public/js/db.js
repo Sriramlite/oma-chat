@@ -1,6 +1,6 @@
 export const db = {
     dbName: 'OMADatabase',
-    version: 1,
+    version: 2,
     db: null,
 
     async open() {
@@ -21,7 +21,14 @@ export const db = {
                 }
                 // Store active chats list
                 if (!db.objectStoreNames.contains('chats')) {
-                    db.createObjectStore('chats', { keyPath: 'id' });
+                    const chatStore = db.createObjectStore('chats', { keyPath: 'id' });
+                    chatStore.createIndex('userId', 'userId', { unique: false });
+                } else {
+                    const tx = event.target.transaction;
+                    const chatStore = tx.objectStore('chats');
+                    if (!chatStore.indexNames.contains('userId')) {
+                        chatStore.createIndex('userId', 'userId', { unique: false });
+                    }
                 }
             };
 
@@ -138,25 +145,81 @@ export const db = {
         });
     },
 
-    async saveChats(chats) {
+    async saveChats(chats, userId) {
+        if (!userId || !Array.isArray(chats)) return;
         if (!this.db) await this.open();
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['chats'], 'readwrite');
-            const store = transaction.objectStore('chats');
-            chats.forEach(chat => store.put(chat));
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = (e) => reject(e);
+            try {
+                const transaction = this.db.transaction(['chats'], 'readwrite');
+                const store = transaction.objectStore('chats');
+                chats.forEach(chat => {
+                    if (chat && chat.id) {
+                        store.put({
+                            ...chat,
+                            id: `${userId}_${chat.id}`,
+                            chatId: chat.id,
+                            userId: userId
+                        });
+                    }
+                });
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = (e) => reject(e);
+            } catch (e) {
+                reject(e);
+            }
         });
     },
 
-    async getChats() {
+    async getChats(userId) {
+        if (!userId) return [];
         if (!this.db) await this.open();
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['chats'], 'readonly');
-            const store = transaction.objectStore('chats');
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = (e) => reject(e);
+            try {
+                const transaction = this.db.transaction(['chats'], 'readonly');
+                const store = transaction.objectStore('chats');
+                if (store.indexNames.contains('userId')) {
+                    const index = store.index('userId');
+                    const request = index.getAll(userId);
+                    request.onsuccess = () => {
+                        const res = (request.result || []).map(c => ({
+                            ...c,
+                            id: c.chatId || c.id.replace(`${userId}_`, '')
+                        }));
+                        resolve(res);
+                    };
+                    request.onerror = (e) => reject(e);
+                } else {
+                    resolve([]);
+                }
+            } catch (e) {
+                resolve([]);
+            }
+        });
+    },
+
+    async clearChatsForUser(userId) {
+        if (!userId) return;
+        if (!this.db) await this.open();
+        return new Promise((resolve, reject) => {
+            try {
+                const transaction = this.db.transaction(['chats'], 'readwrite');
+                const store = transaction.objectStore('chats');
+                if (store.indexNames.contains('userId')) {
+                    const index = store.index('userId');
+                    const request = index.openKeyCursor(IDBKeyRange.only(userId));
+                    request.onsuccess = (e) => {
+                        const cursor = e.target.result;
+                        if (cursor) {
+                            store.delete(cursor.primaryKey);
+                            cursor.continue();
+                        }
+                    };
+                }
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = (e) => reject(e);
+            } catch (e) {
+                resolve();
+            }
         });
     },
 

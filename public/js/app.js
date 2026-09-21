@@ -90,6 +90,28 @@ const state = {
     animatedChats: new Set() // Track chats that have already played initial animation
 };
 
+// Helper: User-scoped storage helpers
+function saveChatsToStorage() {
+    const userId = state.user?.user?.id;
+    if (!userId) return;
+    try {
+        localStorage.setItem(`oma_chats_${userId}`, JSON.stringify(state.chats));
+    } catch (e) {
+        console.error("Failed to save chats to storage", e);
+    }
+}
+
+function loadChatsFromStorage() {
+    const userId = state.user?.user?.id;
+    if (!userId) return [];
+    try {
+        const raw = localStorage.getItem(`oma_chats_${userId}`);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
 // Helper: Securely update and deduplicate state.chats
 function updateStateChats(newChatsOrSingle) {
     const list = Array.isArray(newChatsOrSingle) ? newChatsOrSingle : [newChatsOrSingle];
@@ -302,34 +324,39 @@ async function init() {
             }
         });
 
-        // Load Chats
-        const chats = localStorage.getItem('oma_chats');
-        if (chats) state.chats = JSON.parse(chats);
+        // Load Chats (User Scoped)
+        const currentUserId = state.user?.user?.id;
+        if (currentUserId) {
+            const cachedChats = loadChatsFromStorage();
+            if (cachedChats && cachedChats.length > 0) state.chats = cachedChats;
 
-        // Try loading from DB if empty
-        if (state.chats.length === 0) {
-            const overlay = document.getElementById('restoration-overlay');
-            if (overlay) overlay.classList.remove('hidden');
+            // Try loading from DB if empty
+            if (state.chats.length === 0) {
+                const overlay = document.getElementById('restoration-overlay');
+                if (overlay) overlay.classList.remove('hidden');
 
-            db.getChats().then(c => {
-                if (c && c.length > 0) {
-                    state.chats = c;
-                    render();
-                }
-            }).finally(() => {
-                if (overlay) {
-                    overlay.style.opacity = '0';
-                    setTimeout(() => overlay.classList.add('hidden'), 500);
-                }
-            });
+                db.getChats(currentUserId).then(c => {
+                    if (c && c.length > 0) {
+                        state.chats = c;
+                        render();
+                    }
+                }).finally(() => {
+                    if (overlay) {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => overlay.classList.add('hidden'), 500);
+                    }
+                });
 
-            // Watchdog Timer (Safety)
-            setTimeout(() => {
-                if (overlay && !overlay.classList.contains('hidden')) {
-                    console.warn("Restoration overlay watchdog triggered.");
-                    overlay.classList.add('hidden');
-                }
-            }, 10000); // 10s max
+                // Watchdog Timer (Safety)
+                setTimeout(() => {
+                    if (overlay && !overlay.classList.contains('hidden')) {
+                        console.warn("Restoration overlay watchdog triggered.");
+                        overlay.classList.add('hidden');
+                    }
+                }, 10000); // 10s max
+            }
+        } else {
+            state.chats = [];
         }
 
         render(); // Initial Render
@@ -1760,7 +1787,7 @@ window.setupProfileSync = () => {
             if (data.avatar) chat.avatar = data.avatar;
             if (data.username) chat.username = data.username;
 
-            localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+            saveChatsToStorage();
             window.refreshSidebar();
         }
 
@@ -2662,6 +2689,53 @@ async function setupChatLogic() {
             }
             // Update Cache
             saveChatToCache(state.activeChatId, state.messages);
+
+            // Message-Driven Recent Chats Update (Sender Side)
+            const partnerId = state.activeChatId;
+            if (partnerId && realMsg) {
+                const chatIndex = state.chats.findIndex(c => c.id === partnerId);
+                const msgTime = Number(realMsg.timestamp || Date.now());
+                const formattedTime = new Date(msgTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                if (chatIndex !== -1) {
+                    state.chats[chatIndex].lastMsg = realMsg.content || 'Media';
+                    state.chats[chatIndex].timestamp = msgTime;
+                    state.chats[chatIndex].time = formattedTime;
+                    state.chats.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    saveChatsToStorage();
+                    if (window.refreshSidebar) window.refreshSidebar();
+                } else {
+                    const isGroup = partnerId === 'general';
+                    const newChat = {
+                        id: partnerId,
+                        name: isGroup ? 'General Group' : 'Chat',
+                        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(partnerId)}&background=random`,
+                        lastMsg: realMsg.content || 'Media',
+                        timestamp: msgTime,
+                        time: formattedTime,
+                        type: isGroup ? 'group' : 'user',
+                        status: 'online'
+                    };
+                    state.chats.unshift(newChat);
+                    saveChatsToStorage();
+                    if (window.refreshSidebar) window.refreshSidebar();
+
+                    if (!isGroup) {
+                        api.batchGetUsers([partnerId]).then(users => {
+                            if (users && users.length > 0) {
+                                const u = users[0];
+                                const idx = state.chats.findIndex(c => c.id === u.id);
+                                if (idx !== -1) {
+                                    state.chats[idx].name = u.name;
+                                    state.chats[idx].avatar = u.avatar;
+                                    state.chats[idx].username = u.username;
+                                    saveChatsToStorage();
+                                    if (window.refreshSidebar) window.refreshSidebar();
+                                }
+                            }
+                        }).catch(e => console.error("Batch sync failed", e));
+                    }
+                }
+            }
         } catch (e) {
             console.error("Send failed", e);
             // Optionally remove temp message or show error
@@ -2972,7 +3046,7 @@ async function pollMessages(container) {
                                         state.chats[idx].name = u.name;
                                         state.chats[idx].avatar = u.avatar;
                                         state.chats[idx].username = u.username;
-                                        localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+                                        saveChatsToStorage();
                                         window.refreshSidebar();
                                     }
                                 }
@@ -2986,7 +3060,7 @@ async function pollMessages(container) {
             });
 
             if (chatsUpdated) {
-                localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+                saveChatsToStorage();
                 window.refreshSidebar();
             }
             const activeContainer = document.getElementById('messages-container');
@@ -4117,7 +4191,7 @@ window.deleteCurrentChat = async () => {
 
         // Remove from list locally
         state.chats = state.chats.filter(c => c.id !== chatId);
-        localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+        saveChatsToStorage();
 
         // Remove from messages
         state.messages = [];
@@ -4210,7 +4284,7 @@ window.updateAvatar = async (input) => {
             if (selfChatIndex !== -1) {
                 state.chats[selfChatIndex].avatar = state.user.user.avatar;
                 state.chats[selfChatIndex].name = state.user.user.name; // Sync name too just in case
-                localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+                saveChatsToStorage();
             }
 
             render();
@@ -4532,7 +4606,7 @@ window.openChat = async (chatId) => {
     if (chatIndex !== -1) {
         state.chats[chatIndex].unreadCount = 0;
         state.chats[chatIndex].unread = false;
-        localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+        saveChatsToStorage();
         render(); // Re-render sidebar to clear the dot instantly
     }
 
@@ -4545,17 +4619,7 @@ window.openChat = async (chatId) => {
         }
     }
 
-    // Add to Recent Chats
-    const searchedUser = state.searchResults.find(u => u.id === chatId);
-    if (searchedUser) {
-        const exists = state.chats.find(c => c.id === chatId);
-        if (!exists) {
-            state.chats.push(searchedUser);
-            localStorage.setItem('oma_chats', JSON.stringify(state.chats));
-        }
-    }
-
-    // Clear Search Mode
+    // Clear Search Mode (Do NOT add to Recent Chats on search open)
     state.isSearching = false;
     state.searchResults = [];
     const searchInput = document.getElementById('user-search');
@@ -4567,20 +4631,39 @@ window.closeChat = () => {
 };
 
 window.logout = () => {
+    if (socket) {
+        try { socket.disconnect(); } catch (e) {}
+    }
     state.user = null;
     state.chats = []; // Clear chats on logout
-    localStorage.clear(); // Nuclear Logout
+    state.messages = [];
+    state.activeChatId = null;
+    state.isSearching = false;
+    state.searchResults = [];
+    localStorage.removeItem('oma_user');
+    localStorage.removeItem('token');
     window.location.hash = '#login';
     window.location.reload();
 };
 
-
-
 window.loginUser = (data) => {
     state.user = data;
+    state.chats = []; // Clear before loading authenticated user's chats
+    state.messages = [];
+    state.activeChatId = null;
+    state.isSearching = false;
+    state.searchResults = [];
     localStorage.setItem('oma_user', JSON.stringify(data));
+
+    // Load only authenticated user's scoped cache
+    const cached = loadChatsFromStorage();
+    if (cached && cached.length > 0) {
+        state.chats = cached;
+    }
+
     window.location.hash = '#chat';
     initSocket();
+    if (window.syncChats) window.syncChats();
 
     // Unified Push Registration for Native
     if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
@@ -4592,9 +4675,12 @@ window.loginUser = (data) => {
 
 window.clearChats = async () => {
     if (confirm('Are you sure you want to clear your recent chats list?')) {
-        try { if (window.db) await window.db.clear(); } catch (e) { }
-        state.chats = [];
-        localStorage.removeItem('oma_chats');
+        const userId = state.user?.user?.id;
+        if (userId) {
+            try { if (window.db) await window.db.clearChatsForUser(userId); } catch (e) { }
+            state.chats = [];
+            localStorage.removeItem(`oma_chats_${userId}`);
+        }
         alert('Chats cleared.');
         render(); // Re-render sidebar
     }
@@ -4808,7 +4894,7 @@ window.leaveGroup = async (groupId) => {
 
         // Remove from list locally
         state.chats = state.chats.filter(c => c.id !== groupId);
-        localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+        saveChatsToStorage();
         render(); // Refresh Sidebar
 
         alert('You left the group');
@@ -4875,7 +4961,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (state.chats[selfIndex].avatar !== refreshedUser.avatar) {
                     state.chats[selfIndex].avatar = refreshedUser.avatar;
                     state.chats[selfIndex].name = refreshedUser.name;
-                    localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+                    saveChatsToStorage();
                     updated = true;
                 }
             }
@@ -4892,14 +4978,13 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (!state.user) return;
-    const cacheKey = `oma_chats_${state.user.user.id}`;
-    const chats = localStorage.getItem(cacheKey);
-    if (chats) {
-        state.chats = JSON.parse(chats);
+    window.syncChats = () => {
+        if (!state.user?.user?.id) return;
+        const cachedChats = loadChatsFromStorage();
+        if (cachedChats && cachedChats.length > 0) {
+            state.chats = cachedChats;
 
-        // Batch Refresh All Chat Profiles
-        if (state.chats.length > 0) {
+            // Batch Refresh All Chat Profiles
             const ids = state.chats.map(c => c.id).filter(id => id !== 'general');
             if (ids.length > 0) {
                 api.batchGetUsers(ids).then(freshUsers => {
@@ -4915,16 +5000,14 @@ window.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                     if (listUpdated) {
-                        localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+                        saveChatsToStorage();
                         if (window.refreshSidebar) window.refreshSidebar();
                     }
                 }).catch(e => console.error("Batch sync failed", e));
             }
         }
-    }
 
-    // Fetch Groups and Recent DMs from Server
-    if (state.user) {
+        // Fetch Groups and Recent DMs from Server
         const statusEl = document.getElementById('restoration-status');
         if (statusEl) statusEl.textContent = "Connecting to secure message vault...";
 
@@ -4932,16 +5015,6 @@ window.addEventListener('DOMContentLoaded', () => {
             .then(([groups, recentDMs]) => {
                 if (statusEl) statusEl.textContent = "Decrypting conversation headers...";
                 const allFetched = [];
-                
-                // Add "General Group" as a baseline if it doesn't exist
-                allFetched.push({ 
-                    id: 'general', 
-                    name: 'General Group', 
-                    lastMsg: 'Tap to chat', 
-                    avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', 
-                    timestamp: 0,
-                    type: 'group'
-                });
 
                 if (Array.isArray(groups)) {
                     groups.forEach(g => allFetched.push({ ...g, type: 'group' }));
@@ -4958,26 +5031,20 @@ window.addEventListener('DOMContentLoaded', () => {
                     time: c.time || (c.timestamp ? new Date(Number(c.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')
                 }));
 
-                updateStateChats(standardized);
-                
-                // Final sort and save
-                state.chats.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                localStorage.setItem('oma_chats', JSON.stringify(state.chats));
+                // Server-Authoritative reconciliation:
+                standardized.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                state.chats = standardized;
+                saveChatsToStorage();
                 if (window.refreshSidebar) window.refreshSidebar();
+                render();
             })
             .catch(e => {
                 console.error("Failed to sync chats:", e);
-                // Even on error, ensure General is there
-                updateStateChats([{ 
-                    id: 'general', 
-                    name: 'General Group', 
-                    lastMsg: 'Chat online', 
-                    avatar: 'https://ui-avatars.com/api/?name=General+Group&background=random', 
-                    timestamp: 0,
-                    type: 'group'
-                }]);
-                render();
             });
+    };
+
+    if (state.user) {
+        window.syncChats();
     }
 
     // Load Dark Mode Preference
@@ -5047,7 +5114,9 @@ const rtcConfig = {
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
-        { urls: 'stun:global.stun.twilio.com:3478' }
+        { urls: 'stun:global.stun.twilio.com:3478' },
+        { urls: 'stun:stun.services.mozilla.com:3478' },
+        { urls: 'stun:stun.relay.metered.ca:80' }
     ],
     iceCandidatePoolSize: 10,
     bundlePolicy: 'max-bundle'
@@ -5247,28 +5316,47 @@ function initSocket() {
             console.log('Call Answered:', data);
             soundManager.stop('calling'); // Stop Calling Tone
             if (peerConnection) {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                try {
+                    let answerDesc = data.answer;
+                    if (typeof answerDesc === 'string') {
+                        try { answerDesc = JSON.parse(answerDesc); } catch (_) { answerDesc = { type: 'answer', sdp: answerDesc }; }
+                    } else if (!answerDesc && data.sdp) {
+                        answerDesc = { type: 'answer', sdp: data.sdp };
+                    }
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(answerDesc));
 
-                // Process Queued Candidates (Caller Side)
-                while (window.iceCandidateQueue && window.iceCandidateQueue.length > 0) {
-                    const c = window.iceCandidateQueue.shift();
-                    peerConnection.addIceCandidate(c).catch(e => console.error("Queued ICE Error (Caller)", e));
+                    // Process Queued Candidates (Caller Side)
+                    while (window.iceCandidateQueue && window.iceCandidateQueue.length > 0) {
+                        const c = window.iceCandidateQueue.shift();
+                        peerConnection.addIceCandidate(c).catch(e => console.error("[WebRTC] Queued ICE Error (Caller)", e));
+                    }
+
+                    startCallTimer(); // Start timer for caller
+                    wasConnected = true;
+                } catch (e) {
+                    console.error("[WebRTC] Set Answer Description Error:", e);
                 }
-
-                startCallTimer(); // Start timer for caller
-                wasConnected = true;
             }
         });
 
         // ICE Candidate
         socket.on('ice-candidate', (data) => {
-            const candidate = new RTCIceCandidate(data.candidate);
-            if (peerConnection && peerConnection.remoteDescription) {
-                peerConnection.addIceCandidate(candidate).catch(e => console.error("ICE Error", e));
-            } else {
-                if (!window.iceCandidateQueue) window.iceCandidateQueue = [];
-                window.iceCandidateQueue.push(candidate);
-                // console.log("ICE Candidate Queued (Remote desc not ready)");
+            try {
+                let candidateInit = data.candidate;
+                if (typeof candidateInit === 'string') {
+                    try { candidateInit = JSON.parse(candidateInit); } catch (_) { candidateInit = { candidate: candidateInit, sdpMid: data.sdpMid || "0", sdpMLineIndex: data.sdpMLineIndex || 0 }; }
+                } else if (!candidateInit && data.sdp) {
+                    candidateInit = { candidate: data.sdp, sdpMid: data.sdpMid || "0", sdpMLineIndex: data.sdpMLineIndex || 0 };
+                }
+                const candidate = new RTCIceCandidate(candidateInit);
+                if (peerConnection && peerConnection.remoteDescription) {
+                    peerConnection.addIceCandidate(candidate).catch(e => console.error("[WebRTC] ICE Error", e));
+                } else {
+                    if (!window.iceCandidateQueue) window.iceCandidateQueue = [];
+                    window.iceCandidateQueue.push(candidate);
+                }
+            } catch (e) {
+                console.error("[WebRTC] Error parsing ICE candidate:", e, data);
             }
         });
 
@@ -5700,12 +5788,22 @@ window.answerCall = async () => {
     await setupLocalMedia(isVideo);
     createPeerConnection();
 
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(window.pendingOffer));
+    try {
+        let offerDesc = window.pendingOffer;
+        if (typeof offerDesc === 'string') {
+            try { offerDesc = JSON.parse(offerDesc); } catch (_) { offerDesc = { type: 'offer', sdp: offerDesc }; }
+        } else if (offerDesc && !offerDesc.sdp && offerDesc.offer) {
+            offerDesc = offerDesc.offer;
+        }
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offerDesc));
+    } catch (e) {
+        console.error("[WebRTC] Set Remote Offer Error:", e);
+    }
 
     // Process Queued Candidates (Callee Side)
     while (window.iceCandidateQueue && window.iceCandidateQueue.length > 0) {
         const c = window.iceCandidateQueue.shift();
-        peerConnection.addIceCandidate(c).catch(e => console.error("Queued ICE Error (Callee)", e));
+        peerConnection.addIceCandidate(c).catch(e => console.error("[WebRTC] Queued ICE Error (Callee)", e));
     }
 
     const answer = await peerConnection.createAnswer();
