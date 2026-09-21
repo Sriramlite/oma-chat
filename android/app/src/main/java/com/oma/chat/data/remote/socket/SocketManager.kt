@@ -290,19 +290,45 @@ class SocketManager @Inject constructor(
                                 else -> JSONObject(data.toString())
                             }
                             val targetId = json.optString("targetId")
-                            val candidateObj = json.optJSONObject("candidate")
-                            val candidateStr = if (candidateObj != null) {
-                                candidateObj.optString("candidate", "")
-                            } else {
-                                json.optString("candidate", "")
-                            }
-                            val sdpMid = if (candidateObj != null && candidateObj.has("sdpMid") && !candidateObj.isNull("sdpMid")) {
-                                candidateObj.getString("sdpMid")
-                            } else if (json.has("sdpMid") && !json.isNull("sdpMid")) {
-                                json.getString("sdpMid")
-                            } else null
+                            val rawCandidate = json.opt("candidate")
+                            
+                            var candidateStr = ""
+                            var sdpMid: String? = null
+                            var sdpMLineIndex = 0
 
-                            val sdpMLineIndex = candidateObj?.optInt("sdpMLineIndex", 0) ?: json.optInt("sdpMLineIndex", 0)
+                            if (rawCandidate is JSONObject) {
+                                candidateStr = rawCandidate.optString("candidate", "")
+                                sdpMid = if (rawCandidate.has("sdpMid") && !rawCandidate.isNull("sdpMid")) {
+                                    rawCandidate.getString("sdpMid")
+                                } else null
+                                sdpMLineIndex = rawCandidate.optInt("sdpMLineIndex", 0)
+                            } else if (rawCandidate is String) {
+                                val trimmed = rawCandidate.trim()
+                                if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                                    try {
+                                        val innerJson = JSONObject(trimmed)
+                                        candidateStr = innerJson.optString("candidate", "")
+                                        sdpMid = if (innerJson.has("sdpMid") && !innerJson.isNull("sdpMid")) {
+                                            innerJson.getString("sdpMid")
+                                        } else null
+                                        sdpMLineIndex = innerJson.optInt("sdpMLineIndex", 0)
+                                    } catch (_: Exception) {
+                                        candidateStr = trimmed
+                                    }
+                                } else {
+                                    candidateStr = trimmed
+                                }
+                            }
+
+                            if (candidateStr.isBlank() && json.has("sdp")) {
+                                candidateStr = json.optString("sdp", "")
+                            }
+                            if (sdpMid == null && json.has("sdpMid") && !json.isNull("sdpMid")) {
+                                sdpMid = json.getString("sdpMid")
+                            }
+                            if (sdpMLineIndex == 0 && json.has("sdpMLineIndex")) {
+                                sdpMLineIndex = json.optInt("sdpMLineIndex", 0)
+                            }
 
                             if (candidateStr.isNotBlank()) {
                                 scope.launch {

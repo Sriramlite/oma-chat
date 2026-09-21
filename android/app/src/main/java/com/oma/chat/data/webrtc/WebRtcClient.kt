@@ -72,7 +72,19 @@ class WebRtcClient @Inject constructor(
         PeerConnection.IceServer.builder("stun:stun4.l.google.com:19302").createIceServer(),
         PeerConnection.IceServer.builder("stun:global.stun.twilio.com:3478").createIceServer(),
         PeerConnection.IceServer.builder("stun:stun.services.mozilla.com:3478").createIceServer(),
-        PeerConnection.IceServer.builder("stun:stun.relay.metered.ca:80").createIceServer()
+        PeerConnection.IceServer.builder("stun:openrelay.metered.ca:80").createIceServer(),
+        PeerConnection.IceServer.builder("turn:openrelay.metered.ca:80")
+            .setUsername("openrelayproject")
+            .setPassword("openrelayproject")
+            .createIceServer(),
+        PeerConnection.IceServer.builder("turn:openrelay.metered.ca:443")
+            .setUsername("openrelayproject")
+            .setPassword("openrelayproject")
+            .createIceServer(),
+        PeerConnection.IceServer.builder("turn:openrelay.metered.ca:443?transport=tcp")
+            .setUsername("openrelayproject")
+            .setPassword("openrelayproject")
+            .createIceServer()
     )
 
     init {
@@ -171,7 +183,6 @@ class WebRtcClient @Inject constructor(
         onRemoteTrack: (MediaStreamTrack) -> Unit
     ) {
         synchronized(pendingIceCandidates) {
-            pendingIceCandidates.clear()
             isRemoteDescriptionSet = false
         }
 
@@ -195,9 +206,13 @@ class WebRtcClient @Inject constructor(
                     Log.d("WebRtcClient", "ICE Connection State: $state")
                     logger.info("WebRTC", "ICE Connection State -> $state")
                     if (state == PeerConnection.IceConnectionState.FAILED) {
-                        logger.error("WebRTC", "ICE Negotiation Failed! Check STUN/Network reachability")
-                        errorNotificationManager.showError("Call Connection Error", "ICE negotiation failed between peers")
-                    } else if (state == PeerConnection.IceConnectionState.CONNECTED) {
+                        logger.warn("WebRTC", "ICE state FAILED. Attempting automatic ICE restart...")
+                        try {
+                            peerConnection?.restartIce()
+                        } catch (e: Exception) {
+                            logger.error("WebRTC", "ICE restart failed: ${e.localizedMessage}")
+                        }
+                    } else if (state == PeerConnection.IceConnectionState.CONNECTED || state == PeerConnection.IceConnectionState.COMPLETED) {
                         logger.success("WebRTC", "P2P DTLS-SRTP Transport Connected! Media streaming live.")
                     }
                 }

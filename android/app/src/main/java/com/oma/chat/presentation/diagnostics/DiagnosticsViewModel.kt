@@ -313,7 +313,16 @@ class DiagnosticsViewModel @Inject constructor(
                 val factory = webRtcClient.ensurePeerConnectionFactory()
                 val iceServers = listOf(
                     PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
-                    PeerConnection.IceServer.builder("stun:global.stun.twilio.com:3478").createIceServer()
+                    PeerConnection.IceServer.builder("stun:global.stun.twilio.com:3478").createIceServer(),
+                    PeerConnection.IceServer.builder("stun:openrelay.metered.ca:80").createIceServer(),
+                    PeerConnection.IceServer.builder("turn:openrelay.metered.ca:80")
+                        .setUsername("openrelayproject")
+                        .setPassword("openrelayproject")
+                        .createIceServer(),
+                    PeerConnection.IceServer.builder("turn:openrelay.metered.ca:443")
+                        .setUsername("openrelayproject")
+                        .setPassword("openrelayproject")
+                        .createIceServer()
                 )
                 val rtcConfig = PeerConnection.RTCConfiguration(iceServers).apply {
                     sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
