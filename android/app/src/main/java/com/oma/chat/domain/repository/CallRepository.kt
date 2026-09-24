@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface CallRepository {
     val callState: StateFlow<CallState>
+    val isNearEar: StateFlow<Boolean>
     fun startCall(targetId: String, targetName: String, targetAvatar: String, callType: CallType)
     fun acceptCall(callerId: String, sdp: String, callType: CallType)
     fun rejectCall(callerId: String)

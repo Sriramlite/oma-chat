@@ -49,6 +49,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.oma.chat.presentation.components.BatteryStatusBadge
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -227,13 +228,14 @@ fun UserProfileScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = if (user.isCharging) Color(0xFFF59E0B).copy(alpha = 0.15f) else EmeraldPrimary.copy(alpha = 0.15f)
+                                    color = EmeraldPrimary.copy(alpha = 0.12f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, EmeraldPrimary.copy(alpha = 0.25f))
                                 ) {
-                                    Text(
-                                        text = if (user.isCharging) "⚡ ${user.battery}% Charging" else "🔋 ${user.battery}%",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (user.isCharging) Color(0xFFF59E0B) else EmeraldPrimary,
-                                        fontWeight = FontWeight.Bold,
+                                    BatteryStatusBadge(
+                                        level = user.battery,
+                                        isCharging = user.isCharging,
+                                        textColor = EmeraldPrimary,
+                                        fontSize = 11.sp,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                     )
                                 }

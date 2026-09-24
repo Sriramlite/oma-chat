@@ -63,6 +63,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import com.oma.chat.presentation.components.BatteryStatusBadge
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -298,7 +299,7 @@ fun ChatScreen(
                                     color = EmeraldPrimary,
                                     fontWeight = FontWeight.Medium
                                 )
-                            } else if (batteryText != null) {
+                            } else if (uiState.partnerBatteryLevel != null) {
                                 AnimatedContent(
                                     targetState = showBatterySlide,
                                     transitionSpec = {
@@ -315,11 +316,11 @@ fun ChatScreen(
                                     label = "header_status_slide"
                                 ) { isBattery ->
                                     if (isBattery) {
-                                        Text(
-                                            text = batteryText,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = if (uiState.isPartnerCharging) Color(0xFFF59E0B) else EmeraldPrimary,
-                                            fontWeight = FontWeight.Medium
+                                        BatteryStatusBadge(
+                                            level = uiState.partnerBatteryLevel ?: 100,
+                                            isCharging = uiState.isPartnerCharging,
+                                            textColor = EmeraldPrimary,
+                                            fontSize = 12.sp
                                         )
                                     } else {
                                         Text(

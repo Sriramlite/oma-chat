@@ -1,7 +1,9 @@
 package com.oma.chat.presentation.call
 
 import android.Manifest
+import android.app.Activity
 import android.content.pm.PackageManager
+import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
@@ -54,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -75,6 +78,41 @@ fun CallScreen(
 ) {
     val context = LocalContext.current
     val callState by viewModel.callState.collectAsState()
+    val isNearEar by viewModel.isNearEar.collectAsState()
+
+    val isSpeakerActive = when (val state = callState) {
+        is CallState.OutgoingRinging -> state.isSpeakerOn
+        is CallState.Connecting -> state.isSpeakerOn
+        is CallState.Connected -> state.isSpeakerOn
+        else -> false
+    }
+
+    val isVideoCall = when (val state = callState) {
+        is CallState.OutgoingRinging -> state.callType == CallType.VIDEO
+        is CallState.Connecting -> state.callType == CallType.VIDEO
+        is CallState.Connected -> state.callType == CallType.VIDEO
+        else -> false
+    }
+
+    val shouldBlackoutScreen = isNearEar && !isSpeakerActive && !isVideoCall && callState !is CallState.Idle && callState !is CallState.Ended
+
+    val activity = context as? Activity
+    DisposableEffect(shouldBlackoutScreen) {
+        if (shouldBlackoutScreen) {
+            activity?.window?.attributes = activity?.window?.attributes?.apply {
+                screenBrightness = 0.001f
+            }
+        } else {
+            activity?.window?.attributes = activity?.window?.attributes?.apply {
+                screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            }
+        }
+        onDispose {
+            activity?.window?.attributes = activity?.window?.attributes?.apply {
+                screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            }
+        }
+    }
 
     // Permissions check
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -177,6 +215,22 @@ fun CallScreen(
                 }
             }
             else -> {}
+        }
+
+        if (shouldBlackoutScreen) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                event.changes.forEach { it.consume() }
+                            }
+                        }
+                    }
+            )
         }
     }
 }

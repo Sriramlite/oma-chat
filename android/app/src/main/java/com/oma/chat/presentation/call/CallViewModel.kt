@@ -15,6 +15,7 @@ class CallViewModel @Inject constructor(
 ) : ViewModel() {
 
     val callState: StateFlow<CallState> = callRepository.callState
+    val isNearEar: StateFlow<Boolean> = callRepository.isNearEar
 
     val webRtcClient: WebRtcClient
         get() = callRepository.getWebRtcClient()

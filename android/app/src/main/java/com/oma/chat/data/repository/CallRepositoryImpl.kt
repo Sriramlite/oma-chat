@@ -49,6 +49,7 @@ class CallRepositoryImpl @Inject constructor(
 
     private val _callState = MutableStateFlow<CallState>(CallState.Idle)
     override val callState: StateFlow<CallState> = _callState.asStateFlow()
+    override val isNearEar: StateFlow<Boolean> = callProximityManager.isNear
 
     private var timerJob: Job? = null
     private var unansweredJob: Job? = null
