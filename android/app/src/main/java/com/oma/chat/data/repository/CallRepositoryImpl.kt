@@ -37,6 +37,7 @@ class CallRepositoryImpl @Inject constructor(
     private val socketManager: SocketManager,
     private val authPreferences: AuthPreferences,
     private val callSoundManager: com.oma.chat.data.call.CallSoundManager,
+    private val callProximityManager: com.oma.chat.data.call.CallProximityManager,
     private val errorNotificationManager: com.oma.chat.data.notification.ErrorNotificationManager,
     private val logger: com.oma.chat.data.diagnostics.DiagnosticsLogger,
     @ApplicationContext private val context: Context,
@@ -353,6 +354,11 @@ class CallRepositoryImpl @Inject constructor(
                 @Suppress("DEPRECATION")
                 audioManager.isSpeakerphoneOn = enabled
             }
+            if (enabled) {
+                callProximityManager.release()
+            } else {
+                callProximityManager.acquire()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -436,6 +442,12 @@ class CallRepositoryImpl @Inject constructor(
                 audioManager.isSpeakerphoneOn = isSpeaker
             }
 
+            if (isSpeaker) {
+                callProximityManager.release()
+            } else {
+                callProximityManager.acquire()
+            }
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val playbackAttributes = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
@@ -458,6 +470,7 @@ class CallRepositoryImpl @Inject constructor(
 
     private fun resetAudioMode() {
         try {
+            callProximityManager.release()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 audioManager.clearCommunicationDevice()
             }
