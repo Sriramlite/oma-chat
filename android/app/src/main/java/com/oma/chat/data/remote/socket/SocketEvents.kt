@@ -44,3 +44,40 @@ data class IceCandidateEvent(
 data class EndCallEvent(
     val targetId: String
 )
+
+data class MessageEditedEvent(
+    val messageId: String,
+    val chatId: String,
+    val senderId: String,
+    val receiverId: String,
+    val newContent: String,
+    val isEdited: Boolean = true
+)
+
+data class MessageDeletedEvent(
+    val messageId: String,
+    val chatId: String,
+    val senderId: String,
+    val receiverId: String,
+    val mode: String, // "everyone" or "me"
+    val deletedFor: String? = null,
+    val isDeleted: Boolean = true,
+    val content: String = "🚫 This message was deleted"
+)
+
+data class ChatDeletedEvent(
+    val chatId: String,
+    val deletedBy: String
+)
+
+data class MessageStarredEvent(
+    val messageId: String,
+    val userId: String,
+    val isStarred: Boolean
+)
+
+data class MessagePinnedEvent(
+    val messageId: String,
+    val chatId: String,
+    val isPinned: Boolean
+)

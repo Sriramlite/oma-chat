@@ -3476,8 +3476,76 @@ window.deleteSelectedMessage = async () => {
         await api.deleteMessage(msgId, 'everyone');
 
     } catch (e) {
-        alert('Failed to delete');
-        // Reload messages on failure?
+        alert('Failed to delete: ' + (e.error || e.message || 'Error'));
+    }
+    window.closeMessageOptions();
+};
+
+window.editSelectedMessage = async () => {
+    if (!window.selectedMessageId) return;
+    const msgId = window.selectedMessageId;
+    const msg = state.messages.find(m => m.id == msgId);
+    if (!msg) {
+        window.closeMessageOptions();
+        return;
+    }
+
+    const currentText = (typeof msg.content === 'string') ? msg.content : '';
+    const newContent = prompt('Edit your message:', currentText);
+    if (newContent === null || newContent.trim() === '' || newContent.trim() === currentText) {
+        window.closeMessageOptions();
+        return;
+    }
+
+    try {
+        const trimmed = newContent.trim();
+        msg.content = trimmed;
+        msg.isEdited = true;
+
+        // Optimistic UI Update
+        const msgEl = document.getElementById(`msg-${msgId}`);
+        if (msgEl) {
+            const contentEl = msgEl.querySelector('.msg-content');
+            if (contentEl) {
+                contentEl.innerHTML = `${trimmed} <small class="edited-badge" style="opacity:0.6;font-size:0.72em;margin-left:4px;">(edited)</small>`;
+            }
+        }
+
+        await api.editMessage(msgId, trimmed);
+    } catch (e) {
+        alert('Failed to edit message: ' + (e.error || e.message || 'Error'));
+    }
+    window.closeMessageOptions();
+};
+
+window.starSelectedMessage = async () => {
+    if (!window.selectedMessageId) return;
+    const msgId = window.selectedMessageId;
+    try {
+        const msg = state.messages.find(m => m.id == msgId);
+        if (msg) {
+            msg.isStarred = !msg.isStarred;
+        }
+        await api.starMessage(msgId);
+        window.showCustomAlert(msg?.isStarred ? 'Message starred' : 'Message unstarred', 'info');
+    } catch (e) {
+        console.error('Star failed:', e);
+    }
+    window.closeMessageOptions();
+};
+
+window.pinSelectedMessage = async () => {
+    if (!window.selectedMessageId) return;
+    const msgId = window.selectedMessageId;
+    try {
+        const msg = state.messages.find(m => m.id == msgId);
+        if (msg) {
+            msg.isPinned = !msg.isPinned;
+        }
+        await api.pinMessage(msgId);
+        window.showCustomAlert(msg?.isPinned ? 'Message pinned' : 'Message unpinned', 'info');
+    } catch (e) {
+        console.error('Pin failed:', e);
     }
     window.closeMessageOptions();
 };
@@ -5491,6 +5559,111 @@ function initSocket() {
                 // Show Toast only if from others
                 if (msg.senderId !== state.user.user.id) {
                     window.showCustomAlert(`New message from ${msg.senderName}`, 'info');
+                }
+            }
+        });
+
+        // Real-Time Message Edit Listener
+        socket.on('message_edited', (data) => {
+            console.log('[Socket] message_edited:', data);
+            if (!data || !data.messageId) return;
+
+            // Update in local state
+            if (state.messages) {
+                const msg = state.messages.find(m => m.id == data.messageId);
+                if (msg) {
+                    msg.content = data.newContent;
+                    msg.isEdited = true;
+                    saveChatToCache(state.activeChatId, state.messages);
+                }
+            }
+
+            // Update DOM element if visible
+            const msgEl = document.getElementById(`msg-${data.messageId}`);
+            if (msgEl) {
+                const contentEl = msgEl.querySelector('.msg-content');
+                if (contentEl) {
+                    contentEl.innerHTML = `${data.newContent} <small class="edited-badge" style="opacity:0.6;font-size:0.72em;margin-left:4px;">(edited)</small>`;
+                }
+            }
+        });
+
+        // Real-Time Message Delete Listener
+        socket.on('message_deleted', (data) => {
+            console.log('[Socket] message_deleted:', data);
+            if (!data || !data.messageId) return;
+
+            if (data.mode === 'everyone') {
+                // Update in local state
+                if (state.messages) {
+                    const msg = state.messages.find(m => m.id == data.messageId);
+                    if (msg) {
+                        msg.isDeleted = true;
+                        msg.content = '🚫 This message was deleted';
+                        msg.type = 'system';
+                        saveChatToCache(state.activeChatId, state.messages);
+                    }
+                }
+
+                // Update DOM element
+                const msgEl = document.getElementById(`msg-${data.messageId}`);
+                if (msgEl) {
+                    msgEl.className = 'message-bubble system-message animate__animated animate__fadeIn';
+                    msgEl.innerHTML = '🚫 This message was deleted';
+                }
+            } else if (data.mode === 'me' && data.deletedFor === state.user?.user?.id) {
+                // Remove from state
+                if (state.messages) {
+                    state.messages = state.messages.filter(m => m.id != data.messageId);
+                    saveChatToCache(state.activeChatId, state.messages);
+                }
+
+                // Remove from DOM
+                const msgEl = document.getElementById(`msg-${data.messageId}`);
+                if (msgEl) {
+                    msgEl.classList.remove('animate__fadeInUp');
+                    msgEl.classList.add('animate__fadeOut');
+                    setTimeout(() => msgEl.remove(), 250);
+                }
+            }
+        });
+
+        // Real-Time Chat Deleted Listener
+        socket.on('chat_deleted', (data) => {
+            console.log('[Socket] chat_deleted:', data);
+            if (!data || !data.chatId) return;
+
+            if (state.activeChatId === data.chatId || (state.user && state.user.user && data.chatId === state.user.user.id)) {
+                state.messages = [];
+                const container = document.getElementById('messages-container');
+                if (container) container.innerHTML = '';
+                saveChatToCache(data.chatId, []);
+            }
+            if (window.refreshSidebar) {
+                window.refreshSidebar();
+            }
+        });
+
+        // Real-Time Message Star Listener
+        socket.on('message_starred', (data) => {
+            if (!data || !data.messageId) return;
+            if (state.messages) {
+                const msg = state.messages.find(m => m.id == data.messageId);
+                if (msg) {
+                    msg.isStarred = data.isStarred;
+                    saveChatToCache(state.activeChatId, state.messages);
+                }
+            }
+        });
+
+        // Real-Time Message Pin Listener
+        socket.on('message_pinned', (data) => {
+            if (!data || !data.messageId) return;
+            if (state.messages) {
+                const msg = state.messages.find(m => m.id == data.messageId);
+                if (msg) {
+                    msg.isPinned = data.isPinned;
+                    saveChatToCache(state.activeChatId, state.messages);
                 }
             }
         });

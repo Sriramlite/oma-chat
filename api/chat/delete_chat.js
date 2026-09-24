@@ -35,11 +35,16 @@ module.exports = async (req, res) => {
         // Group: Admin -> Destroys Group. Member -> Clears local visible? (Hard in simple backend).
         // DM: Deletes all messages matching (sender=me, receiver=them) OR (sender=them, receiver=me)
 
+        const io = req.app ? req.app.get('io') : null;
+
         if (group) {
             // Group Deletion (Admin only)
             if (group.adminIds && group.adminIds.includes(user.id)) {
                 await groupsCollection.deleteOne({ id: chatId });
                 await messagesCollection.deleteMany({ receiverId: chatId }); // Delete all group messages
+                if (io) {
+                    io.to(String(chatId)).emit('chat_deleted', { chatId, deletedBy: user.id });
+                }
                 return res.status(200).json({ success: true, message: 'Group deleted' });
             } else {
                 return res.status(403).json({ error: 'Only admins can delete groups' });
@@ -54,6 +59,10 @@ module.exports = async (req, res) => {
                     { senderId: targetId, receiverId: user.id }
                 ]
             });
+            if (io) {
+                io.to(String(targetId)).emit('chat_deleted', { chatId: user.id, deletedBy: user.id });
+                io.to(String(user.id)).emit('chat_deleted', { chatId: targetId, deletedBy: user.id });
+            }
             return res.status(200).json({ success: true, message: 'Chat deleted for everyone' });
         }
 

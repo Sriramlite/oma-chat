@@ -76,9 +76,71 @@ module.exports = async (req, res) => {
 
         await messagesCollection.updateOne({ id: messageId }, update);
 
-        // Fetch updated message to return
-        // const updatedMessage = await messagesCollection.findOne({ id: messageId });
-        // Return 200 OK
+        // Real-time Socket Emission
+        const io = req.app ? req.app.get('io') : null;
+        if (io) {
+            const receiverRoom = String(message.receiverId);
+            const senderRoom = String(message.senderId);
+
+            if (action === 'delete') {
+                if (payload.mode === 'everyone') {
+                    const deletePayload = {
+                        messageId: message.id,
+                        chatId: message.receiverId,
+                        senderId: message.senderId,
+                        receiverId: message.receiverId,
+                        mode: 'everyone',
+                        isDeleted: true,
+                        content: '🚫 This message was deleted'
+                    };
+                    io.to(receiverRoom).emit('message_deleted', deletePayload);
+                    if (receiverRoom !== senderRoom) {
+                        io.to(senderRoom).emit('message_deleted', deletePayload);
+                    }
+                } else {
+                    io.to(senderRoom).emit('message_deleted', {
+                        messageId: message.id,
+                        chatId: message.receiverId,
+                        senderId: message.senderId,
+                        receiverId: message.receiverId,
+                        mode: 'me',
+                        deletedFor: user.id
+                    });
+                }
+            } else if (action === 'edit') {
+                const editPayload = {
+                    messageId: message.id,
+                    chatId: message.receiverId,
+                    senderId: message.senderId,
+                    receiverId: message.receiverId,
+                    newContent: payload.newContent,
+                    isEdited: true,
+                    editedAt: new Date().toISOString()
+                };
+                io.to(receiverRoom).emit('message_edited', editPayload);
+                if (receiverRoom !== senderRoom) {
+                    io.to(senderRoom).emit('message_edited', editPayload);
+                }
+            } else if (action === 'pin') {
+                const pinPayload = {
+                    messageId: message.id,
+                    chatId: message.receiverId,
+                    isPinned: !message.isPinned
+                };
+                io.to(receiverRoom).emit('message_pinned', pinPayload);
+                if (receiverRoom !== senderRoom) {
+                    io.to(senderRoom).emit('message_pinned', pinPayload);
+                }
+            } else if (action === 'star') {
+                const starPayload = {
+                    messageId: message.id,
+                    userId: user.id,
+                    isStarred: !(message.starredBy || []).includes(user.id)
+                };
+                io.to(senderRoom).emit('message_starred', starPayload);
+            }
+        }
+
         res.status(200).json({ success: true, action });
 
     } catch (e) {

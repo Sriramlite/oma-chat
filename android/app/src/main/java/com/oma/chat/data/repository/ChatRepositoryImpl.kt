@@ -103,6 +103,65 @@ class ChatRepositoryImpl @Inject constructor(
                 )
             }
         }
+
+        // Listen for real-time Message Edit events
+        repositoryScope.launch {
+            socketManager.messageEditedEvents.collect { event ->
+                val ownerUserId = authPreferences.getUserId() ?: return@collect
+                messageDao.updateMessageContent(
+                    ownerUserId = ownerUserId,
+                    id = event.messageId,
+                    content = event.newContent,
+                    isEdited = event.isEdited
+                )
+            }
+        }
+
+        // Listen for real-time Message Delete events
+        repositoryScope.launch {
+            socketManager.messageDeletedEvents.collect { event ->
+                val ownerUserId = authPreferences.getUserId() ?: return@collect
+                if (event.mode == "everyone") {
+                    messageDao.deleteMessageForEveryone(
+                        ownerUserId = ownerUserId,
+                        id = event.messageId,
+                        placeholder = event.content
+                    )
+                } else if (event.deletedFor == ownerUserId) {
+                    messageDao.deleteMessage(
+                        ownerUserId = ownerUserId,
+                        id = event.messageId
+                    )
+                }
+            }
+        }
+
+        // Listen for real-time Chat Delete events
+        repositoryScope.launch {
+            socketManager.chatDeletedEvents.collect { event ->
+                val ownerUserId = authPreferences.getUserId() ?: return@collect
+                messageDao.deleteMessagesForChat(ownerUserId, event.chatId)
+                conversationDao.deleteConversation(ownerUserId, event.chatId)
+            }
+        }
+
+        // Listen for real-time Star events
+        repositoryScope.launch {
+            socketManager.messageStarredEvents.collect { event ->
+                val ownerUserId = authPreferences.getUserId() ?: return@collect
+                if (event.userId == ownerUserId) {
+                    messageDao.updateMessageStarred(ownerUserId, event.messageId, event.isStarred)
+                }
+            }
+        }
+
+        // Listen for real-time Pin events
+        repositoryScope.launch {
+            socketManager.messagePinnedEvents.collect { event ->
+                val ownerUserId = authPreferences.getUserId() ?: return@collect
+                messageDao.updateMessagePinned(ownerUserId, event.messageId, event.isPinned)
+            }
+        }
     }
 
     override fun getRecentConversations(ownerUserId: String): Flow<List<Conversation>> {

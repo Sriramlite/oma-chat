@@ -54,6 +54,21 @@ class SocketManager @Inject constructor(
     private val _endCallEvents = MutableSharedFlow<EndCallEvent>(extraBufferCapacity = 16)
     val endCallEvents: SharedFlow<EndCallEvent> = _endCallEvents.asSharedFlow()
 
+    private val _messageEditedEvents = MutableSharedFlow<MessageEditedEvent>(extraBufferCapacity = 64)
+    val messageEditedEvents: SharedFlow<MessageEditedEvent> = _messageEditedEvents.asSharedFlow()
+
+    private val _messageDeletedEvents = MutableSharedFlow<MessageDeletedEvent>(extraBufferCapacity = 64)
+    val messageDeletedEvents: SharedFlow<MessageDeletedEvent> = _messageDeletedEvents.asSharedFlow()
+
+    private val _chatDeletedEvents = MutableSharedFlow<ChatDeletedEvent>(extraBufferCapacity = 32)
+    val chatDeletedEvents: SharedFlow<ChatDeletedEvent> = _chatDeletedEvents.asSharedFlow()
+
+    private val _messageStarredEvents = MutableSharedFlow<MessageStarredEvent>(extraBufferCapacity = 64)
+    val messageStarredEvents: SharedFlow<MessageStarredEvent> = _messageStarredEvents.asSharedFlow()
+
+    private val _messagePinnedEvents = MutableSharedFlow<MessagePinnedEvent>(extraBufferCapacity = 64)
+    val messagePinnedEvents: SharedFlow<MessagePinnedEvent> = _messagePinnedEvents.asSharedFlow()
+
     fun connect() {
         if (socket?.connected() == true) return
 
@@ -98,6 +113,156 @@ class SocketManager @Inject constructor(
                             val jsonString = data.toString()
                             val msgDto = gson.fromJson(jsonString, ChatMessageDto::class.java)
                             scope.launch { _incomingMessages.emit(msgDto) }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                on("message_edited") { args ->
+                    args.firstOrNull()?.let { data ->
+                        try {
+                            val json = when (data) {
+                                is JSONObject -> data
+                                else -> JSONObject(data.toString())
+                            }
+                            val messageId = json.optString("messageId")
+                            val chatId = json.optString("chatId")
+                            val senderId = json.optString("senderId")
+                            val receiverId = json.optString("receiverId")
+                            val newContent = json.optString("newContent")
+                            val isEdited = json.optBoolean("isEdited", true)
+
+                            if (messageId.isNotBlank()) {
+                                scope.launch {
+                                    _messageEditedEvents.emit(
+                                        MessageEditedEvent(
+                                            messageId = messageId,
+                                            chatId = chatId,
+                                            senderId = senderId,
+                                            receiverId = receiverId,
+                                            newContent = newContent,
+                                            isEdited = isEdited
+                                        )
+                                    )
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                on("message_deleted") { args ->
+                    args.firstOrNull()?.let { data ->
+                        try {
+                            val json = when (data) {
+                                is JSONObject -> data
+                                else -> JSONObject(data.toString())
+                            }
+                            val messageId = json.optString("messageId")
+                            val chatId = json.optString("chatId")
+                            val senderId = json.optString("senderId")
+                            val receiverId = json.optString("receiverId")
+                            val mode = json.optString("mode", "everyone")
+                            val deletedFor = if (json.has("deletedFor")) json.optString("deletedFor") else null
+                            val content = json.optString("content", "🚫 This message was deleted")
+
+                            if (messageId.isNotBlank()) {
+                                scope.launch {
+                                    _messageDeletedEvents.emit(
+                                        MessageDeletedEvent(
+                                            messageId = messageId,
+                                            chatId = chatId,
+                                            senderId = senderId,
+                                            receiverId = receiverId,
+                                            mode = mode,
+                                            deletedFor = deletedFor,
+                                            isDeleted = true,
+                                            content = content
+                                        )
+                                    )
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                on("chat_deleted") { args ->
+                    args.firstOrNull()?.let { data ->
+                        try {
+                            val json = when (data) {
+                                is JSONObject -> data
+                                else -> JSONObject(data.toString())
+                            }
+                            val chatId = json.optString("chatId")
+                            val deletedBy = json.optString("deletedBy")
+                            if (chatId.isNotBlank()) {
+                                scope.launch {
+                                    _chatDeletedEvents.emit(
+                                        ChatDeletedEvent(
+                                            chatId = chatId,
+                                            deletedBy = deletedBy
+                                        )
+                                    )
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                on("message_starred") { args ->
+                    args.firstOrNull()?.let { data ->
+                        try {
+                            val json = when (data) {
+                                is JSONObject -> data
+                                else -> JSONObject(data.toString())
+                            }
+                            val messageId = json.optString("messageId")
+                            val uId = json.optString("userId")
+                            val isStarred = json.optBoolean("isStarred")
+                            if (messageId.isNotBlank()) {
+                                scope.launch {
+                                    _messageStarredEvents.emit(
+                                        MessageStarredEvent(
+                                            messageId = messageId,
+                                            userId = uId,
+                                            isStarred = isStarred
+                                        )
+                                    )
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                on("message_pinned") { args ->
+                    args.firstOrNull()?.let { data ->
+                        try {
+                            val json = when (data) {
+                                is JSONObject -> data
+                                else -> JSONObject(data.toString())
+                            }
+                            val messageId = json.optString("messageId")
+                            val chatId = json.optString("chatId")
+                            val isPinned = json.optBoolean("isPinned")
+                            if (messageId.isNotBlank()) {
+                                scope.launch {
+                                    _messagePinnedEvents.emit(
+                                        MessagePinnedEvent(
+                                            messageId = messageId,
+                                            chatId = chatId,
+                                            isPinned = isPinned
+                                        )
+                                    )
+                                }
+                            }
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
