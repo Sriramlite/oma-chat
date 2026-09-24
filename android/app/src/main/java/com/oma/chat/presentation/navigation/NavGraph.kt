@@ -176,6 +176,26 @@ fun NavGraph(
                     onNavigateToGroupInfo = { groupId ->
                         navController.navigate(Screen.GroupInfo.createRoute(groupId))
                     },
+                    onNavigateToUserProfile = { userId ->
+                        navController.navigate(Screen.UserProfile.createRoute(userId))
+                    },
+                    onStartCall = { targetId, targetName, targetAvatar, callType ->
+                        callViewModel.startCall(targetId, targetName, targetAvatar, callType)
+                        navController.navigate(Screen.Call.route)
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.UserProfile.route,
+                arguments = listOf(
+                    navArgument("userId") { type = NavType.StringType }
+                )
+            ) {
+                com.oma.chat.presentation.profile.UserProfileScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
                     onStartCall = { targetId, targetName, targetAvatar, callType ->
                         callViewModel.startCall(targetId, targetName, targetAvatar, callType)
                         navController.navigate(Screen.Call.route)

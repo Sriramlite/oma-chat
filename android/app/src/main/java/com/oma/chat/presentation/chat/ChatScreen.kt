@@ -123,6 +123,7 @@ fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
     onNavigateToGroupInfo: (groupId: String) -> Unit = {},
+    onNavigateToUserProfile: (userId: String) -> Unit = {},
     onStartCall: (targetId: String, targetName: String, targetAvatar: String, callType: CallType) -> Unit = { _, _, _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -232,7 +233,13 @@ fun ChatScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(vertical = 4.dp)
-                            .clickable { onNavigateToGroupInfo(viewModel.chatId) }
+                            .clickable {
+                                if (viewModel.chatId.startsWith("group_")) {
+                                    onNavigateToGroupInfo(viewModel.chatId)
+                                } else {
+                                    onNavigateToUserProfile(viewModel.chatId)
+                                }
+                            }
                     ) {
                         Box {
                             if (uiState.partnerAvatar.isNotBlank()) {
@@ -376,13 +383,23 @@ fun ChatScreen(
                             expanded = showTopMenu,
                             onDismissRequest = { showTopMenu = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("Group Info") },
-                                onClick = {
-                                    showTopMenu = false
-                                    onNavigateToGroupInfo(viewModel.chatId)
-                                }
-                            )
+                            if (viewModel.chatId.startsWith("group_")) {
+                                DropdownMenuItem(
+                                    text = { Text("Group Info") },
+                                    onClick = {
+                                        showTopMenu = false
+                                        onNavigateToGroupInfo(viewModel.chatId)
+                                    }
+                                )
+                            } else {
+                                DropdownMenuItem(
+                                    text = { Text("View Contact") },
+                                    onClick = {
+                                        showTopMenu = false
+                                        onNavigateToUserProfile(viewModel.chatId)
+                                    }
+                                )
+                            }
                             DropdownMenuItem(
                                 text = { Text("Delete Chat", color = ErrorRed) },
                                 onClick = {
