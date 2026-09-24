@@ -1374,7 +1374,10 @@ function renderChatLayout(container) {
 
     // Start Status Carousel if active chat
     if (state.activeChatId && state.activeChatId !== 'general') {
-        const chat = state.chats.find(c => c.id === state.activeChatId) || state.searchResults.find(c => c.id === state.activeChatId);
+        const chat = state.chats.find(c => c.id === state.activeChatId) || 
+                     state.searchResults.find(c => c.id === state.activeChatId) ||
+                     (state.allUsers || []).find(u => u.id === state.activeChatId) ||
+                     { id: state.activeChatId };
         if (chat) {
             setTimeout(() => window.startStatusCarousel(chat), 100);
         }
@@ -5103,16 +5106,14 @@ window.addEventListener('DOMContentLoaded', () => {
                     freshUsers.forEach(fresh => {
                         const idx = state.chats.findIndex(c => c.id === fresh.id);
                         if (idx !== -1) {
-                            if (state.chats[idx].avatar !== fresh.avatar || state.chats[idx].name !== fresh.name) {
-                                state.chats[idx].avatar = fresh.avatar;
-                                state.chats[idx].name = fresh.name;
-                                listUpdated = true;
-                            }
+                            state.chats[idx] = { ...state.chats[idx], ...fresh };
+                            listUpdated = true;
                         }
                     });
                     if (listUpdated) {
                         saveChatsToStorage();
                         if (window.refreshSidebar) window.refreshSidebar();
+                        if (window.statusCarouselUpdate) window.statusCarouselUpdate();
                     }
                 }).catch(e => console.error("Batch sync failed", e));
             }
@@ -5148,6 +5149,21 @@ window.addEventListener('DOMContentLoaded', () => {
                 saveChatsToStorage();
                 if (window.refreshSidebar) window.refreshSidebar();
                 render();
+
+                // Enrich with user profiles (battery, lastSeen, etc.)
+                const userIds = standardized.filter(c => c.id !== 'general' && c.type !== 'group').map(c => c.id);
+                if (userIds.length > 0) {
+                    api.batchGetUsers(userIds).then(freshUsers => {
+                        freshUsers.forEach(fresh => {
+                            const idx = state.chats.findIndex(c => c.id === fresh.id);
+                            if (idx !== -1) {
+                                state.chats[idx] = { ...state.chats[idx], ...fresh };
+                            }
+                        });
+                        saveChatsToStorage();
+                        if (window.statusCarouselUpdate) window.statusCarouselUpdate();
+                    }).catch(e => console.error("Enrich batch users failed", e));
+                }
             })
             .catch(e => {
                 console.error("Failed to sync chats:", e);
@@ -5302,6 +5318,9 @@ function initSocket() {
         socket.on('connect', () => {
             console.log(`[Client] *** SOCKET CONNECTED: ${socket.id} ***`);
             document.documentElement.style.setProperty('--connection-status', '#22c55e'); // Green
+            if (window.checkAndSendBattery) {
+                window.checkAndSendBattery(true);
+            }
 
             // NUKE GHOST SERVICE WORKERS (Fixing database.js error)
             if ('serviceWorker' in navigator) {
@@ -5954,7 +5973,7 @@ window.startCall = async (type = 'video', targetId = null) => {
 
 /* --- Global Helpers (Moved out of startCall) --- */
 
-function getHeaderStatusText(chat) {
+function getHeaderStatusText(chat, includeBattery = false) {
     if (!chat || !chat.id) return '';
     if (chat.id === 'general') return 'Tap to view info';
 
@@ -5968,9 +5987,9 @@ function getHeaderStatusText(chat) {
         return `${memberCount} members`;
     }
 
-    // Battery Status Logic
+    // Battery Status Logic (only when explicitly requested)
     let batteryHtml = '';
-    if (chat.battery && chat.battery.level !== undefined) {
+    if (includeBattery && chat.battery && chat.battery.level !== undefined && chat.battery.level !== null) {
         const { level, charging } = chat.battery;
         let icon = 'empty';
         if (level > 90) icon = 'full';
@@ -6003,13 +6022,9 @@ function updateUserStatusUI(userId, online, lastSeen) {
         window.refreshSidebar();
     }
 
-    // 2. Header Update
-    if (state.activeChatId === userId) {
-        const headerStatus = document.getElementById('header-status');
-        if (headerStatus) {
-            const newText = getHeaderStatusText({ id: userId });
-            headerStatus.innerHTML = newText;
-        }
+    // 2. Header Update (Call status carousel update so container isn't destroyed)
+    if (state.activeChatId === userId && window.statusCarouselUpdate) {
+        window.statusCarouselUpdate();
     }
 }
 
@@ -6940,8 +6955,9 @@ window.checkAndSendBattery = async (force = false) => {
 
     if (shouldUpdate) {
         try {
-            if (state.socket && state.socket.connected) {
-                state.socket.emit('battery', { level: levelPercent, charging });
+            const activeSocket = (typeof socket !== 'undefined' && socket) || window.socket || state.socket;
+            if (activeSocket && activeSocket.connected) {
+                activeSocket.emit('battery', { level: levelPercent, charging });
             }
             await api.updateProfile({ battery: { level: levelPercent, charging, timestamp: Date.now() } });
             window.batteryService.lastSent = { level: levelPercent, charging };
@@ -7074,13 +7090,20 @@ window.saveProfile = async () => {
 
 // --- Status Carousel ---
 window.startStatusCarousel = (chat) => {
+    if (!chat || !chat.id) return;
     // Clear previous
-    if (state.statusInterval) clearInterval(state.statusInterval);
+    if (state.statusInterval) {
+        clearInterval(state.statusInterval);
+        state.statusInterval = null;
+    }
     const headerStatus = document.getElementById('header-status');
     if (!headerStatus) return;
 
     // Initial Render
-    let standardText = getHeaderStatusText(chat, false);
+    let currentChat = state.chats.find(c => c.id === chat.id) || 
+                      (state.allUsers || []).find(u => u.id === chat.id) || 
+                      chat;
+    let standardText = getHeaderStatusText(currentChat, false);
     headerStatus.innerHTML = `<div class="status-text-container"><span class="status-slide" id="status-slide-1">${standardText}</span></div>`;
 
     let timer = 0;
@@ -7091,7 +7114,9 @@ window.startStatusCarousel = (chat) => {
         if (!container) return;
 
         // Fetch fresh chat object from state to get latest battery/status
-        const freshChat = state.chats.find(c => c.id === chat.id) || chat;
+        const freshChat = state.chats.find(c => c.id === chat.id) || 
+                          (state.allUsers || []).find(u => u.id === chat.id) || 
+                          chat;
         standardText = getHeaderStatusText(freshChat, false);
 
         let content = standardText;
@@ -7110,11 +7135,37 @@ window.startStatusCarousel = (chat) => {
         container.innerHTML = `<span class="status-slide status-slide-up">${content}</span>`;
     };
 
+    window.statusCarouselUpdate = update;
+
+    // Immediately fetch fresh user data (including battery and status)
+    if (chat.id && chat.id !== 'general') {
+        api.batchGetUsers([chat.id]).then(users => {
+            if (users && users.length > 0) {
+                const freshUser = users[0];
+                const idx = state.chats.findIndex(c => c.id === chat.id);
+                if (idx !== -1) {
+                    state.chats[idx] = { ...state.chats[idx], ...freshUser };
+                    saveChatsToStorage();
+                } else {
+                    const uIdx = (state.allUsers || []).findIndex(u => u.id === chat.id);
+                    if (uIdx !== -1) {
+                        state.allUsers[uIdx] = { ...state.allUsers[uIdx], ...freshUser };
+                    }
+                }
+                if (state.activeChatId === chat.id) {
+                    update();
+                }
+            }
+        }).catch(err => console.error("Carousel immediate fetch failed:", err));
+    }
+
     const cycle = () => {
         timer++;
-        // 0-4s: Status. 4s: Switch to Battery. 7s: Switch to Status.
+        // 0-3s: Status. 4-6s: Battery. 7s: Status again.
         if (timer === 4) {
-            const freshChat = state.chats.find(c => c.id === chat.id) || chat;
+            const freshChat = state.chats.find(c => c.id === chat.id) || 
+                              (state.allUsers || []).find(u => u.id === chat.id) || 
+                              chat;
             if (freshChat.battery && freshChat.battery.level !== undefined && freshChat.battery.level !== null) {
                 showBattery = true;
                 update();
@@ -7122,7 +7173,7 @@ window.startStatusCarousel = (chat) => {
                 timer = 0;
                 update();
             }
-        } else if (timer === 7) {
+        } else if (timer >= 7) {
             showBattery = false;
             update();
             timer = 0;
