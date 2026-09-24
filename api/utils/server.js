@@ -187,11 +187,19 @@ io.on('connection', (socket) => {
 
     socket.on('offer', async (data) => {
         const { targetId } = data;
+        const isOnline = onlineUsers.has(String(targetId)) && onlineUsers.get(String(targetId)).size > 0;
+
         io.to(String(targetId)).emit('offer', data);
 
         try {
             const db = await connectToDatabase();
             const targetUser = await db.collection('users').findOne({ id: targetId });
+
+            if (!isOnline && (!targetUser || !targetUser.pushToken)) {
+                console.log(`[Call] Target ${targetId} is offline and has no push token -> emitting call_unreachable`);
+                socket.emit('call_unreachable', { targetId, reason: 'offline' });
+                return;
+            }
 
             if (targetUser && targetUser.pushToken) {
                 const title = "Incoming Call";

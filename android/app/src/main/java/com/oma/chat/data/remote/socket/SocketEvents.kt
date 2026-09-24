@@ -42,7 +42,13 @@ data class IceCandidateEvent(
 )
 
 data class EndCallEvent(
-    val targetId: String
+    val targetId: String,
+    val reason: String? = null
+)
+
+data class CallUnreachableEvent(
+    val targetId: String,
+    val reason: String = "offline"
 )
 
 data class MessageEditedEvent(

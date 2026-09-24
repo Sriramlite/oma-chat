@@ -147,16 +147,23 @@ function loadChatFromCache(chatId) {
 const soundManager = {
     sounds: {
         ringtone: new Audio(`sounds/ringtone.mp3?v=${Date.now()}`),
-        calling: new Audio(`sounds/calling.mp3?v=${Date.now()}`),
-        message: new Audio(`sounds/message.mp3?v=${Date.now()}`)
+        calling: new Audio(`sounds/outgoingcall.mp3?v=${Date.now()}`),
+        message: new Audio(`sounds/message.mp3?v=${Date.now()}`),
+        busytone: new Audio(`sounds/busytone.mp3?v=${Date.now()}`),
+        callrejected: new Audio(`sounds/callrejected.mp3?v=${Date.now()}`),
+        notreachable: new Audio(`sounds/notreachable_offline.mp3?v=${Date.now()}`)
     },
     init() {
         this.sounds.ringtone.loop = true;
         this.sounds.calling.loop = true;
+        this.sounds.busytone.loop = false;
+        this.sounds.callrejected.loop = false;
+        this.sounds.notreachable.loop = false;
     },
     play(type) {
         try {
             if (this.sounds[type]) {
+                this.sounds[type].currentTime = 0;
                 const promise = this.sounds[type].play();
                 if (promise !== undefined) {
                     promise.catch(e => console.log("Audio play failed (autoplay policy):", e));
@@ -171,8 +178,44 @@ const soundManager = {
         }
     },
     stopAll() {
-        this.stop('ringtone');
-        this.stop('calling');
+        Object.keys(this.sounds).forEach(k => this.stop(k));
+    },
+    playBusyTone(onFinish) {
+        this.stopAll();
+        this.play('busytone');
+        let finished = false;
+        const done = () => {
+            if (finished) return;
+            finished = true;
+            this.stop('busytone');
+            if (onFinish) onFinish();
+        };
+        this.sounds.busytone.onended = done;
+        setTimeout(done, 3500);
+    },
+    playRejectedSequence(onFinish) {
+        this.stopAll();
+        this.play('callrejected');
+        this.sounds.callrejected.onended = () => {
+            this.playBusyTone(onFinish);
+        };
+        setTimeout(() => {
+            if (this.sounds.callrejected.paused) {
+                this.playBusyTone(onFinish);
+            }
+        }, 3000);
+    },
+    playUnreachableSequence(onFinish) {
+        this.stopAll();
+        this.play('notreachable');
+        this.sounds.notreachable.onended = () => {
+            this.playBusyTone(onFinish);
+        };
+        setTimeout(() => {
+            if (this.sounds.notreachable.paused) {
+                this.playBusyTone(onFinish);
+            }
+        }, 4000);
     },
     unlock() {
         // Play and pause all sounds silently to unlock audio context
@@ -5398,7 +5441,11 @@ function initSocket() {
         // Call Answered
         socket.on('answer', async (data) => {
             console.log('Call Answered:', data);
-            soundManager.stop('calling'); // Stop Calling Tone
+            if (window.callUnansweredTimer) {
+                clearTimeout(window.callUnansweredTimer);
+                window.callUnansweredTimer = null;
+            }
+            soundManager.stopAll(); // Stop Calling Tone
             if (peerConnection) {
                 try {
                     let answerDesc = data.answer;
@@ -5445,8 +5492,40 @@ function initSocket() {
         });
 
         // End Call
-        socket.on('end-call', () => {
+        socket.on('end-call', (data) => {
+            if (window.callUnansweredTimer) {
+                clearTimeout(window.callUnansweredTimer);
+                window.callUnansweredTimer = null;
+            }
+            const reason = (data && data.reason) ? data.reason.toLowerCase() : '';
+            const isRejected = reason === 'rejected' || reason === 'declined' || reason === 'busy';
+            const isOffline = reason === 'offline' || reason === 'unreachable';
+
+            if (currentCallTargetId && !wasConnected) {
+                if (isRejected) {
+                    const placeholderText = document.querySelector('#video-placeholder .placeholder-text');
+                    if (placeholderText) placeholderText.textContent = "Call Declined";
+                    soundManager.playRejectedSequence(() => endCallCleanup(true));
+                    return;
+                } else if (isOffline) {
+                    const placeholderText = document.querySelector('#video-placeholder .placeholder-text');
+                    if (placeholderText) placeholderText.textContent = "User Unreachable";
+                    soundManager.playUnreachableSequence(() => endCallCleanup(true));
+                    return;
+                }
+            }
             endCallCleanup(true);
+        });
+
+        // Unreachable / Offline Event
+        socket.on('call_unreachable', () => {
+            if (window.callUnansweredTimer) {
+                clearTimeout(window.callUnansweredTimer);
+                window.callUnansweredTimer = null;
+            }
+            const placeholderText = document.querySelector('#video-placeholder .placeholder-text');
+            if (placeholderText) placeholderText.textContent = "User Unreachable";
+            soundManager.playUnreachableSequence(() => endCallCleanup(true));
         });
 
         socket.on('receive_message', (msg) => {
@@ -5783,6 +5862,23 @@ window.startCall = async (type = 'video', targetId = null) => {
 
     soundManager.play('calling'); // Start Calling Tone
 
+    // 20-second unanswered timeout
+    if (window.callUnansweredTimer) clearTimeout(window.callUnansweredTimer);
+    window.callUnansweredTimer = setTimeout(() => {
+        if (currentCallTargetId && !wasConnected) {
+            console.log("[Call] Unanswered after 20s");
+            soundManager.stop('calling');
+            if (socket && socket.connected) {
+                socket.emit('end-call', { targetId: currentCallTargetId, reason: 'unanswered' });
+            }
+            const placeholderText = document.querySelector('#video-placeholder .placeholder-text');
+            if (placeholderText) placeholderText.textContent = "Call Unanswered";
+            soundManager.playBusyTone(() => {
+                endCallCleanup(false);
+            });
+        }
+    }, 20000);
+
     // UI Toggle
     const wrapper = document.querySelector('.video-wrapper');
 
@@ -6014,7 +6110,7 @@ window.rejectCall = () => {
     if (navigator.vibrate) navigator.vibrate(0); // Stop Vibration immediately
     document.getElementById('incoming-call-popup').classList.add('hidden');
     if (socket && socket.connected) {
-        socket.emit('end-call', { targetId: currentCallTargetId });
+        socket.emit('end-call', { targetId: currentCallTargetId, reason: 'rejected' });
     }
 
     // Log "Declined" (guard against duplicate from endCallCleanup)
@@ -6032,12 +6128,16 @@ window.rejectCall = () => {
 
 window.endCall = () => {
     if (currentCallTargetId && socket && socket.connected) {
-        socket.emit('end-call', { targetId: currentCallTargetId });
+        socket.emit('end-call', { targetId: currentCallTargetId, reason: 'ended' });
     }
     endCallCleanup(false);
 };
 
 function endCallCleanup(isRemote = false) {
+    if (window.callUnansweredTimer) {
+        clearTimeout(window.callUnansweredTimer);
+        window.callUnansweredTimer = null;
+    }
     soundManager.stopAll(); // Ensure all sounds stop
     if (navigator.vibrate) navigator.vibrate(0); // Stop Vibration
 

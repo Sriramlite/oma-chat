@@ -36,6 +36,7 @@ class CallRepositoryImpl @Inject constructor(
     private val webRtcClient: WebRtcClient,
     private val socketManager: SocketManager,
     private val authPreferences: AuthPreferences,
+    private val callSoundManager: com.oma.chat.data.call.CallSoundManager,
     private val errorNotificationManager: com.oma.chat.data.notification.ErrorNotificationManager,
     private val logger: com.oma.chat.data.diagnostics.DiagnosticsLogger,
     @ApplicationContext private val context: Context,
@@ -49,6 +50,7 @@ class CallRepositoryImpl @Inject constructor(
     override val callState: StateFlow<CallState> = _callState.asStateFlow()
 
     private var timerJob: Job? = null
+    private var unansweredJob: Job? = null
     private var activeTargetId: String? = null
 
     init {
@@ -78,6 +80,10 @@ class CallRepositoryImpl @Inject constructor(
                 val current = _callState.value
                 if (current is CallState.OutgoingRinging || current is CallState.Connecting) {
                     try {
+                        unansweredJob?.cancel()
+                        unansweredJob = null
+                        callSoundManager.stopAll()
+
                         logger.info("CallSignaling", "Received call answer from peer ${event.targetId}. Setting remote description...")
                         webRtcClient.setRemoteDescription(
                             SessionDescription(SessionDescription.Type.ANSWER, event.sdp)
@@ -116,9 +122,54 @@ class CallRepositoryImpl @Inject constructor(
         }
 
         scope.launch {
-            socketManager.endCallEvents.collectLatest {
-                logger.info("CallSignaling", "Received end-call event from peer")
-                endCallInternal(reason = "Call ended by remote party")
+            socketManager.callUnreachableEvents.collectLatest { event ->
+                val current = _callState.value
+                if (current is CallState.OutgoingRinging && (current.targetId == event.targetId || activeTargetId == event.targetId)) {
+                    logger.info("CallSignaling", "Peer ${event.targetId} is unreachable/offline. Playing unreachable tone sequence.")
+                    unansweredJob?.cancel()
+                    unansweredJob = null
+                    handleCallEndedWithSound(
+                        reason = "User is unreachable",
+                        playSequence = { onFinish -> callSoundManager.playUnreachableSequence(onFinish = onFinish) }
+                    )
+                }
+            }
+        }
+
+        scope.launch {
+            socketManager.endCallEvents.collectLatest { event ->
+                logger.info("CallSignaling", "Received end-call event from peer, reason: ${event.reason}")
+                unansweredJob?.cancel()
+                unansweredJob = null
+
+                val current = _callState.value
+                if (current is CallState.OutgoingRinging) {
+                    val isRejected = event.reason?.equals("rejected", ignoreCase = true) == true ||
+                            event.reason?.equals("declined", ignoreCase = true) == true ||
+                            event.reason?.equals("busy", ignoreCase = true) == true
+
+                    val isOffline = event.reason?.equals("offline", ignoreCase = true) == true ||
+                            event.reason?.equals("unreachable", ignoreCase = true) == true
+
+                    if (isRejected) {
+                        handleCallEndedWithSound(
+                            reason = "Call declined",
+                            playSequence = { onFinish -> callSoundManager.playCallRejectedSequence(onFinish = onFinish) }
+                        )
+                    } else if (isOffline) {
+                        handleCallEndedWithSound(
+                            reason = "User is unreachable",
+                            playSequence = { onFinish -> callSoundManager.playUnreachableSequence(onFinish = onFinish) }
+                        )
+                    } else {
+                        handleCallEndedWithSound(
+                            reason = if (event.reason.isNullOrBlank()) "Call ended by remote party" else event.reason!!,
+                            playSequence = { onFinish -> callSoundManager.playBusyTone(onFinish = onFinish) }
+                        )
+                    }
+                } else {
+                    endCallInternal(reason = if (!event.reason.isNullOrBlank()) event.reason!! else "Call ended by remote party")
+                }
             }
         }
     }
@@ -137,6 +188,23 @@ class CallRepositoryImpl @Inject constructor(
                 targetAvatar = targetAvatar,
                 callType = callType
             )
+
+            // Play outgoing dialing ringtone
+            callSoundManager.playOutgoingCall()
+
+            // 20-second unanswered timeout
+            unansweredJob?.cancel()
+            unansweredJob = scope.launch {
+                delay(20000L) // 20 seconds timeout
+                if (_callState.value is CallState.OutgoingRinging) {
+                    logger.info("CallRepository", "Call unanswered after 20s. Ending with busy tone.")
+                    socketManager.emitEndCall(targetId, reason = "unanswered")
+                    handleCallEndedWithSound(
+                        reason = "Call unanswered",
+                        playSequence = { onFinish -> callSoundManager.playBusyTone(durationMs = 3500L, onFinish = onFinish) }
+                    )
+                }
+            }
 
             setupAudioMode(callType == CallType.VIDEO)
             initWebRtc(targetId, isCaller = true, callType = callType)
@@ -215,15 +283,19 @@ class CallRepositoryImpl @Inject constructor(
 
     override fun rejectCall(callerId: String) {
         scope.launch {
-            socketManager.emitEndCall(callerId)
+            callSoundManager.stopAll()
+            socketManager.emitEndCall(callerId, reason = "rejected")
             endCallInternal(reason = "Call declined")
         }
     }
 
     override fun endCall() {
         scope.launch {
+            unansweredJob?.cancel()
+            unansweredJob = null
+            callSoundManager.stopAll()
             activeTargetId?.let { targetId ->
-                socketManager.emitEndCall(targetId)
+                socketManager.emitEndCall(targetId, reason = "ended")
             }
             endCallInternal(reason = "Call ended")
         }
@@ -397,11 +469,36 @@ class CallRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun endCallInternal(reason: String) {
+    private fun handleCallEndedWithSound(
+        reason: String,
+        playSequence: (onFinish: () -> Unit) -> Unit
+    ) {
+        unansweredJob?.cancel()
+        unansweredJob = null
         timerJob?.cancel()
         timerJob = null
         activeTargetId = null
 
+        resetAudioMode()
+        webRtcClient.close()
+
+        _callState.value = CallState.Ended(reason)
+
+        playSequence {
+            if (_callState.value is CallState.Ended) {
+                _callState.value = CallState.Idle
+            }
+        }
+    }
+
+    private fun endCallInternal(reason: String) {
+        unansweredJob?.cancel()
+        unansweredJob = null
+        timerJob?.cancel()
+        timerJob = null
+        activeTargetId = null
+
+        callSoundManager.stopAll()
         resetAudioMode()
         webRtcClient.close()
 

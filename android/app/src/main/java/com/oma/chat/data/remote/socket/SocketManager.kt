@@ -54,6 +54,9 @@ class SocketManager @Inject constructor(
     private val _endCallEvents = MutableSharedFlow<EndCallEvent>(extraBufferCapacity = 16)
     val endCallEvents: SharedFlow<EndCallEvent> = _endCallEvents.asSharedFlow()
 
+    private val _callUnreachableEvents = MutableSharedFlow<CallUnreachableEvent>(extraBufferCapacity = 16)
+    val callUnreachableEvents: SharedFlow<CallUnreachableEvent> = _callUnreachableEvents.asSharedFlow()
+
     private val _messageEditedEvents = MutableSharedFlow<MessageEditedEvent>(extraBufferCapacity = 64)
     val messageEditedEvents: SharedFlow<MessageEditedEvent> = _messageEditedEvents.asSharedFlow()
 
@@ -521,8 +524,27 @@ class SocketManager @Inject constructor(
                                 else -> JSONObject(data.toString())
                             }
                             val targetId = json.optString("targetId")
+                            val reason = json.optString("reason", "")
                             scope.launch {
-                                _endCallEvents.emit(EndCallEvent(targetId = targetId))
+                                _endCallEvents.emit(EndCallEvent(targetId = targetId, reason = reason))
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                on("call_unreachable") { args ->
+                    args.firstOrNull()?.let { data ->
+                        try {
+                            val json = when (data) {
+                                is JSONObject -> data
+                                else -> JSONObject(data.toString())
+                            }
+                            val targetId = json.optString("targetId")
+                            val reason = json.optString("reason", "offline")
+                            scope.launch {
+                                _callUnreachableEvents.emit(CallUnreachableEvent(targetId = targetId, reason = reason))
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -639,10 +661,13 @@ class SocketManager @Inject constructor(
         }
     }
 
-    fun emitEndCall(targetId: String) {
+    fun emitEndCall(targetId: String, reason: String = "ended") {
         try {
+            val myId = authPreferences.getUserId() ?: ""
             val json = JSONObject().apply {
                 put("targetId", targetId)
+                put("callerId", myId)
+                put("reason", reason)
             }
             socket?.emit("end-call", json)
         } catch (e: Exception) {
