@@ -41,7 +41,9 @@ class UserRepositoryImpl @Inject constructor(
                     avatar = it.avatar,
                     bio = it.bio,
                     lastSeen = it.lastSeen,
-                    isBlocked = it.isBlocked
+                    isBlocked = it.isBlocked,
+                    battery = it.batteryLevel,
+                    isCharging = it.isCharging
                 )
             } ?: authPreferences.getUser()
         }
@@ -60,7 +62,9 @@ class UserRepositoryImpl @Inject constructor(
                         name = user.name,
                         avatar = user.avatar,
                         bio = user.bio,
-                        lastSeen = user.lastSeen
+                        lastSeen = user.lastSeen,
+                        batteryLevel = user.battery,
+                        isCharging = user.isCharging
                     )
                 )
                 Result.success(user)
@@ -95,7 +99,9 @@ class UserRepositoryImpl @Inject constructor(
                         name = user.name,
                         avatar = user.avatar,
                         bio = user.bio,
-                        lastSeen = user.lastSeen
+                        lastSeen = user.lastSeen,
+                        batteryLevel = user.battery,
+                        isCharging = user.isCharging
                     )
                 )
                 Result.success(user)
@@ -135,9 +141,14 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateBattery(batteryLevel: Int): Result<Unit> = withContext(ioDispatcher) {
+    override suspend fun updateBattery(batteryLevel: Int, isCharging: Boolean): Result<Unit> = withContext(ioDispatcher) {
         try {
-            userApi.updateProfile(UpdateProfileRequest(battery = batteryLevel))
+            val batteryMap = mapOf("level" to batteryLevel, "charging" to isCharging)
+            userApi.updateProfile(UpdateProfileRequest(battery = batteryMap))
+            val myId = authPreferences.getUserId() ?: ""
+            if (myId.isNotBlank()) {
+                userDao.updateBattery(myId, batteryLevel, isCharging)
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

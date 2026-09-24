@@ -137,6 +137,7 @@ io.on('connection', (socket) => {
 
     // User joins with their ID to receive calls
     socket.on('join', async (userId) => {
+        socket.userId = String(userId);
         const roomName = String(userId);
         socket.join(roomName);
 
@@ -173,6 +174,31 @@ io.on('connection', (socket) => {
 
         } catch (e) {
             console.error("Socket Join Error:", e);
+        }
+    });
+
+    socket.on('battery', async (data) => {
+        const uid = socket.userId || data?.userId;
+        if (!uid) return;
+        try {
+            const db = await connectToDatabase();
+            const level = typeof data.level === 'number' ? data.level : parseInt(data.level, 10);
+            const charging = Boolean(data.charging);
+            
+            const batteryObj = {
+                level: level,
+                charging: charging,
+                timestamp: Date.now()
+            };
+
+            await db.collection('users').updateOne({ id: uid }, { $set: { battery: batteryObj } });
+            
+            socket.broadcast.emit('user_status', {
+                userId: uid,
+                battery: { level, charging }
+            });
+        } catch (e) {
+            console.error("Socket battery error:", e);
         }
     });
 

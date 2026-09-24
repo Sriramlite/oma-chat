@@ -19,17 +19,32 @@ class CallSoundManager @Inject constructor(
 ) {
     private var mediaPlayer: MediaPlayer? = null
     private val scope = CoroutineScope(Dispatchers.Main)
-    private var timeoutJob: Job? = null
+    private var fallbackTimeoutJob: Job? = null
+
+    private val ringAudioAttributes = AudioAttributes.Builder()
+        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING)
+        .build()
 
     private val voiceAudioAttributes = AudioAttributes.Builder()
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
         .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
         .build()
 
-    private val ringAudioAttributes = AudioAttributes.Builder()
-        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING)
-        .build()
+    private fun createPlayer(rawResId: Int, audioAttributes: AudioAttributes): MediaPlayer? {
+        return try {
+            val afd = context.resources.openRawResourceFd(rawResId) ?: return null
+            MediaPlayer().apply {
+                setAudioAttributes(audioAttributes)
+                setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                afd.close()
+                prepare()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 
     /**
      * Plays outgoing call dialing tone (outgoingcall.mp3) in a loop.
@@ -38,10 +53,11 @@ class CallSoundManager @Inject constructor(
     fun playOutgoingCall() {
         stopAll()
         try {
-            mediaPlayer = MediaPlayer.create(context, R.raw.outgoingcall)?.apply {
-                setAudioAttributes(ringAudioAttributes)
-                isLooping = true
-                start()
+            val player = createPlayer(R.raw.outgoingcall, ringAudioAttributes)
+            if (player != null) {
+                player.isLooping = true
+                player.start()
+                mediaPlayer = player
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -49,29 +65,28 @@ class CallSoundManager @Inject constructor(
     }
 
     /**
-     * Plays busy tone (busytone.mp3) at the end of an unanswered, rejected, or unreachable call.
+     * Plays busy tone (busytone.mp3) and calls onFinish when the audio finishes playing.
      */
     @Synchronized
-    fun playBusyTone(durationMs: Long = 3500L, onFinish: (() -> Unit)? = null) {
+    fun playBusyTone(durationMs: Long = 4000L, onFinish: (() -> Unit)? = null) {
         stopAll()
         try {
-            val player = MediaPlayer.create(context, R.raw.busytone)?.apply {
-                setAudioAttributes(ringAudioAttributes)
-                isLooping = false
-                setOnCompletionListener {
-                    stopAll()
-                    onFinish?.invoke()
-                }
-                start()
-            }
-            mediaPlayer = player
-
+            val player = createPlayer(R.raw.busytone, ringAudioAttributes)
             if (player == null) {
                 onFinish?.invoke()
                 return
             }
 
-            timeoutJob = scope.launch {
+            mediaPlayer = player
+            player.isLooping = false
+            player.setOnCompletionListener {
+                stopAll()
+                onFinish?.invoke()
+            }
+            player.start()
+
+            // Safety timeout in case completion listener doesn't fire
+            fallbackTimeoutJob = scope.launch {
                 delay(durationMs)
                 stopAll()
                 onFinish?.invoke()
@@ -89,22 +104,28 @@ class CallSoundManager @Inject constructor(
     fun playCallRejectedSequence(onFinish: (() -> Unit)? = null) {
         stopAll()
         try {
-            val player = MediaPlayer.create(context, R.raw.callrejected)?.apply {
-                setAudioAttributes(voiceAudioAttributes)
-                isLooping = false
-                setOnCompletionListener {
-                    playBusyTone(durationMs = 3500L, onFinish = onFinish)
-                }
-                start()
-            }
-            mediaPlayer = player
-
+            val player = createPlayer(R.raw.callrejected, voiceAudioAttributes)
             if (player == null) {
-                playBusyTone(durationMs = 3500L, onFinish = onFinish)
+                playBusyTone(durationMs = 4000L, onFinish = onFinish)
+                return
+            }
+
+            mediaPlayer = player
+            player.isLooping = false
+            player.setOnCompletionListener {
+                stopAll()
+                playBusyTone(durationMs = 4000L, onFinish = onFinish)
+            }
+            player.start()
+
+            // Fallback timeout in case rejected audio stalls
+            fallbackTimeoutJob = scope.launch {
+                delay(8000L)
+                playBusyTone(durationMs = 4000L, onFinish = onFinish)
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            playBusyTone(durationMs = 3500L, onFinish = onFinish)
+            playBusyTone(durationMs = 4000L, onFinish = onFinish)
         }
     }
 
@@ -115,22 +136,28 @@ class CallSoundManager @Inject constructor(
     fun playUnreachableSequence(onFinish: (() -> Unit)? = null) {
         stopAll()
         try {
-            val player = MediaPlayer.create(context, R.raw.notreachable_offline)?.apply {
-                setAudioAttributes(voiceAudioAttributes)
-                isLooping = false
-                setOnCompletionListener {
-                    playBusyTone(durationMs = 3500L, onFinish = onFinish)
-                }
-                start()
-            }
-            mediaPlayer = player
-
+            val player = createPlayer(R.raw.notreachable_offline, voiceAudioAttributes)
             if (player == null) {
-                playBusyTone(durationMs = 3500L, onFinish = onFinish)
+                playBusyTone(durationMs = 4000L, onFinish = onFinish)
+                return
+            }
+
+            mediaPlayer = player
+            player.isLooping = false
+            player.setOnCompletionListener {
+                stopAll()
+                playBusyTone(durationMs = 4000L, onFinish = onFinish)
+            }
+            player.start()
+
+            // Fallback timeout in case unreachable audio stalls
+            fallbackTimeoutJob = scope.launch {
+                delay(8000L)
+                playBusyTone(durationMs = 4000L, onFinish = onFinish)
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            playBusyTone(durationMs = 3500L, onFinish = onFinish)
+            playBusyTone(durationMs = 4000L, onFinish = onFinish)
         }
     }
 
@@ -139,8 +166,8 @@ class CallSoundManager @Inject constructor(
      */
     @Synchronized
     fun stopAll() {
-        timeoutJob?.cancel()
-        timeoutJob = null
+        fallbackTimeoutJob?.cancel()
+        fallbackTimeoutJob = null
         try {
             mediaPlayer?.let { player ->
                 if (player.isPlaying) {

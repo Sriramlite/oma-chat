@@ -12,5 +12,7 @@ data class UserEntity(
     val avatar: String,
     val bio: String? = null,
     val lastSeen: Long = 0L,
-    val isBlocked: Boolean = false
+    val isBlocked: Boolean = false,
+    val batteryLevel: Int? = null,
+    val isCharging: Boolean = false
 )

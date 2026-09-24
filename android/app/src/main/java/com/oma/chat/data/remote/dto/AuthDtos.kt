@@ -79,7 +79,7 @@ data class UserDto(
     @SerializedName("bio") val bio: String? = null,
     @SerializedName("phone") val phone: String? = null,
     @SerializedName("lastSeen") val lastSeen: Any? = null,
-    @SerializedName("battery") val battery: Int? = null,
+    @SerializedName("battery") val battery: Any? = null,
     @SerializedName("settings") val settings: UserSettingsDto? = null,
     @SerializedName("blockedUsers") val blockedUsers: List<String>? = null
 ) {
@@ -89,6 +89,15 @@ data class UserDto(
             is String -> lastSeen.toLongOrNull() ?: 0L
             else -> 0L
         }
+        var batteryLevel: Int? = null
+        var isCharging = false
+        when (battery) {
+            is Number -> batteryLevel = battery.toInt()
+            is Map<*, *> -> {
+                batteryLevel = (battery["level"] as? Number)?.toInt()
+                isCharging = (battery["charging"] as? Boolean) ?: false
+            }
+        }
         return User(
             id = id,
             username = username,
@@ -97,7 +106,8 @@ data class UserDto(
             bio = bio,
             phone = phone,
             lastSeen = parsedLastSeen,
-            battery = battery,
+            battery = batteryLevel,
+            isCharging = isCharging,
             settings = settings?.toDomain() ?: com.oma.chat.domain.model.UserPrivacySettings(),
             blockedUsers = blockedUsers ?: emptyList()
         )

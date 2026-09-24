@@ -2828,43 +2828,30 @@ body.dark-mode .hover-reply-btn {
 
 /* Status Carousel Animation (Lyrics Style) */
 .status-text-container {
-    height: 1.2em;
+    height: 1.25em;
     overflow: hidden;
     position: relative;
-    display: flex;
-    flex-direction: column;
+    display: inline-flex;
+    align-items: center;
 }
 
 .status-slide {
-    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s;
-    display: block;
+    display: inline-flex;
+    align-items: center;
 }
 
 .status-slide-up {
-    animation: slideUp 0.5s forwards;
+    animation: statusSlideUpIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes slideUp {
-    from {
+@keyframes statusSlideUpIn {
+    0% {
         transform: translateY(100%);
         opacity: 0;
     }
-
-    to {
+    100% {
         transform: translateY(0);
         opacity: 1;
-    }
-}
-
-@keyframes slideDown {
-    from {
-        transform: translateY(0);
-        opacity: 1;
-    }
-
-    to {
-        transform: translateY(-100%);
-        opacity: 0;
     }
 }
 

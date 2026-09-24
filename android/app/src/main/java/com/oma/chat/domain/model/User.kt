@@ -18,6 +18,7 @@ data class User(
     val phone: String? = null,
     val isBlocked: Boolean = false,
     val battery: Int? = null,
+    val isCharging: Boolean = false,
     val settings: UserPrivacySettings = UserPrivacySettings(),
     val blockedUsers: List<String> = emptyList()
 )

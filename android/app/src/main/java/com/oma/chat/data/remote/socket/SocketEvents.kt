@@ -10,7 +10,9 @@ sealed interface SocketConnectionState {
 data class UserStatusEvent(
     val userId: String,
     val online: Boolean,
-    val lastSeen: Long = 0L
+    val lastSeen: Long = 0L,
+    val batteryLevel: Int? = null,
+    val isCharging: Boolean = false
 )
 
 data class TypingEvent(

@@ -97,7 +97,7 @@ fun CallScreen(
     }
 
     LaunchedEffect(callState) {
-        if (callState is CallState.Ended || callState is CallState.Idle) {
+        if (callState is CallState.Idle) {
             onNavigateBack()
         }
     }
@@ -113,6 +113,8 @@ fun CallScreen(
                     name = state.targetName,
                     avatar = state.targetAvatar,
                     statusText = "Ringing...",
+                    isSpeakerOn = state.isSpeakerOn,
+                    onToggleSpeaker = { viewModel.toggleSpeaker(!state.isSpeakerOn) },
                     onEndCall = { viewModel.endCall() }
                 )
             }
@@ -121,6 +123,8 @@ fun CallScreen(
                     name = state.targetName,
                     avatar = state.targetAvatar,
                     statusText = "Connecting...",
+                    isSpeakerOn = state.isSpeakerOn,
+                    onToggleSpeaker = { viewModel.toggleSpeaker(!state.isSpeakerOn) },
                     onEndCall = { viewModel.endCall() }
                 )
             }
@@ -139,14 +143,37 @@ fun CallScreen(
             }
             is CallState.Ended -> {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = state.reason,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color.White
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(80.dp),
+                            shape = CircleShape,
+                            color = ErrorRed.copy(alpha = 0.2f)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.CallEnd,
+                                    contentDescription = null,
+                                    tint = ErrorRed,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            text = state.reason,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
             else -> {}
@@ -159,6 +186,8 @@ private fun RingingView(
     name: String,
     avatar: String,
     statusText: String,
+    isSpeakerOn: Boolean = false,
+    onToggleSpeaker: (() -> Unit)? = null,
     onEndCall: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -235,20 +264,43 @@ private fun RingingView(
             }
         }
 
-        FloatingActionButton(
-            onClick = onEndCall,
-            containerColor = ErrorRed,
-            contentColor = Color.White,
-            shape = CircleShape,
+        Row(
             modifier = Modifier
-                .size(68.dp)
-                .padding(bottom = 16.dp)
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.CallEnd,
-                contentDescription = "End Call",
-                modifier = Modifier.size(32.dp)
-            )
+            if (onToggleSpeaker != null) {
+                IconButton(
+                    onClick = onToggleSpeaker,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = if (isSpeakerOn) EmeraldPrimary else Color.White.copy(alpha = 0.15f),
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier.size(54.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isSpeakerOn) Icons.Default.VolumeUp else Icons.Default.VolumeDown,
+                        contentDescription = "Speaker"
+                    )
+                }
+                Spacer(modifier = Modifier.width(32.dp))
+            }
+
+            FloatingActionButton(
+                onClick = onEndCall,
+                containerColor = ErrorRed,
+                contentColor = Color.White,
+                shape = CircleShape,
+                modifier = Modifier.size(68.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CallEnd,
+                    contentDescription = "End Call",
+                    modifier = Modifier.size(32.dp)
+                )
+            }
         }
     }
 }

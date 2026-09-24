@@ -4,7 +4,15 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import com.oma.chat.presentation.common.wallpaper.BookshelfWallpaper
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -106,6 +114,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.oma.chat.domain.model.CallType
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
@@ -121,6 +132,46 @@ fun ChatScreen(
     var showDeleteChatConfirm by remember { mutableStateOf(false) }
     var editingTargetMessage by remember { mutableStateOf<Message?>(null) }
     var pendingCallType by remember { mutableStateOf<CallType?>(null) }
+    var showBatterySlide by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.partnerBatteryLevel) {
+        if (uiState.partnerBatteryLevel != null) {
+            while (isActive) {
+                delay(3500)
+                showBatterySlide = !showBatterySlide
+            }
+        } else {
+            showBatterySlide = false
+        }
+    }
+
+    val lastSeenText = when {
+        uiState.isPartnerOnline -> "online"
+        uiState.partnerLastSeen > 0L -> {
+            val diff = System.currentTimeMillis() - uiState.partnerLastSeen
+            val seconds = diff / 1000
+            val minutes = seconds / 60
+            val hours = minutes / 60
+            val days = hours / 24
+            when {
+                seconds < 60 -> "Last seen just now"
+                minutes < 60 -> "Last seen ${minutes}m ago"
+                hours < 24 -> "Last seen ${hours}h ago"
+                days == 1L -> "Last seen yesterday"
+                days < 7 -> "Last seen ${days}d ago"
+                else -> "Last seen Long time ago"
+            }
+        }
+        else -> "offline"
+    }
+
+    val batteryText = if (uiState.partnerBatteryLevel != null) {
+        if (uiState.isPartnerCharging) {
+            "⚡ ${uiState.partnerBatteryLevel}% Charging"
+        } else {
+            "🔋 ${uiState.partnerBatteryLevel}%"
+        }
+    } else null
 
     val callPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -233,15 +284,51 @@ fun ChatScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            Text(
-                                text = when {
-                                    uiState.isPartnerTyping -> "typing..."
-                                    uiState.isPartnerOnline -> "online"
-                                    else -> "offline"
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (uiState.isPartnerTyping || uiState.isPartnerOnline) EmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            if (uiState.isPartnerTyping) {
+                                Text(
+                                    text = "typing...",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = EmeraldPrimary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            } else if (batteryText != null) {
+                                AnimatedContent(
+                                    targetState = showBatterySlide,
+                                    transitionSpec = {
+                                        (slideInVertically(
+                                            animationSpec = tween(400, easing = FastOutSlowInEasing),
+                                            initialOffsetY = { fullHeight -> fullHeight }
+                                        ) + fadeIn(animationSpec = tween(400))).togetherWith(
+                                            slideOutVertically(
+                                                animationSpec = tween(400, easing = FastOutSlowInEasing),
+                                                targetOffsetY = { fullHeight -> -fullHeight }
+                                            ) + fadeOut(animationSpec = tween(400))
+                                        )
+                                    },
+                                    label = "header_status_slide"
+                                ) { isBattery ->
+                                    if (isBattery) {
+                                        Text(
+                                            text = batteryText,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (uiState.isPartnerCharging) Color(0xFFF59E0B) else EmeraldPrimary,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    } else {
+                                        Text(
+                                            text = lastSeenText,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (uiState.isPartnerOnline) EmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            } else {
+                                Text(
+                                    text = lastSeenText,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (uiState.isPartnerOnline) EmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 },

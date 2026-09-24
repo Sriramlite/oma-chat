@@ -6940,6 +6940,9 @@ window.checkAndSendBattery = async (force = false) => {
 
     if (shouldUpdate) {
         try {
+            if (state.socket && state.socket.connected) {
+                state.socket.emit('battery', { level: levelPercent, charging });
+            }
             await api.updateProfile({ battery: { level: levelPercent, charging, timestamp: Date.now() } });
             window.batteryService.lastSent = { level: levelPercent, charging };
             console.log("Battery Status Sent:", levelPercent + "%", charging ? "Charging" : "");
@@ -6956,9 +6959,9 @@ window.toggleBatteryShare = (input) => {
         window.initBatteryService();
         window.checkAndSendBattery(true);
     } else {
-        // Clear from server? Maybe send null? 
-        // For now, just stop sending.
-        // Ideally we send 'null' to clear it for others.
+        if (state.socket && state.socket.connected) {
+            state.socket.emit('battery', { level: null, charging: false });
+        }
         api.updateProfile({ battery: null }).catch(console.error);
     }
 };
@@ -7093,7 +7096,7 @@ window.startStatusCarousel = (chat) => {
 
         let content = standardText;
 
-        if (showBattery && freshChat.battery && freshChat.battery.level) {
+        if (showBattery && freshChat.battery && freshChat.battery.level !== undefined && freshChat.battery.level !== null) {
             const { level, charging } = freshChat.battery;
             let icon = 'empty';
             if (level > 90) icon = 'full';
@@ -7109,19 +7112,17 @@ window.startStatusCarousel = (chat) => {
 
     const cycle = () => {
         timer++;
-        // 0-10s: Status. 10s: Switch to Battery. 15s: Switch to Status.
-        if (timer === 10) {
-            // Only switch to battery if we have data
+        // 0-4s: Status. 4s: Switch to Battery. 7s: Switch to Status.
+        if (timer === 4) {
             const freshChat = state.chats.find(c => c.id === chat.id) || chat;
-            if (freshChat.battery && freshChat.battery.level) {
+            if (freshChat.battery && freshChat.battery.level !== undefined && freshChat.battery.level !== null) {
                 showBattery = true;
                 update();
             } else {
-                timer = 0; // Reset if no battery, keep showing status
-                // Optional: Update status text in case it changed (Online -> Last seen)
+                timer = 0;
                 update();
             }
-        } else if (timer === 15) {
+        } else if (timer === 7) {
             showBattery = false;
             update();
             timer = 0;

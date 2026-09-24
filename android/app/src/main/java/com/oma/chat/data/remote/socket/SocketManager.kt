@@ -282,6 +282,19 @@ class SocketManager @Inject constructor(
                             val targetUid = json.optString("userId")
                             val online = json.optBoolean("online", false)
                             val lastSeen = json.optLong("lastSeen", 0L)
+                            
+                            var batteryLevel: Int? = null
+                            var isCharging = false
+                            if (json.has("battery")) {
+                                val bVal = json.opt("battery")
+                                if (bVal is JSONObject) {
+                                    if (bVal.has("level")) batteryLevel = bVal.optInt("level")
+                                    isCharging = bVal.optBoolean("charging", false)
+                                } else if (bVal is Number) {
+                                    batteryLevel = bVal.toInt()
+                                }
+                            }
+
                             if (targetUid.isNotBlank()) {
                                 val current = _onlineUsers.value.toMutableSet()
                                 if (online) current.add(targetUid) else current.remove(targetUid)
@@ -291,7 +304,9 @@ class SocketManager @Inject constructor(
                                         UserStatusEvent(
                                             userId = targetUid,
                                             online = online,
-                                            lastSeen = lastSeen
+                                            lastSeen = lastSeen,
+                                            batteryLevel = batteryLevel,
+                                            isCharging = isCharging
                                         )
                                     )
                                 }
@@ -670,6 +685,18 @@ class SocketManager @Inject constructor(
                 put("reason", reason)
             }
             socket?.emit("end-call", json)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun emitBattery(level: Int, charging: Boolean) {
+        try {
+            val json = JSONObject().apply {
+                put("level", level)
+                put("charging", charging)
+            }
+            socket?.emit("battery", json)
         } catch (e: Exception) {
             e.printStackTrace()
         }

@@ -339,8 +339,13 @@ class CallRepositoryImpl @Inject constructor(
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val devices = audioManager.availableCommunicationDevices
-                val targetType = if (enabled) android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER else android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-                val device = devices.firstOrNull { it.type == targetType } ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                val targetType = if (enabled) {
+                    android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+                } else {
+                    android.media.AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+                }
+                val device = devices.firstOrNull { it.type == targetType }
+                    ?: devices.firstOrNull { it.type == android.media.AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
                 if (device != null) {
                     audioManager.setCommunicationDevice(device)
                 }
@@ -352,9 +357,12 @@ class CallRepositoryImpl @Inject constructor(
             e.printStackTrace()
         }
         _callState.update { current ->
-            if (current is CallState.Connected) {
-                current.copy(isSpeakerOn = enabled)
-            } else current
+            when (current) {
+                is CallState.Connected -> current.copy(isSpeakerOn = enabled)
+                is CallState.OutgoingRinging -> current.copy(isSpeakerOn = enabled)
+                is CallState.Connecting -> current.copy(isSpeakerOn = enabled)
+                else -> current
+            }
         }
     }
 

@@ -12,7 +12,8 @@ sealed interface CallState {
         val targetId: String,
         val targetName: String,
         val targetAvatar: String,
-        val callType: CallType
+        val callType: CallType,
+        val isSpeakerOn: Boolean = false
     ) : CallState
 
     data class IncomingRinging(
@@ -27,7 +28,8 @@ sealed interface CallState {
         val targetId: String,
         val targetName: String,
         val targetAvatar: String,
-        val callType: CallType
+        val callType: CallType,
+        val isSpeakerOn: Boolean = false
     ) : CallState
 
     data class Connected(

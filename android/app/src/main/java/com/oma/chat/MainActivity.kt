@@ -36,10 +36,17 @@ import android.os.Build
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 
+import androidx.lifecycle.lifecycleScope
+import com.oma.chat.data.battery.BatteryMonitor
+import javax.inject.Inject
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+
+    @Inject
+    lateinit var batteryMonitor: BatteryMonitor
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -52,6 +59,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         checkAndRequestPermissions()
 
+        batteryMonitor.startMonitoring(lifecycleScope)
+
         setContent {
             OmaTheme {
                 val uiState by viewModel.uiState.collectAsState()
@@ -62,6 +71,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        batteryMonitor.stopMonitoring()
     }
 
     private fun checkAndRequestPermissions() {

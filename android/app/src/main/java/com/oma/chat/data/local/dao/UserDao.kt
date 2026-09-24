@@ -27,4 +27,10 @@ interface UserDao {
 
     @Query("UPDATE users SET isBlocked = :isBlocked WHERE id = :userId")
     suspend fun updateBlockedStatus(userId: String, isBlocked: Boolean)
+
+    @Query("UPDATE users SET batteryLevel = :batteryLevel, isCharging = :isCharging WHERE id = :userId")
+    suspend fun updateBattery(userId: String, batteryLevel: Int?, isCharging: Boolean)
+
+    @Query("UPDATE users SET lastSeen = :lastSeen WHERE id = :userId")
+    suspend fun updateLastSeen(userId: String, lastSeen: Long)
 }
