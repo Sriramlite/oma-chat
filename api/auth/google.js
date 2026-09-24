@@ -1,10 +1,13 @@
 const { connectToDatabase } = require('../utils/db');
 const { generateToken } = require('../utils/auth');
 const admin = require('firebase-admin');
+const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 
 // Ensure firebase-admin is initialized
 const { initFirebase } = require('../utils/firebase');
+
+const googleOAuthClient = new OAuth2Client();
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -19,11 +22,26 @@ module.exports = async (req, res) => {
         const { idToken } = req.body;
         if (!idToken) return res.status(400).json({ error: 'ID Token required' });
 
-        initFirebase();
+        let email, name, picture, uid;
 
-        // Verify Firebase Google ID Token
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
-        const { email, name, picture, uid } = decodedToken;
+        try {
+            initFirebase();
+            const decodedToken = await admin.auth().verifyIdToken(idToken);
+            email = decodedToken.email;
+            name = decodedToken.name;
+            picture = decodedToken.picture;
+            uid = decodedToken.uid;
+        } catch (fbErr) {
+            console.log("Firebase verifyIdToken fallback to Google OAuth2 verification:", fbErr.message);
+            const ticket = await googleOAuthClient.verifyIdToken({
+                idToken: idToken
+            });
+            const payload = ticket.getPayload();
+            email = payload.email;
+            name = payload.name;
+            picture = payload.picture;
+            uid = payload.sub;
+        }
 
         if (!email) {
             return res.status(400).json({ error: 'Invalid Google authentication' });

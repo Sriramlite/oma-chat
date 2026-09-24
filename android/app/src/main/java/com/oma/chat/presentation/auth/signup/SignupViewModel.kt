@@ -2,6 +2,7 @@ package com.oma.chat.presentation.auth.signup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.oma.chat.domain.usecase.auth.GoogleAuthUseCase
 import com.oma.chat.domain.usecase.auth.SignupUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,6 +23,7 @@ data class SignupUiState(
     val confirmPassword: String = "",
     val isPasswordVisible: Boolean = false,
     val isLoading: Boolean = false,
+    val isGoogleLoading: Boolean = false,
     val errorMessage: String? = null
 )
 
@@ -32,7 +34,8 @@ sealed interface SignupEvent {
 
 @HiltViewModel
 class SignupViewModel @Inject constructor(
-    private val signupUseCase: SignupUseCase
+    private val signupUseCase: SignupUseCase,
+    private val googleAuthUseCase: GoogleAuthUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SignupUiState())
@@ -107,6 +110,27 @@ class SignupViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             errorMessage = error.localizedMessage ?: "Signup failed. Please try again."
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    fun signupWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isGoogleLoading = true, errorMessage = null) }
+            val result = googleAuthUseCase(idToken)
+            result.fold(
+                onSuccess = {
+                    _uiState.update { it.copy(isGoogleLoading = false) }
+                    _eventFlow.emit(SignupEvent.SignupSuccess)
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isGoogleLoading = false,
+                            errorMessage = error.localizedMessage ?: "Google Sign-Up verification failed."
                         )
                     }
                 }

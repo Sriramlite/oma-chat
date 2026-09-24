@@ -329,7 +329,7 @@ fun SignupScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    enabled = !uiState.isLoading,
+                    enabled = !uiState.isLoading && !uiState.isGoogleLoading,
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = EmeraldPrimary,
@@ -351,7 +351,19 @@ fun SignupScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                // Google Sign-Up
+                com.oma.chat.presentation.auth.components.GoogleSignInSection(
+                    isLoading = uiState.isGoogleLoading,
+                    onGoogleTokenReceived = { idToken ->
+                        viewModel.signupWithGoogle(idToken)
+                    },
+                    onError = { error ->
+                        viewModel.onUsernameChange(uiState.username)
+                    },
+                    buttonText = "Sign up with Google"
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Switch back to Login
                 Row(
