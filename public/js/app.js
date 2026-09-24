@@ -800,6 +800,20 @@ async function handleResetPassword(e) {
 function renderUpdates() {
     const changelog = [
         {
+            version: 'v2.9.0',
+            date: 'September 2026',
+            title: 'Calls, Proximity Sensor & Profile Enhancements',
+            tags: ['Calling', 'Profile', 'UI/UX', 'Mobile'],
+            items: [
+                'Enhanced Calling Audio: Integrated custom tones for outgoing calls, busy tone on 20s timeout, call rejected tone, and unreachable tone.',
+                'Proximity Sensor Mistouch Prevention: Automatically turns off display during earpiece calls when brought near ear on Android.',
+                'Earpiece & Speakerphone Toggle: Seamless audio routing between earpiece and speaker.',
+                'WhatsApp-style User Profile: Full profile screen with Avatar, Bio, Phone Number, Live Battery, and Chat Actions on Android and Web.',
+                'Live Battery Status Carousel: Smooth vertical slide animation in chat header alternating presence and real-time battery info.',
+                'Real-time Message Sync: Instant reflection of message edits, deletions, and status updates across peers.'
+            ]
+        },
+        {
             version: 'v2.8.5',
             date: 'March 2026',
             title: 'Security & Recovery',
