@@ -7,6 +7,9 @@ interface UserRepository {
     fun getCurrentUser(): Flow<User?>
     suspend fun fetchMe(): Result<User>
     suspend fun updateProfile(name: String?, bio: String?, avatar: String?): Result<User>
+    suspend fun updatePrivacySettings(settings: com.oma.chat.domain.model.UserPrivacySettings): Result<User>
+    suspend fun updateBattery(batteryLevel: Int): Result<Unit>
+    suspend fun getBlockedUsers(): Result<List<User>>
     suspend fun changePassword(oldPassword: String, newPassword: String): Result<String>
     suspend fun deleteAccount(password: String): Result<String>
     suspend fun blockUser(userId: String, action: String): Result<String>

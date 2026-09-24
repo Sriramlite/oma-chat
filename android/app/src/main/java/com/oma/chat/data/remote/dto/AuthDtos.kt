@@ -53,6 +53,24 @@ data class AuthResponseDto(
     @SerializedName("user") val user: UserDto
 )
 
+data class UserSettingsDto(
+    @SerializedName("lastSeenPrivacy") val lastSeenPrivacy: String? = "everyone",
+    @SerializedName("profilePhotoPrivacy") val profilePhotoPrivacy: String? = "everyone",
+    @SerializedName("aboutPrivacy") val aboutPrivacy: String? = "everyone",
+    @SerializedName("readReceipts") val readReceipts: Boolean? = true,
+    @SerializedName("shareBattery") val shareBattery: Boolean? = true
+) {
+    fun toDomain(): com.oma.chat.domain.model.UserPrivacySettings {
+        return com.oma.chat.domain.model.UserPrivacySettings(
+            lastSeenPrivacy = lastSeenPrivacy ?: "everyone",
+            profilePhotoPrivacy = profilePhotoPrivacy ?: "everyone",
+            aboutPrivacy = aboutPrivacy ?: "everyone",
+            readReceipts = readReceipts ?: true,
+            shareBattery = shareBattery ?: true
+        )
+    }
+}
+
 data class UserDto(
     @SerializedName("id") val id: String,
     @SerializedName("username") val username: String,
@@ -60,7 +78,10 @@ data class UserDto(
     @SerializedName("avatar") val avatar: String,
     @SerializedName("bio") val bio: String? = null,
     @SerializedName("phone") val phone: String? = null,
-    @SerializedName("lastSeen") val lastSeen: Any? = null
+    @SerializedName("lastSeen") val lastSeen: Any? = null,
+    @SerializedName("battery") val battery: Int? = null,
+    @SerializedName("settings") val settings: UserSettingsDto? = null,
+    @SerializedName("blockedUsers") val blockedUsers: List<String>? = null
 ) {
     fun toDomain(): User {
         val parsedLastSeen = when (lastSeen) {
@@ -75,7 +96,10 @@ data class UserDto(
             avatar = avatar,
             bio = bio,
             phone = phone,
-            lastSeen = parsedLastSeen
+            lastSeen = parsedLastSeen,
+            battery = battery,
+            settings = settings?.toDomain() ?: com.oma.chat.domain.model.UserPrivacySettings(),
+            blockedUsers = blockedUsers ?: emptyList()
         )
     }
 }

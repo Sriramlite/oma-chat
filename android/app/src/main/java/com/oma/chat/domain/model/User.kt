@@ -1,5 +1,13 @@
 package com.oma.chat.domain.model
 
+data class UserPrivacySettings(
+    val lastSeenPrivacy: String = "everyone",
+    val profilePhotoPrivacy: String = "everyone",
+    val aboutPrivacy: String = "everyone",
+    val readReceipts: Boolean = true,
+    val shareBattery: Boolean = true
+)
+
 data class User(
     val id: String,
     val username: String,
@@ -8,7 +16,10 @@ data class User(
     val bio: String? = null,
     val lastSeen: Long = 0L,
     val phone: String? = null,
-    val isBlocked: Boolean = false
+    val isBlocked: Boolean = false,
+    val battery: Int? = null,
+    val settings: UserPrivacySettings = UserPrivacySettings(),
+    val blockedUsers: List<String> = emptyList()
 )
 
 data class AuthSession(

@@ -107,6 +107,69 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updatePrivacySettings(
+        settings: com.oma.chat.domain.model.UserPrivacySettings
+    ): Result<User> = withContext(ioDispatcher) {
+        try {
+            val settingsMap = mapOf<String, Any?>(
+                "lastSeenPrivacy" to settings.lastSeenPrivacy,
+                "profilePhotoPrivacy" to settings.profilePhotoPrivacy,
+                "aboutPrivacy" to settings.aboutPrivacy,
+                "readReceipts" to settings.readReceipts,
+                "shareBattery" to settings.shareBattery
+            )
+            val response = userApi.updateProfile(
+                UpdateProfileRequest(
+                    settings = settingsMap
+                )
+            )
+            if (response.isSuccessful && response.body() != null) {
+                val user = response.body()!!.toDomain()
+                authPreferences.updateUserData(user)
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Failed to update privacy settings: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateBattery(batteryLevel: Int): Result<Unit> = withContext(ioDispatcher) {
+        try {
+            userApi.updateProfile(UpdateProfileRequest(battery = batteryLevel))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getBlockedUsers(): Result<List<User>> = withContext(ioDispatcher) {
+        try {
+            // First refresh me to ensure we have latest blocked IDs
+            val meResult = fetchMe()
+            val blockedIds = if (meResult.isSuccess) {
+                meResult.getOrNull()?.blockedUsers ?: emptyList()
+            } else {
+                authPreferences.getUser()?.blockedUsers ?: emptyList()
+            }
+
+            if (blockedIds.isEmpty()) {
+                return@withContext Result.success(emptyList())
+            }
+
+            val response = userApi.batchGetUsers(com.oma.chat.data.remote.api.BatchUsersRequest(ids = blockedIds))
+            if (response.isSuccessful && response.body() != null) {
+                val users = response.body()!!.map { it.toDomain() }
+                Result.success(users)
+            } else {
+                Result.failure(Exception("Failed to load blocked users: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun changePassword(
         oldPassword: String,
         newPassword: String

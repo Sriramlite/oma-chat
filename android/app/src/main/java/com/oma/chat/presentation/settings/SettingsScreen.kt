@@ -93,6 +93,7 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToDiagnostics: () -> Unit,
+    onNavigateToPrivacy: () -> Unit = {},
     onLoggedOut: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -203,8 +204,8 @@ fun SettingsScreen(
                 SettingsItem(
                     icon = Icons.Default.Lock,
                     title = "Privacy",
-                    subtitle = "Block contacts, read receipts, disappearing messages",
-                    onClick = { viewModel.setShowReportIssueDialog(true) }
+                    subtitle = "Last seen, profile photo, read receipts, blocked users",
+                    onClick = onNavigateToPrivacy
                 )
             }
 

@@ -11,7 +11,9 @@ import retrofit2.http.Query
 data class UpdateProfileRequest(
     val name: String? = null,
     val bio: String? = null,
-    val avatar: String? = null
+    val avatar: String? = null,
+    val battery: Int? = null,
+    val settings: Map<String, Any?>? = null
 )
 
 data class BatchUsersRequest(

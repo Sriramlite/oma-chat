@@ -111,10 +111,32 @@ fun NavGraph(
                     onNavigateToDiagnostics = {
                         navController.navigate(Screen.Diagnostics.route)
                     },
+                    onNavigateToPrivacy = {
+                        navController.navigate(Screen.Privacy.route)
+                    },
                     onLoggedOut = {
                         navController.navigate(Screen.Login.route) {
                             popUpTo(Screen.Home.route) { inclusive = true }
                         }
+                    }
+                )
+            }
+
+            composable(Screen.Privacy.route) {
+                com.oma.chat.presentation.settings.privacy.PrivacyScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToBlockedUsers = {
+                        navController.navigate(Screen.BlockedUsers.route)
+                    }
+                )
+            }
+
+            composable(Screen.BlockedUsers.route) {
+                com.oma.chat.presentation.settings.privacy.BlockedUsersScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }
