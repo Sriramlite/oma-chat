@@ -236,7 +236,30 @@ class CallRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun setIncomingCall(
+        callerId: String,
+        callerName: String,
+        callerAvatar: String,
+        sdp: String,
+        callType: CallType
+    ) {
+        if (_callState.value is CallState.Idle) {
+            activeTargetId = callerId
+            logger.info("CallRepository", "Manually setting incoming call from $callerName ($callerId)")
+            _callState.value = CallState.IncomingRinging(
+                callerId = callerId,
+                callerName = callerName.ifBlank { "Incoming Call" },
+                callerAvatar = callerAvatar,
+                sdp = sdp,
+                callType = callType
+            )
+        }
+    }
+
     override fun acceptCall(callerId: String, sdp: String, callType: CallType) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+        notificationManager?.cancel(com.oma.chat.receiver.NotificationActionReceiver.NOTIFICATION_ID_CALL)
+
         scope.launch {
             val current = _callState.value
             val callerName = if (current is CallState.IncomingRinging) current.callerName else "Incoming Call"
@@ -284,6 +307,9 @@ class CallRepositoryImpl @Inject constructor(
     }
 
     override fun rejectCall(callerId: String) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+        notificationManager?.cancel(com.oma.chat.receiver.NotificationActionReceiver.NOTIFICATION_ID_CALL)
+
         scope.launch {
             callSoundManager.stopAll()
             socketManager.emitEndCall(callerId, reason = "rejected")
@@ -292,6 +318,9 @@ class CallRepositoryImpl @Inject constructor(
     }
 
     override fun endCall() {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+        notificationManager?.cancel(com.oma.chat.receiver.NotificationActionReceiver.NOTIFICATION_ID_CALL)
+
         scope.launch {
             unansweredJob?.cancel()
             unansweredJob = null
@@ -514,6 +543,9 @@ class CallRepositoryImpl @Inject constructor(
     }
 
     private fun endCallInternal(reason: String) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+        notificationManager?.cancel(com.oma.chat.receiver.NotificationActionReceiver.NOTIFICATION_ID_CALL)
+
         unansweredJob?.cancel()
         unansweredJob = null
         timerJob?.cancel()

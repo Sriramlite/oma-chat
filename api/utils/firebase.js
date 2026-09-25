@@ -79,21 +79,44 @@ async function sendPushNotification(token, title, body, data = {}, options = {},
         // FCM requires all data values to be strings
         const stringifiedData = {};
         for (const [key, val] of Object.entries(data || {})) {
-            stringifiedData[key] = String(val);
+            if (val !== undefined && val !== null) {
+                stringifiedData[key] = String(val);
+            }
         }
+        stringifiedData.title = String(title || '');
+        stringifiedData.body = String(body || '');
 
         const message = {
-            notification: {
-                title: title,
-                body: body
-            },
             data: stringifiedData,
             token: token,
-            ...options // Mix in android/apns specific options
+            android: {
+                priority: 'high',
+                ttl: (options.android && options.android.ttl !== undefined) ? options.android.ttl : 60 * 60 * 24,
+                ...(options.android || {})
+            },
+            webpush: {
+                notification: {
+                    title: title,
+                    body: body,
+                    icon: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
+                    badge: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
+                    requireInteraction: data?.type === 'call_offer'
+                },
+                data: stringifiedData,
+                ...(options.webpush || {})
+            }
         };
 
+        // Only include top-level notification if explicitly requested
+        if (options.includeNotification) {
+            message.notification = {
+                title: title,
+                body: body
+            };
+        }
+
         const response = await admin.messaging().send(message);
-        console.log(`[FCM SUCCESS] Message ID: ${response} -> Token: ${token.substring(0, 5)}... -> Tag: ${options?.android?.notification?.tag || 'none'}`);
+        console.log(`[FCM SUCCESS] Message ID: ${response} -> Token: ${token.substring(0, 5)}... -> Type: ${stringifiedData.type || 'standard'}`);
         return { success: true, response };
     } catch (e) {
         console.error("Error sending notification:", e.code || e.message);

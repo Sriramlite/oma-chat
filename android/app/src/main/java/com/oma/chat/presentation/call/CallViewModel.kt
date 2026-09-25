@@ -33,6 +33,10 @@ class CallViewModel @Inject constructor(
         callRepository.acceptCall(callerId, sdp, callType)
     }
 
+    fun setIncomingCall(callerId: String, callerName: String, callerAvatar: String, sdp: String, callType: CallType) {
+        callRepository.setIncomingCall(callerId, callerName, callerAvatar, sdp, callType)
+    }
+
     fun rejectCall(callerId: String) {
         callRepository.rejectCall(callerId)
     }

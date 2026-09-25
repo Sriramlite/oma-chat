@@ -272,26 +272,15 @@ io.on('connection', (socket) => {
 
                 await sendPushNotification(targetUser.pushToken, title, body, {
                     type: 'call_offer',
-                    callerId: data.callerId,
-                    callerName: data.callerName || 'Someone',
-                    callerAvatar: data.callerAvatar || '',
-                    callType: data.type || 'voice'
+                    callerId: String(data.callerId || socket.userId || ''),
+                    callerName: String(data.callerName || 'Someone'),
+                    callerAvatar: String(data.callerAvatar || ''),
+                    callType: String(data.type || 'voice'),
+                    sdp: String(data.sdp || '')
                 }, {
                     android: {
                         priority: 'high',
-                        ttl: 0,
-                        notification: {
-                            channelId: 'call_channel_v3',
-                            priority: 'max',
-                            sound: 'calling',
-                            tag: 'incoming_call', // Prevent multiple notifications for same call
-                            color: '#f43f5e',
-                            icon: 'ic_stat_name', 
-                            visibility: 'public',
-                            fullScreenIntent: true,
-                            notification_priority: 'PRIORITY_MAX',
-                            vibrateConfig: [1000, 1000, 1000, 1000, 1000] // 5 seconds pulse
-                        }
+                        ttl: 60
                     }
                 }, db);
             }

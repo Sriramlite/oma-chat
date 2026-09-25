@@ -17,4 +17,5 @@ interface CallRepository {
     fun switchCamera()
     fun toggleSpeaker(enabled: Boolean)
     fun getWebRtcClient(): WebRtcClient
+    fun setIncomingCall(callerId: String, callerName: String, callerAvatar: String, sdp: String, callType: CallType)
 }

@@ -38,6 +38,8 @@ fun NavGraph(
     val callState by callViewModel.callState.collectAsState()
     val navIntent by (navigationIntent ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     androidx.compose.runtime.LaunchedEffect(navIntent) {
         val intent = navIntent ?: return@LaunchedEffect
         val chatId = intent.getStringExtra("chatId")
@@ -48,6 +50,8 @@ fun NavGraph(
                 intent.action == "com.oma.chat.ACTION_ANSWER_CALL"
         val callerId = intent.getStringExtra("callerId") ?: ""
         val callerName = intent.getStringExtra("callerName") ?: "Caller"
+        val callerAvatar = intent.getStringExtra("callerAvatar") ?: ""
+        val sdp = intent.getStringExtra("sdp") ?: ""
         val callTypeStr = intent.getStringExtra("callType") ?: "voice"
         val callType = if (callTypeStr.equals("video", ignoreCase = true)) com.oma.chat.domain.model.CallType.VIDEO else com.oma.chat.domain.model.CallType.VOICE
 
@@ -56,9 +60,14 @@ fun NavGraph(
                 popUpTo(Screen.Home.route)
             }
         } else if (isIncomingCall && callerId.isNotBlank()) {
+            val notificationManager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
+            notificationManager?.cancel(com.oma.chat.receiver.NotificationActionReceiver.NOTIFICATION_ID_CALL)
+
             if (autoAccept) {
-                callViewModel.acceptCall(callerId, "", callType)
+                callViewModel.acceptCall(callerId, sdp, callType)
                 navController.navigate(Screen.Call.route)
+            } else {
+                callViewModel.setIncomingCall(callerId, callerName, callerAvatar, sdp, callType)
             }
         }
     }
