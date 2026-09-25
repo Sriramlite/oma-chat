@@ -41,9 +41,12 @@ data class ChatUiState(
     val messageInput: String = "",
     val messages: List<Message> = emptyList(),
     val selectedMessage: Message? = null,
+    val replyingTo: Message? = null,
     val isEditing: Boolean = false,
     val editingText: String = "",
     val isSending: Boolean = false,
+    val isRecordingVoice: Boolean = false,
+    val voiceRecordingSeconds: Int = 0,
     val errorMessage: String? = null
 )
 
@@ -188,12 +191,27 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    fun startReplying(message: Message) {
+        _uiState.update {
+            it.copy(
+                selectedMessage = null,
+                replyingTo = message
+            )
+        }
+    }
+
+    fun cancelReply() {
+        _uiState.update { it.copy(replyingTo = null) }
+    }
+
     fun sendMessage() {
         val text = _uiState.value.messageInput.trim()
         if (text.isBlank()) return
 
+        val replyToId = _uiState.value.replyingTo?.id
+
         // Clear input immediately for responsive typing experience
-        _uiState.update { it.copy(messageInput = "") }
+        _uiState.update { it.copy(messageInput = "", replyingTo = null) }
         typingJob?.cancel()
         sendTypingUseCase.sendStopTyping(chatId)
 
@@ -202,8 +220,103 @@ class ChatViewModel @Inject constructor(
                 ownerUserId = ownerUserId,
                 receiverId = chatId,
                 content = text,
-                type = "text"
+                type = "text",
+                replyToId = replyToId
             )
+        }
+    }
+
+    fun sendVoiceMessage(dataUri: String) {
+        if (dataUri.isBlank()) return
+        val replyToId = _uiState.value.replyingTo?.id
+        _uiState.update { it.copy(replyingTo = null) }
+
+        viewModelScope.launch {
+            sendMessageUseCase(
+                ownerUserId = ownerUserId,
+                receiverId = chatId,
+                content = dataUri,
+                type = "audio",
+                replyToId = replyToId
+            )
+        }
+    }
+
+    fun sendImageBitmap(bitmap: android.graphics.Bitmap) {
+        val replyToId = _uiState.value.replyingTo?.id
+        _uiState.update { it.copy(replyingTo = null) }
+
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val outputStream = java.io.ByteArrayOutputStream()
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, outputStream)
+                val bytes = outputStream.toByteArray()
+                val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                val dataUri = "data:image/jpeg;base64,$base64"
+
+                sendMessageUseCase(
+                    ownerUserId = ownerUserId,
+                    receiverId = chatId,
+                    content = dataUri,
+                    type = "image",
+                    replyToId = replyToId
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun sendImageUri(context: android.content.Context, uri: android.net.Uri) {
+        val replyToId = _uiState.value.replyingTo?.id
+        _uiState.update { it.copy(replyingTo = null) }
+
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@launch
+                val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+                val dataUri = "data:$mimeType;base64,$base64"
+
+                sendMessageUseCase(
+                    ownerUserId = ownerUserId,
+                    receiverId = chatId,
+                    content = dataUri,
+                    type = "image",
+                    replyToId = replyToId
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun sendDocumentUri(context: android.content.Context, uri: android.net.Uri, displayName: String) {
+        val replyToId = _uiState.value.replyingTo?.id
+        _uiState.update { it.copy(replyingTo = null) }
+
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return@launch
+                val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+                val jsonPayload = org.json.JSONObject().apply {
+                    put("name", displayName)
+                    put("size", bytes.size)
+                    put("mimeType", mimeType)
+                    put("data", "data:$mimeType;base64,$base64")
+                }.toString()
+
+                sendMessageUseCase(
+                    ownerUserId = ownerUserId,
+                    receiverId = chatId,
+                    content = jsonPayload,
+                    type = "file",
+                    replyToId = replyToId
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
