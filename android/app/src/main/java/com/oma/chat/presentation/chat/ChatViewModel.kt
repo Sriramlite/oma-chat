@@ -47,6 +47,7 @@ data class ChatUiState(
     val isSending: Boolean = false,
     val isRecordingVoice: Boolean = false,
     val voiceRecordingSeconds: Int = 0,
+    val currentWallpaper: String = "bookshelf",
     val errorMessage: String? = null
 )
 
@@ -74,7 +75,8 @@ class ChatViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         ChatUiState(
             chatId = chatId,
-            chatName = chatName
+            chatName = chatName,
+            currentWallpaper = authPreferences.getWallpaper()
         )
     )
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -82,6 +84,13 @@ class ChatViewModel @Inject constructor(
     private var typingJob: Job? = null
 
     init {
+        // Observe wallpaper preference
+        viewModelScope.launch {
+            authPreferences.wallpaperState.collect { wp ->
+                _uiState.update { it.copy(currentWallpaper = wp) }
+            }
+        }
+
         // 1. Observe local messages from Room
         viewModelScope.launch {
             getChatMessagesUseCase(ownerUserId, chatId).collect { msgs ->

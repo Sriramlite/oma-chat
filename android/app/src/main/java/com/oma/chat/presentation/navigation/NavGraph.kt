@@ -150,10 +150,21 @@ fun NavGraph(
                     onNavigateToPrivacy = {
                         navController.navigate(Screen.Privacy.route)
                     },
+                    onNavigateToWallpaper = {
+                        navController.navigate(Screen.Wallpaper.route)
+                    },
                     onLoggedOut = {
                         navController.navigate(Screen.Login.route) {
                             popUpTo(Screen.Home.route) { inclusive = true }
                         }
+                    }
+                )
+            }
+
+            composable(Screen.Wallpaper.route) {
+                com.oma.chat.presentation.settings.wallpaper.WallpaperSelectorScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }
@@ -214,6 +225,9 @@ fun NavGraph(
                     },
                     onNavigateToUserProfile = { userId ->
                         navController.navigate(Screen.UserProfile.createRoute(userId))
+                    },
+                    onNavigateToWallpaper = {
+                        navController.navigate(Screen.Wallpaper.route)
                     },
                     onStartCall = { targetId, targetName, targetAvatar, callType ->
                         callViewModel.startCall(targetId, targetName, targetAvatar, callType)

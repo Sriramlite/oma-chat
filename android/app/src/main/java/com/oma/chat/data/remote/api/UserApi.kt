@@ -14,6 +14,7 @@ data class UpdateProfileRequest(
     val avatar: String? = null,
     val phone: String? = null,
     val battery: Any? = null,
+    val wallpaper: String? = null,
     val settings: Map<String, Any?>? = null
 )
 

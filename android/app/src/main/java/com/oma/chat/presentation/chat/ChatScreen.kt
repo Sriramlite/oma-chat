@@ -6,7 +6,9 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Base64
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,9 +16,12 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -26,9 +31,12 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,10 +44,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -73,6 +83,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material.icons.filled.PlayArrow
@@ -103,6 +114,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -112,9 +124,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -122,8 +140,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -131,7 +152,7 @@ import com.oma.chat.domain.model.CallType
 import com.oma.chat.domain.model.Message
 import com.oma.chat.domain.model.MessageStatus
 import com.oma.chat.domain.model.MessageType
-import com.oma.chat.presentation.common.wallpaper.BookshelfWallpaper
+import com.oma.chat.presentation.common.wallpaper.OmaWallpaperHost
 import com.oma.chat.presentation.components.BatteryStatusBadge
 import com.oma.chat.presentation.components.OmaAvatar
 import com.oma.chat.presentation.components.OmaTypingDots
@@ -141,12 +162,15 @@ import com.oma.chat.presentation.theme.EmeraldPrimary
 import com.oma.chat.presentation.theme.ErrorRed
 import com.oma.chat.presentation.theme.LightIncomingBubble
 import com.oma.chat.presentation.theme.LightOutgoingBubble
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -155,6 +179,7 @@ fun ChatScreen(
     onNavigateBack: () -> Unit,
     onNavigateToGroupInfo: (groupId: String) -> Unit = {},
     onNavigateToUserProfile: (userId: String) -> Unit = {},
+    onNavigateToWallpaper: () -> Unit = {},
     onStartCall: (targetId: String, targetName: String, targetAvatar: String, callType: CallType) -> Unit = { _, _, _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -168,6 +193,7 @@ fun ChatScreen(
     var pendingCallType by remember { mutableStateOf<CallType?>(null) }
     var showBatterySlide by remember { mutableStateOf(false) }
     var showAttachmentSheet by remember { mutableStateOf(false) }
+    var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
 
     // Audio Recorder & Player Helpers
     val audioRecorderHelper = remember { AudioRecorderHelper(context) }
@@ -175,6 +201,7 @@ fun ChatScreen(
     var isRecording by remember { mutableStateOf(false) }
     var recordingDuration by remember { mutableIntStateOf(0) }
     var currentlyPlayingMsgId by remember { mutableStateOf<String?>(null) }
+    val currentAudioProgressMs by audioPlayerHelper.currentPositionMs.collectAsState()
 
     DisposableEffect(Unit) {
         onDispose {
@@ -508,6 +535,20 @@ fun ChatScreen(
                                 )
                             }
                             DropdownMenuItem(
+                                text = { Text("Wallpaper") },
+                                onClick = {
+                                    showTopMenu = false
+                                    onNavigateToWallpaper()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Palette,
+                                        contentDescription = null,
+                                        tint = EmeraldPrimary
+                                    )
+                                }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Delete Chat", color = ErrorRed) },
                                 onClick = {
                                     showTopMenu = false
@@ -537,8 +578,11 @@ fun ChatScreen(
                 .padding(innerPadding)
                 .imePadding()
         ) {
-            // Default Animated Bookshelf Wallpaper
-            BookshelfWallpaper(modifier = Modifier.fillMaxSize())
+            // Dynamic Synchronized Wallpaper Host
+            OmaWallpaperHost(
+                wallpaperId = uiState.currentWallpaper,
+                modifier = Modifier.fillMaxSize()
+            )
 
             // Subtle overlay to ensure maximum message contrast and readability
             Box(
@@ -576,6 +620,7 @@ fun ChatScreen(
                             repliedMessage = repliedMsg,
                             ownerUserId = viewModel.ownerUserId,
                             isPlayingAudio = currentlyPlayingMsgId == message.id,
+                            currentAudioProgressMs = if (currentlyPlayingMsgId == message.id) currentAudioProgressMs else 0,
                             onPlayAudio = { dataUri ->
                                 if (currentlyPlayingMsgId == message.id) {
                                     audioPlayerHelper.stopAudio()
@@ -592,6 +637,12 @@ fun ChatScreen(
                                         }
                                     )
                                 }
+                            },
+                            onSwipeReply = { msg ->
+                                viewModel.startReplying(msg)
+                            },
+                            onImageClick = { imgUrl ->
+                                fullscreenImageUrl = imgUrl
                             },
                             onLongClick = { viewModel.selectMessage(message) },
                             onScrollToReplied = { replyId ->
@@ -802,7 +853,7 @@ fun ChatScreen(
                                         .padding(horizontal = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // Camera Button (Replaced Emoji menu like WhatsApp)
+                                    // Camera Button (WhatsApp style)
                                     IconButton(
                                         onClick = launchCameraDirectly,
                                         modifier = Modifier.size(34.dp)
@@ -870,7 +921,7 @@ fun ChatScreen(
 
                             Spacer(modifier = Modifier.width(8.dp))
 
-                            // Send / Mic Action Button (Instant Voice Recording on tap)
+                            // Send / Mic Action Button
                             AnimatedContent(
                                 targetState = uiState.messageInput.isNotBlank(),
                                 transitionSpec = {
@@ -915,6 +966,14 @@ fun ChatScreen(
                         }
                     }
                 }
+            }
+
+            // Fullscreen Image Viewer Modal Dialog
+            fullscreenImageUrl?.let { imageUrl ->
+                FullscreenImageViewer(
+                    imageUrl = imageUrl,
+                    onDismiss = { fullscreenImageUrl = null }
+                )
             }
         }
 
@@ -1132,10 +1191,14 @@ private fun ModernMessageBubble(
     repliedMessage: Message?,
     ownerUserId: String,
     isPlayingAudio: Boolean,
+    currentAudioProgressMs: Int,
     onPlayAudio: (dataUri: String) -> Unit,
+    onSwipeReply: (Message) -> Unit,
+    onImageClick: (imageUrl: String) -> Unit,
     onLongClick: () -> Unit,
     onScrollToReplied: (replyId: String) -> Unit
 ) {
+    val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
     val bubbleColor = when {
         isOutgoing -> if (isDark) DarkOutgoingBubble else LightOutgoingBubble
@@ -1147,252 +1210,516 @@ private fun ModernMessageBubble(
             (message.content.startsWith("http") && (message.content.endsWith(".jpg") || message.content.endsWith(".png") || message.content.endsWith(".webp") || message.content.endsWith(".jpeg")))
     val isAudio = message.type == MessageType.AUDIO || message.content.startsWith("data:audio/")
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isOutgoing) Arrangement.End else Arrangement.Start
-    ) {
-        Surface(
-            shape = RoundedCornerShape(
-                topStart = 18.dp,
-                topEnd = 18.dp,
-                bottomStart = if (isOutgoing) 18.dp else 4.dp,
-                bottomEnd = if (isOutgoing) 4.dp else 18.dp
-            ),
-            color = bubbleColor,
-            shadowElevation = 1.dp,
-            modifier = Modifier
-                .widthIn(max = 300.dp)
-                .combinedClickable(
-                    onClick = {},
-                    onLongClick = onLongClick
-                )
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp)
-            ) {
-                // Pin / Star indicators
-                if (message.isPinned || message.isStarred) {
-                    Row(
-                        modifier = Modifier.padding(bottom = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (message.isPinned) {
-                            Icon(
-                                imageVector = Icons.Default.PushPin,
-                                contentDescription = "Pinned",
-                                tint = EmeraldPrimary,
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
+    // Swipe Left-to-Right to reply state
+    var dragOffsetX by remember { mutableFloatStateOf(0f) }
+    val animatedOffsetX by animateFloatAsState(
+        targetValue = dragOffsetX,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "bubble_swipe_offset"
+    )
+
+    // Voice Note duration caching & resolution
+    var audioDurationFormatted by remember { mutableStateOf("0:05") }
+    LaunchedEffect(message.content, isAudio) {
+        if (isAudio) {
+            withContext(Dispatchers.IO) {
+                audioDurationFormatted = AudioPlayerHelper.extractDurationFormatted(context, message.content)
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .pointerInput(message.id) {
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        if (dragOffsetX >= 72f) {
+                            onSwipeReply(message)
                         }
-                        if (message.isStarred) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Starred",
-                                tint = Color(0xFFFFB300),
-                                modifier = Modifier.size(12.dp)
-                            )
+                        dragOffsetX = 0f
+                    },
+                    onDragCancel = {
+                        dragOffsetX = 0f
+                    },
+                    onHorizontalDrag = { change, dragAmount ->
+                        if (dragAmount > 0 || dragOffsetX > 0) {
+                            change.consume()
+                            dragOffsetX = (dragOffsetX + dragAmount).coerceIn(0f, 130f)
                         }
                     }
-                }
+                )
+            }
+    ) {
+        // Revealed Reply Icon when swiping
+        if (animatedOffsetX > 8f) {
+            val progress = (animatedOffsetX / 72f).coerceIn(0f, 1f)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 12.dp)
+                    .size(36.dp)
+                    .scale(0.6f + 0.4f * progress)
+                    .alpha(progress)
+                    .clip(CircleShape)
+                    .background(EmeraldPrimary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Reply,
+                    contentDescription = "Reply",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
 
-                // Quoted Reply Context Box
-                if (repliedMessage != null) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = (if (isDark) Color.Black else Color.White).copy(alpha = 0.28f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 6.dp)
-                            .clickable {
-                                onScrollToReplied(repliedMessage.id)
-                            }
-                    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(animatedOffsetX.roundToInt(), 0) },
+            horizontalArrangement = if (isOutgoing) Arrangement.End else Arrangement.Start
+        ) {
+            Surface(
+                shape = RoundedCornerShape(
+                    topStart = 18.dp,
+                    topEnd = 18.dp,
+                    bottomStart = if (isOutgoing) 18.dp else 4.dp,
+                    bottomEnd = if (isOutgoing) 4.dp else 18.dp
+                ),
+                color = bubbleColor,
+                shadowElevation = 1.dp,
+                modifier = Modifier
+                    .widthIn(max = 300.dp)
+                    .combinedClickable(
+                        onClick = {},
+                        onLongClick = onLongClick
+                    )
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp)
+                ) {
+                    // Pin / Star indicators
+                    if (message.isPinned || message.isStarred) {
                         Row(
-                            modifier = Modifier.padding(6.dp),
+                            modifier = Modifier.padding(bottom = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .width(3.5.dp)
-                                    .height(32.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(EmeraldPrimary)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = if (repliedMessage.senderId == ownerUserId) "You" else repliedMessage.senderName,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = EmeraldPrimary,
-                                    fontSize = 11.sp
-                                )
-                                Text(
-                                    text = when {
-                                        repliedMessage.type == MessageType.IMAGE || repliedMessage.content.startsWith("data:image/") -> "📷 Photo"
-                                        repliedMessage.type == MessageType.AUDIO || repliedMessage.content.startsWith("data:audio/") -> "🎤 Voice message"
-                                        repliedMessage.type == MessageType.VIDEO -> "🎥 Video"
-                                        repliedMessage.type == MessageType.FILE -> "📄 Document"
-                                        else -> repliedMessage.content
-                                    },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = textColor.copy(alpha = 0.8f),
-                                    fontSize = 12.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Message Content (Image, Voice Note, or Text)
-                if (isImage) {
-                    AsyncImage(
-                        model = message.content,
-                        contentDescription = "Image attachment",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                } else if (isAudio) {
-                    // WhatsApp-style Voice Note Audio Player Bubble
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
-                        IconButton(
-                            onClick = { onPlayAudio(message.content) },
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(EmeraldPrimary)
-                        ) {
-                            Icon(
-                                imageVector = if (isPlayingAudio) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = if (isPlayingAudio) "Pause" else "Play",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            // Waveform bars simulation
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(18.dp),
-                                horizontalArrangement = Arrangement.spacedBy(2.5.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                val heights = listOf(8, 14, 18, 12, 6, 16, 10, 14, 18, 12, 8, 15, 10, 6, 12, 16, 8, 14)
-                                heights.forEach { h ->
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(h.dp)
-                                            .clip(RoundedCornerShape(1.dp))
-                                            .background(if (isPlayingAudio) EmeraldPrimary else textColor.copy(alpha = 0.45f))
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            Text(
-                                text = "Voice note",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 10.sp,
-                                color = textColor.copy(alpha = 0.6f)
-                            )
-                        }
-                    }
-                } else {
-                    Text(
-                        text = message.content,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (message.isDeleted) textColor.copy(alpha = 0.5f) else textColor,
-                        lineHeight = 21.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(3.dp))
-
-                Row(
-                    modifier = Modifier.align(Alignment.End),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (message.isEdited) {
-                        Text(
-                            text = "edited",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 9.sp,
-                            color = textColor.copy(alpha = 0.55f)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-
-                    Text(
-                        text = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(message.timestamp)),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontSize = 10.sp,
-                        color = textColor.copy(alpha = 0.65f)
-                    )
-
-                    if (isOutgoing) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        when (message.status) {
-                            MessageStatus.PENDING, MessageStatus.SENDING -> {
+                            if (message.isPinned) {
                                 Icon(
-                                    imageVector = Icons.Default.Schedule,
-                                    contentDescription = "Pending",
-                                    tint = textColor.copy(alpha = 0.5f),
+                                    imageVector = Icons.Default.PushPin,
+                                    contentDescription = "Pinned",
+                                    tint = EmeraldPrimary,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            if (message.isStarred) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "Starred",
+                                    tint = Color(0xFFFFB300),
                                     modifier = Modifier.size(12.dp)
                                 )
                             }
-                            MessageStatus.SENT -> {
+                        }
+                    }
+
+                    // Quoted Reply Context Box
+                    if (repliedMessage != null) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = (if (isDark) Color.Black else Color.White).copy(alpha = 0.28f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 6.dp)
+                                .clickable {
+                                    onScrollToReplied(repliedMessage.id)
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .width(3.5.dp)
+                                        .height(32.dp)
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(EmeraldPrimary)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = if (repliedMessage.senderId == ownerUserId) "You" else repliedMessage.senderName,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = EmeraldPrimary,
+                                        fontSize = 11.sp
+                                    )
+                                    Text(
+                                        text = when {
+                                            repliedMessage.type == MessageType.IMAGE || repliedMessage.content.startsWith("data:image/") -> "📷 Photo"
+                                            repliedMessage.type == MessageType.AUDIO || repliedMessage.content.startsWith("data:audio/") -> "🎤 Voice message"
+                                            repliedMessage.type == MessageType.VIDEO -> "🎥 Video"
+                                            repliedMessage.type == MessageType.FILE -> "📄 Document"
+                                            else -> repliedMessage.content
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = textColor.copy(alpha = 0.8f),
+                                        fontSize = 12.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Message Content (Image, Voice Note, or Text)
+                    if (isImage) {
+                        OmaImageMessage(
+                            content = message.content,
+                            onClick = { onImageClick(message.content) }
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    } else if (isAudio) {
+                        // WhatsApp-style Voice Note Audio Player Bubble with REAL duration
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            IconButton(
+                                onClick = { onPlayAudio(message.content) },
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(EmeraldPrimary)
+                            ) {
                                 Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Sent",
-                                    tint = textColor.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(14.dp)
+                                    imageVector = if (isPlayingAudio) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = if (isPlayingAudio) "Pause" else "Play",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
-                            MessageStatus.DELIVERED -> {
-                                Icon(
-                                    imageVector = Icons.Default.DoneAll,
-                                    contentDescription = "Delivered",
-                                    tint = textColor.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(14.dp)
-                                )
+
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                // Dynamic animated Waveform bars
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(18.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(2.5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val heights = listOf(8, 14, 18, 12, 6, 16, 10, 14, 18, 12, 8, 15, 10, 6, 12, 16, 8, 14)
+                                    heights.forEachIndexed { index, h ->
+                                        val activeFraction = if (isPlayingAudio) {
+                                            (currentAudioProgressMs / 1000f) % 2f
+                                        } else 0f
+                                        val isBarActive = isPlayingAudio && (index.toFloat() / heights.size.toFloat() <= activeFraction)
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(h.dp)
+                                                .clip(RoundedCornerShape(1.dp))
+                                                .background(
+                                                    if (isBarActive) EmeraldPrimary else textColor.copy(alpha = if (isPlayingAudio) 0.7f else 0.45f)
+                                                )
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(3.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = if (isPlayingAudio) {
+                                            val currentSec = (currentAudioProgressMs / 1000)
+                                            val mins = currentSec / 60
+                                            val secs = currentSec % 60
+                                            String.format(Locale.getDefault(), "%d:%02d", mins, secs)
+                                        } else {
+                                            "Voice note"
+                                        },
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontSize = 11.sp,
+                                        color = if (isPlayingAudio) EmeraldPrimary else textColor.copy(alpha = 0.7f),
+                                        fontWeight = if (isPlayingAudio) FontWeight.SemiBold else FontWeight.Normal
+                                    )
+
+                                    // Display REAL audio duration
+                                    Text(
+                                        text = audioDurationFormatted,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = textColor.copy(alpha = 0.8f)
+                                    )
+                                }
                             }
-                            MessageStatus.SEEN -> {
-                                Icon(
-                                    imageVector = Icons.Default.DoneAll,
-                                    contentDescription = "Seen",
-                                    tint = EmeraldPrimary,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                            MessageStatus.FAILED -> {
-                                Text(
-                                    text = "!",
-                                    color = MaterialTheme.colorScheme.error,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                        }
+                    } else {
+                        Text(
+                            text = message.content,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (message.isDeleted) textColor.copy(alpha = 0.5f) else textColor,
+                            lineHeight = 21.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(3.dp))
+
+                    Row(
+                        modifier = Modifier.align(Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (message.isEdited) {
+                            Text(
+                                text = "edited",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 9.sp,
+                                color = textColor.copy(alpha = 0.55f)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+
+                        Text(
+                            text = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(message.timestamp)),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            color = textColor.copy(alpha = 0.65f)
+                        )
+
+                        if (isOutgoing) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            when (message.status) {
+                                MessageStatus.PENDING, MessageStatus.SENDING -> {
+                                    Icon(
+                                        imageVector = Icons.Default.Schedule,
+                                        contentDescription = "Pending",
+                                        tint = textColor.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                }
+                                MessageStatus.SENT -> {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Sent",
+                                        tint = textColor.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                                MessageStatus.DELIVERED -> {
+                                    Icon(
+                                        imageVector = Icons.Default.DoneAll,
+                                        contentDescription = "Delivered",
+                                        tint = textColor.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                                MessageStatus.SEEN -> {
+                                    Icon(
+                                        imageVector = Icons.Default.DoneAll,
+                                        contentDescription = "Seen",
+                                        tint = EmeraldPrimary,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                                MessageStatus.FAILED -> {
+                                    Text(
+                                        text = "!",
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Image message renderer supporting Base64 data URIs and standard URLs
+ */
+@Composable
+fun OmaImageMessage(
+    content: String,
+    onClick: () -> Unit
+) {
+    val bitmap: ImageBitmap? = remember(content) {
+        if (content.startsWith("data:image/") || (!content.startsWith("http") && content.length > 100)) {
+            try {
+                val cleanBase64 = if (content.contains(",")) content.substringAfter(",") else content
+                val bytes = Base64.decode(cleanBase64, Base64.DEFAULT)
+                val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                decoded?.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(210.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .background(Color.Black.copy(alpha = 0.3f)),
+        contentAlignment = Alignment.Center
+    ) {
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = "Photo",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            AsyncImage(
+                model = content,
+                contentDescription = "Photo",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+    }
+}
+
+/**
+ * Fullscreen Interactive Image Viewer with Pinch-Zoom & Pan
+ */
+@Composable
+fun FullscreenImageViewer(
+    imageUrl: String,
+    onDismiss: () -> Unit
+) {
+    val bitmap: ImageBitmap? = remember(imageUrl) {
+        if (imageUrl.startsWith("data:image/") || (!imageUrl.startsWith("http") && imageUrl.length > 100)) {
+            try {
+                val cleanBase64 = if (imageUrl.contains(",")) imageUrl.substringAfter(",") else imageUrl
+                val bytes = Base64.decode(cleanBase64, Base64.DEFAULT)
+                val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                decoded?.asImageBitmap()
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            null
+        }
+    }
+
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            // Interactive Zoom & Pan Container
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTransformGestures { _, pan, zoom, _ ->
+                            scale = (scale * zoom).coerceIn(1f, 5f)
+                            offset = if (scale > 1f) {
+                                Offset(
+                                    x = offset.x + pan.x,
+                                    y = offset.y + pan.y
+                                )
+                            } else {
+                                Offset.Zero
+                            }
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap,
+                        contentDescription = "Full Image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                                translationX = offset.x
+                                translationY = offset.y
+                            },
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Full Image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                                translationX = offset.x
+                                translationY = offset.y
+                            },
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+
+            // Top Overlay Bar with Close Button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)
+                        )
+                    )
+                    .padding(horizontal = 12.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = "Photo View",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }

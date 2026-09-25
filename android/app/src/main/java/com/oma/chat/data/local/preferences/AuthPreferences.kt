@@ -52,20 +52,30 @@ class AuthPreferences @Inject constructor(
     }
 
     fun saveAuthSession(token: String, user: User) {
-        prefs.edit()
+        val wp = user.settings.wallpaper
+        val editor = prefs.edit()
             .putString(KEY_AUTH_TOKEN, token)
             .putString(KEY_USER_DATA, gson.toJson(user))
             .putString(KEY_USER_ID, user.id)
-            .apply()
+        if (!wp.isNullOrBlank()) {
+            editor.putString(KEY_WALLPAPER, wp)
+            _wallpaperState.value = wp
+        }
+        editor.apply()
         _isLoggedInState.value = true
         _currentUserState.value = user
     }
 
     fun updateUserData(user: User) {
-        prefs.edit()
+        val wp = user.settings.wallpaper
+        val editor = prefs.edit()
             .putString(KEY_USER_DATA, gson.toJson(user))
             .putString(KEY_USER_ID, user.id)
-            .apply()
+        if (!wp.isNullOrBlank()) {
+            editor.putString(KEY_WALLPAPER, wp)
+            _wallpaperState.value = wp
+        }
+        editor.apply()
         _currentUserState.value = user
     }
 
@@ -90,10 +100,23 @@ class AuthPreferences @Inject constructor(
         return !getToken().isNullOrBlank()
     }
 
+    private val _wallpaperState = MutableStateFlow(getWallpaper())
+    val wallpaperState: StateFlow<String> = _wallpaperState.asStateFlow()
+
+    fun getWallpaper(): String {
+        return prefs.getString(KEY_WALLPAPER, "bookshelf") ?: "bookshelf"
+    }
+
+    fun setWallpaper(wallpaper: String) {
+        prefs.edit().putString(KEY_WALLPAPER, wallpaper).apply()
+        _wallpaperState.value = wallpaper
+    }
+
     fun clear() {
         prefs.edit().clear().apply()
         _isLoggedInState.value = false
         _currentUserState.value = null
+        _wallpaperState.value = "bookshelf"
     }
 
     companion object {
@@ -101,5 +124,6 @@ class AuthPreferences @Inject constructor(
         private const val KEY_AUTH_TOKEN = "key_jwt_token"
         private const val KEY_USER_DATA = "key_user_json"
         private const val KEY_USER_ID = "key_user_uuid"
+        private const val KEY_WALLPAPER = "key_chat_wallpaper"
     }
 }

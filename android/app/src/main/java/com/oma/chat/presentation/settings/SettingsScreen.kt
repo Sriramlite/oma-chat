@@ -88,6 +88,7 @@ fun SettingsScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToDiagnostics: () -> Unit,
     onNavigateToPrivacy: () -> Unit = {},
+    onNavigateToWallpaper: () -> Unit = {},
     onLoggedOut: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -248,8 +249,20 @@ fun SettingsScreen(
 
                         OmaSettingsRow(
                             icon = Icons.AutoMirrored.Filled.Chat,
-                            title = "Chats & Theme",
-                            subtitle = "Theme, wallpapers, chat history",
+                            title = "Chat Wallpaper",
+                            subtitle = "Signature themes, animated matrix & library",
+                            onClick = onNavigateToWallpaper
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+
+                        OmaSettingsRow(
+                            icon = Icons.Default.BrightnessMedium,
+                            title = "Theme",
+                            subtitle = "Dark, Light, System default",
                             onClick = { viewModel.setShowThemeDialog(true) }
                         )
 

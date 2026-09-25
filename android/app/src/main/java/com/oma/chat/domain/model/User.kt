@@ -6,7 +6,8 @@ data class UserPrivacySettings(
     val aboutPrivacy: String = "everyone",
     val phonePrivacy: String = "everyone",
     val readReceipts: Boolean = true,
-    val shareBattery: Boolean = true
+    val shareBattery: Boolean = true,
+    val wallpaper: String = "bookshelf"
 )
 
 data class User(

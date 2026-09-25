@@ -59,7 +59,8 @@ data class UserSettingsDto(
     @SerializedName("aboutPrivacy") val aboutPrivacy: String? = "everyone",
     @SerializedName("phonePrivacy") val phonePrivacy: String? = "everyone",
     @SerializedName("readReceipts") val readReceipts: Boolean? = true,
-    @SerializedName("shareBattery") val shareBattery: Boolean? = true
+    @SerializedName("shareBattery") val shareBattery: Boolean? = true,
+    @SerializedName("wallpaper") val wallpaper: String? = "bookshelf"
 ) {
     fun toDomain(): com.oma.chat.domain.model.UserPrivacySettings {
         return com.oma.chat.domain.model.UserPrivacySettings(
@@ -68,7 +69,8 @@ data class UserSettingsDto(
             aboutPrivacy = aboutPrivacy ?: "everyone",
             phonePrivacy = phonePrivacy ?: "everyone",
             readReceipts = readReceipts ?: true,
-            shareBattery = shareBattery ?: true
+            shareBattery = shareBattery ?: true,
+            wallpaper = wallpaper ?: "bookshelf"
         )
     }
 }
@@ -82,6 +84,7 @@ data class UserDto(
     @SerializedName("phone") val phone: String? = null,
     @SerializedName("lastSeen") val lastSeen: Any? = null,
     @SerializedName("battery") val battery: Any? = null,
+    @SerializedName("wallpaper") val wallpaper: String? = null,
     @SerializedName("settings") val settings: UserSettingsDto? = null,
     @SerializedName("blockedUsers") val blockedUsers: List<String>? = null
 ) {
@@ -100,6 +103,12 @@ data class UserDto(
                 isCharging = (battery["charging"] as? Boolean) ?: false
             }
         }
+        val domainSettings = settings?.toDomain() ?: com.oma.chat.domain.model.UserPrivacySettings()
+        val finalSettings = if (!wallpaper.isNullOrBlank() && domainSettings.wallpaper == "bookshelf") {
+            domainSettings.copy(wallpaper = wallpaper)
+        } else {
+            domainSettings
+        }
         return User(
             id = id,
             username = username,
@@ -110,7 +119,7 @@ data class UserDto(
             lastSeen = parsedLastSeen,
             battery = batteryLevel,
             isCharging = isCharging,
-            settings = settings?.toDomain() ?: com.oma.chat.domain.model.UserPrivacySettings(),
+            settings = finalSettings,
             blockedUsers = blockedUsers ?: emptyList()
         )
     }
