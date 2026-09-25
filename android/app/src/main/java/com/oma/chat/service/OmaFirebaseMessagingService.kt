@@ -73,11 +73,11 @@ class OmaFirebaseMessagingService : FirebaseMessagingService() {
         val data = remoteMessage.data
 
         val type = data["type"] ?: "message"
-        val title = remoteMessage.notification?.title ?: data["title"] ?: "OMA-CHAT"
-        val body = remoteMessage.notification?.body ?: data["body"] ?: data["content"] ?: "New message"
+        val title = data["title"] ?: data["senderName"] ?: remoteMessage.notification?.title ?: "OMA-CHAT"
+        val body = data["body"] ?: data["content"] ?: remoteMessage.notification?.body ?: "New message"
 
         if (type == "call_offer") {
-            val callerName = data["callerName"] ?: "Someone"
+            val callerName = data["callerName"] ?: title
             val callerId = data["callerId"] ?: ""
             val callerAvatar = data["callerAvatar"] ?: ""
             val callType = data["callType"] ?: "voice"
@@ -94,14 +94,14 @@ class OmaFirebaseMessagingService : FirebaseMessagingService() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val isHighPriority = isHighPriorityAllowed(senderId)
 
-        val highPriorityChannelId = "chat_high_priority_v2"
-        val normalPriorityChannelId = "chat_normal_priority_v2"
+        val highPriorityChannelId = "chat_high_priority_v3"
+        val normalPriorityChannelId = "chat_normal_priority_v3"
         val activeChannelId = if (isHighPriority) highPriorityChannelId else normalPriorityChannelId
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             val audioAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_INSTANT)
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build()
 
@@ -184,10 +184,12 @@ class OmaFirebaseMessagingService : FirebaseMessagingService() {
         ).build()
 
         val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        val notificationId = if (senderId.isNotBlank()) senderId.hashCode() else System.currentTimeMillis().toInt()
         val notificationBuilder = NotificationCompat.Builder(this, activeChannelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -206,7 +208,7 @@ class OmaFirebaseMessagingService : FirebaseMessagingService() {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         }
 
-        notificationManager.notify(senderId.hashCode(), notificationBuilder.build())
+        notificationManager.notify(notificationId, notificationBuilder.build())
     }
 
     private fun showIncomingCallNotification(
@@ -217,7 +219,7 @@ class OmaFirebaseMessagingService : FirebaseMessagingService() {
         sdp: String
     ) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "call_channel_high_priority_v2"
+        val channelId = "call_channel_high_priority_v3"
         val ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -304,6 +306,7 @@ class OmaFirebaseMessagingService : FirebaseMessagingService() {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Incoming $formattedCallType Call")
             .setContentText("$callerName is calling you...")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("$callerName is calling you..."))
             .setAutoCancel(true)
             .setOngoing(true)
             .setSound(ringtoneUri)

@@ -86,13 +86,19 @@ async function sendPushNotification(token, title, body, data = {}, options = {},
         stringifiedData.title = String(title || '');
         stringifiedData.body = String(body || '');
 
+        const androidOptions = { ...(options.android || {}) };
+        // CRITICAL: Delete empty android.notification objects to prevent Android OS displaying blank notifications
+        if (androidOptions.notification && !androidOptions.notification.title && !androidOptions.notification.body) {
+            delete androidOptions.notification;
+        }
+
         const message = {
             data: stringifiedData,
             token: token,
             android: {
                 priority: 'high',
-                ttl: (options.android && options.android.ttl !== undefined) ? options.android.ttl : 60 * 60 * 24,
-                ...(options.android || {})
+                ttl: (androidOptions.ttl !== undefined) ? androidOptions.ttl : 60 * 60 * 24,
+                ...androidOptions
             },
             webpush: {
                 notification: {

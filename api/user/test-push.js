@@ -36,17 +36,12 @@ module.exports = async (req, res) => {
             {
                 type: 'test',
                 senderId: user.id,
-                senderName: 'OMA System'
+                senderName: 'OMA System',
+                content: 'FCM Push is working perfectly on your device!'
             },
             {
                 android: {
-                    priority: 'high',
-                    notification: {
-                        channelId: 'chat_messages_channel',
-                        priority: 'max',
-                        sound: 'message',
-                        visibility: 'public'
-                    }
+                    priority: 'high'
                 }
             },
             db
