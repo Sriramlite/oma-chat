@@ -46,7 +46,10 @@ data class DiagnosticsUiState(
     val isSpeakerTesting: Boolean = false,
     val isWebRtcTesting: Boolean = false,
     val isSocketTesting: Boolean = false,
-    val permissionsGranted: Map<String, Boolean> = emptyMap()
+    val permissionsGranted: Map<String, Boolean> = emptyMap(),
+    val pushToken: String? = null,
+    val isSendingTestPush: Boolean = false,
+    val testPushResult: String? = null
 )
 
 @HiltViewModel
@@ -54,7 +57,8 @@ class DiagnosticsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     val logger: DiagnosticsLogger,
     private val webRtcClient: WebRtcClient,
-    private val socketManager: SocketManager
+    private val socketManager: SocketManager,
+    private val userApi: com.oma.chat.data.remote.api.UserApi
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DiagnosticsUiState())
@@ -67,7 +71,47 @@ class DiagnosticsViewModel @Inject constructor(
 
     init {
         checkPermissions()
+        fetchPushToken()
         logger.info("System", "Diagnostics Console Initialized. Ready for testing.")
+    }
+
+    fun fetchPushToken() {
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (task.isSuccessful && !task.result.isNullOrBlank()) {
+                    val token = task.result
+                    _uiState.update { it.copy(pushToken = token) }
+                    logger.success("FCM", "Active Push Token: ${token.take(16)}... (${token.length} chars)")
+                } else {
+                    logger.error("FCM", "Failed to retrieve FCM Token: ${task.exception?.message}")
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("FCM", "FCM Token Error: ${e.message}")
+        }
+    }
+
+    fun sendTestPushNotification() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSendingTestPush = true, testPushResult = null) }
+            logger.info("FCM", "Requesting test push notification from backend...")
+            try {
+                val response = userApi.sendTestPush()
+                if (response.isSuccessful) {
+                    val msg = response.body()?.message ?: "Test notification sent successfully"
+                    _uiState.update { it.copy(isSendingTestPush = false, testPushResult = msg) }
+                    logger.success("FCM", "Test Push Sent! Check notification tray.")
+                } else {
+                    val err = "Test Push Failed: HTTP ${response.code()}"
+                    _uiState.update { it.copy(isSendingTestPush = false, testPushResult = err) }
+                    logger.error("FCM", err)
+                }
+            } catch (e: Exception) {
+                val err = "Test Push Error: ${e.localizedMessage}"
+                _uiState.update { it.copy(isSendingTestPush = false, testPushResult = err) }
+                logger.error("FCM", err)
+            }
+        }
     }
 
     fun checkPermissions() {

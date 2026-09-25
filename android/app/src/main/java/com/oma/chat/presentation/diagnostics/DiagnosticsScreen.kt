@@ -353,7 +353,145 @@ fun DiagnosticsScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 3. Live Console Terminal Header
+            // 3. FCM Push Notification Diagnostics Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "FCM Push Notifications",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = EmeraldPrimary
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (!uiState.pushToken.isNullOrBlank()) EmeraldPrimary.copy(alpha = 0.15f) else ErrorRed.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                text = if (!uiState.pushToken.isNullOrBlank()) "READY" else "NO TOKEN",
+                                color = if (!uiState.pushToken.isNullOrBlank()) EmeraldPrimary else ErrorRed,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Token Display Box
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF0F172A),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Device Push Token:",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF94A3B8)
+                                )
+                                Text(
+                                    text = uiState.pushToken ?: "Retrieving FCM token...",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 10.sp,
+                                    color = if (!uiState.pushToken.isNullOrBlank()) EmeraldPrimary else Color.Gray,
+                                    maxLines = 2
+                                )
+                            }
+                            if (!uiState.pushToken.isNullOrBlank()) {
+                                IconButton(
+                                    onClick = {
+                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                        val clip = ClipData.newPlainText("FCM Push Token", uiState.pushToken)
+                                        clipboard.setPrimaryClip(clip)
+                                        Toast.makeText(context, "Push Token copied to clipboard", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ContentCopy,
+                                        contentDescription = "Copy Token",
+                                        tint = EmeraldPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Test Push Button & Refresh Button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { viewModel.sendTestPushNotification() },
+                            enabled = !uiState.isSendingTestPush && !uiState.pushToken.isNullOrBlank(),
+                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            if (uiState.isSendingTestPush) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Sending Test...", fontSize = 12.sp)
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Send Test Notification", fontSize = 12.sp)
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { viewModel.fetchPushToken() },
+                            modifier = Modifier.width(90.dp)
+                        ) {
+                            Text("Refresh", fontSize = 12.sp)
+                        }
+                    }
+
+                    if (!uiState.testPushResult.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = uiState.testPushResult ?: "",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = if (uiState.testPushResult?.contains("Failed", ignoreCase = true) == true || uiState.testPushResult?.contains("Error", ignoreCase = true) == true) ErrorRed else EmeraldPrimary
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 4. Live Console Terminal Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

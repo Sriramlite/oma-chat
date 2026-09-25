@@ -1,34 +1,49 @@
-/* OMA Service Worker for Call Notifications */
+/* OMA Service Worker for Web Push & Notifications */
 self.addEventListener('notificationclick', function(event) {
     const action = event.action;
-    const callerId = event.notification.data.callerId;
+    const data = event.notification.data || {};
+    const callerId = data.callerId || data.chatId;
     
     event.notification.close();
     
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-            // Find an open tab
             let client = clientList.find(c => c.visibilityState === 'visible') || clientList[0];
             
             if (client) {
                 client.focus();
-                // Send command to the app
                 client.postMessage({
-                    type: 'CALL_ACTION',
-                    action: action, // 'answer' or 'reject'
-                    callerId: callerId
+                    type: (action === 'answer' || action === 'reject') ? 'CALL_ACTION' : 'NOTIFICATION_CLICK',
+                    action: action || 'open',
+                    callerId: callerId,
+                    data: data
                 });
             } else {
-                // If no tab open, open it
-                clients.openWindow('/').then(function(newClient) {
-                    // Wait for it to load and send message? 
-                    // Simpler to focus existing for now as per user context
-                });
+                clients.openWindow('/');
             }
         })
     );
 });
 
 self.addEventListener('push', function(event) {
-    // Handle background push if needed in future
+    let payload = {};
+    try {
+        payload = event.data ? event.data.json() : {};
+    } catch (e) {
+        payload = { notification: { title: 'OMA-CHAT', body: event.data ? event.data.text() : 'New Notification' } };
+    }
+
+    const title = payload.notification?.title || payload.title || 'OMA-CHAT';
+    const body = payload.notification?.body || payload.body || 'New message';
+    const options = {
+        body: body,
+        icon: payload.notification?.icon || 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
+        badge: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
+        vibrate: [200, 100, 200],
+        tag: payload.data?.chatId || 'oma-notification',
+        renotify: true,
+        data: payload.data || {}
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
 });

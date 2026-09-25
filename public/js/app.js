@@ -6833,6 +6833,57 @@ window.checkCapacitor = () => {
 };
 
 
+// Helper: Convert VAPID base64 string to Uint8Array for Web Push
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+window.subscribeWebPush = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.log('[Web Push] PushManager not supported.');
+        return null;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const vapidPublicKey = 'BNWZKepdv56QxT0xAVrSheBbOzX7OMQ_4AdE_S2nWUIHx55dAtUCQzIfUGUM7nthVfg9wtcAMWIQVYDyxCJEpgY';
+        const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedVapidKey
+            });
+        }
+
+        if (subscription) {
+            const token = JSON.stringify(subscription);
+            localStorage.setItem('oma_push_token', token);
+            window.logToDebug && window.logToDebug("Web Push Subscribed: " + token.substring(0, 30) + "...");
+            if (state.user && state.user.token) {
+                await api.updatePushToken(token);
+            }
+            return token;
+        }
+    } catch (e) {
+        console.warn("[Web Push] Subscription error:", e);
+        window.logToDebug && window.logToDebug("Web Push Error: " + e.message);
+    }
+    return null;
+};
+
 // --- Diagnostics & Debug Tool (Global Scope) ---
 window.showDiagnostics = () => {
     const userId = state.user?.user?.id || 'Not Logged In';
@@ -6843,43 +6894,55 @@ window.showDiagnostics = () => {
     const menu = `
         <div id="dev-menu-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:20000; color:white; padding:20px; box-sizing:border-box; overflow-y:auto; font-family: 'Inter', sans-serif; backdrop-filter: blur(10px);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="color:#3b82f6; margin:0;">OMA Diagnostics</h2>
-                <button onclick="document.getElementById('dev-menu-modal').remove()" style="background:none; border:none; color:white; font-size:1.5rem;"><i class="fas fa-times"></i></button>
+                <h2 style="color:#10b981; margin:0; display:flex; align-items:center; gap:8px;"><i class="fas fa-satellite-dish"></i> OMA Diagnostics & Push Center</h2>
+                <button onclick="document.getElementById('dev-menu-modal').remove()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;"><i class="fas fa-times"></i></button>
             </div>
 
             <div style="background:#1e1e1e; padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid #333;">
                 <p style="margin-bottom:8px; font-size:0.9rem;"><b>User ID:</b> <span style="opacity:0.8; float:right;">${userId}</span></p>
                 <p style="margin-bottom:8px; font-size:0.9rem;"><b>API Base:</b> <span style="opacity:0.8; float:right;">${apiBase}</span></p>
                 <div style="margin-top:10px;">
-                    <b>Push Token:</b>
-                    <div style="font-size:0.7rem; color:#10b981; word-break:break-all; background:#000; padding:10px; border-radius:8px; margin-top:5px; border:1px solid #222;">${pushToken}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <b>Push Token Received:</b>
+                        <button onclick="window.copyPushToken()" style="background:#10b981; color:#000; border:none; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer;"><i class="fas fa-copy"></i> Copy Token</button>
+                    </div>
+                    <div id="debug-push-token-val" style="font-size:0.75rem; color:#10b981; font-family:monospace; word-break:break-all; background:#000; padding:10px; border-radius:8px; border:1px solid #222; max-height:80px; overflow-y:auto;">${pushToken}</div>
                 </div>
             </div>
 
             <div style="margin-bottom:20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <h4 style="margin:0; opacity:0.7;">Event Logs</h4>
-                    <button onclick="window.omaLogs=[]; document.getElementById('dev-log-list').innerHTML=''" style="background:none; border:none; color:#3b82f6; font-size:0.8rem; cursor:pointer;">Clear Logs</button>
+                    <button onclick="window.omaLogs=[]; document.getElementById('dev-log-list').innerHTML=''" style="background:none; border:none; color:#10b981; font-size:0.8rem; cursor:pointer;">Clear Logs</button>
                 </div>
-                <div id="dev-log-list" style="height:200px; background:#000; border-radius:12px; border:1px solid #333; padding:10px; overflow-y:auto; color:#aaa;">
-                    ${logsHtml || '<div style="opacity:0.4; text-align:center; padding-top:80px;">No logs yet...</div>'}
+                <div id="dev-log-list" style="height:180px; background:#000; border-radius:12px; border:1px solid #333; padding:10px; overflow-y:auto; color:#aaa;">
+                    ${logsHtml || '<div style="opacity:0.4; text-align:center; padding-top:70px;">No logs yet...</div>'}
                 </div>
             </div>
             
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button onclick="window.setDevIp()" style="padding:15px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; font-size:0.85rem;">Set API IP</button>
-                <button onclick="window.forcePushRegister()" style="padding:15px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; font-size:0.85rem;">Refresh Push</button>
-                <button onclick="window.checkPluginStatus()" style="grid-column: span 2; padding:15px; border-radius:10px; background:#111; color:#aaa; border:1px solid #333; font-weight:600; font-size:0.85rem; margin-top:5px;">Check Plugin Status</button>
-                <button onclick="window.sendDiagnosticPush()" style="grid-column: span 2; padding:15px; border-radius:10px; background:#3b82f6; color:white; border:none; font-weight:600; font-size:0.9rem; margin-top:5px;">Send Test Notification</button>
+                <button onclick="window.subscribeWebPush().then(t => { if(t) { document.getElementById('debug-push-token-val').innerText=t; alert('Web Push Subscribed!'); } else { alert('Failed or Not Supported'); } })" style="padding:14px; border-radius:10px; background:#10b981; color:#000; border:none; font-weight:700; font-size:0.85rem; cursor:pointer;"><i class="fas fa-bell"></i> Subscribe Web Push</button>
+                <button onclick="window.sendDiagnosticPush()" style="padding:14px; border-radius:10px; background:#3b82f6; color:white; border:none; font-weight:700; font-size:0.85rem; cursor:pointer;"><i class="fas fa-paper-plane"></i> Send Test Notification</button>
+                <button onclick="window.setDevIp()" style="padding:12px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; font-size:0.85rem; cursor:pointer;">Set API IP</button>
+                <button onclick="window.forcePushRegister()" style="padding:12px; border-radius:10px; background:#333; color:white; border:none; font-weight:600; font-size:0.85rem; cursor:pointer;">Refresh Mobile Push</button>
             </div>
 
-            <p style="margin-top:30px; font-size:0.75rem; opacity:0.4; text-align:center;">OMA Engineering v1.1.0 • Ready</p>
+            <p style="margin-top:25px; font-size:0.75rem; opacity:0.4; text-align:center;">OMA Engineering Diagnostics v2.0 • Online</p>
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', menu);
     // Scroll logs to bottom
     const list = document.getElementById('dev-log-list');
     if (list) list.scrollTop = list.scrollHeight;
+};
+
+window.copyPushToken = () => {
+    const token = localStorage.getItem('oma_push_token') || 'None';
+    navigator.clipboard.writeText(token).then(() => {
+        alert("Push Token copied to clipboard!");
+    }).catch(err => {
+        prompt("Copy token manually:", token);
+    });
 };
 
 window.handleLogoClick = () => {
@@ -6913,11 +6976,11 @@ window.forcePushRegister = async () => {
 
 window.sendDiagnosticPush = async () => {
     try {
-        alert("Requesting backend to send push...");
+        window.showCustomAlert && window.showCustomAlert("Requesting backend test notification...", "info");
         const res = await api.sendTestNotification();
-        alert("Success! Check your notification tray.");
+        alert("Success! Notification sent. Check your notification tray.");
     } catch (e) {
-        alert("Failed: " + e.message);
+        alert("Test Push Error: " + e.message);
     }
 };
 

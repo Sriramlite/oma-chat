@@ -23,37 +23,41 @@ module.exports = async (req, res) => {
         const userData = await db.collection('users').findOne({ id: user.id });
 
         if (!userData || !userData.pushToken) {
-            return res.status(404).json({ error: 'No Push Token found for this user.' });
+            return res.status(404).json({ error: 'No Push Token found for this user in database.' });
         }
 
         console.log(`Sending Test Push to ${user.username} (Token: ${userData.pushToken.substring(0, 10)}...)`);
 
-        // Send it
+        // Send Test Push
         await sendPushNotification(
             userData.pushToken,
-            "Test Notification 🔔",
-            "This is your test message from OMA!",
-            { type: 'test' },
+            "OMA Test Notification 🔔",
+            "FCM Push is working perfectly on your device!",
+            {
+                type: 'test',
+                senderId: user.id,
+                senderName: 'OMA System'
+            },
             {
                 android: {
                     priority: 'high',
                     notification: {
-                        channelId: 'message_channel',
+                        channelId: 'chat_messages_channel',
                         priority: 'max',
                         sound: 'message',
                         visibility: 'public'
                     }
                 }
-            }
+            },
+            db
         );
 
-        res.json({ success: true, message: 'Notification Sent' });
+        res.json({ success: true, message: 'Test Notification Sent Successfully' });
 
     } catch (e) {
-        console.error("Google Auth Verification FULL ERROR:", e);
-        console.error("Token Snippet:", idToken ? idToken.substring(0, 50) : 'NONE');
-        res.status(401).json({
-            error: `Verification failed: ${e.message}`,
+        console.error("Test Push Error:", e);
+        res.status(500).json({
+            error: `Push failed: ${e.message}`,
             details: e.message
         });
     }

@@ -62,6 +62,9 @@ interface UserApi {
         @Body request: PushTokenRequest
     ): Response<SimpleMessageResponseDto>
 
+    @POST("user/test-push")
+    suspend fun sendTestPush(): Response<SimpleMessageResponseDto>
+
     @POST("user/block")
     suspend fun blockUser(
         @Body request: BlockUserRequest
