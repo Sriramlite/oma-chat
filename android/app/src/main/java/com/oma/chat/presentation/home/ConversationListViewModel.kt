@@ -40,7 +40,8 @@ class ConversationListViewModel @Inject constructor(
     private val refreshRecentConversationsUseCase: RefreshRecentConversationsUseCase,
     private val searchUsersUseCase: SearchUsersUseCase,
     private val observePresenceUseCase: ObservePresenceUseCase,
-    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val getMeUseCase: com.oma.chat.domain.usecase.user.GetMeUseCase,
+    private val updatePushTokenUseCase: com.oma.chat.domain.usecase.user.UpdatePushTokenUseCase,
     private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
 
@@ -49,14 +50,28 @@ class ConversationListViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ConversationListUiState())
     val uiState: StateFlow<ConversationListUiState> = _uiState.asStateFlow()
 
-    val currentUser: StateFlow<User?> = getCurrentUserUseCase()
+    val currentUser: StateFlow<User?> = getMeUseCase.asFlow()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
+            initialValue = authPreferences.getUser()
         )
 
     init {
+        // Sync FCM push token with backend on home entry
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (task.isSuccessful && !task.result.isNullOrBlank()) {
+                    val token = task.result
+                    viewModelScope.launch {
+                        updatePushTokenUseCase(token)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         // Connect Socket.IO upon entering home
         observePresenceUseCase.connect()
 
@@ -87,6 +102,7 @@ class ConversationListViewModel @Inject constructor(
         if (ownerUserId.isBlank()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
+            getMeUseCase()
             val result = refreshRecentConversationsUseCase(ownerUserId)
             result.fold(
                 onSuccess = {

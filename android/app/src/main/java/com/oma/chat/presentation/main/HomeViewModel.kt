@@ -14,16 +14,22 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val getMeUseCase: com.oma.chat.domain.usecase.user.GetMeUseCase,
     private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
 
-    val currentUser: StateFlow<User?> = getCurrentUserUseCase()
+    val currentUser: StateFlow<User?> = getMeUseCase.asFlow()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = null
         )
+
+    init {
+        viewModelScope.launch {
+            getMeUseCase()
+        }
+    }
 
     fun logout() {
         viewModelScope.launch {

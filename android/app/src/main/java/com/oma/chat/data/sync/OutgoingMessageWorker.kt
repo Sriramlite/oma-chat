@@ -57,15 +57,24 @@ class OutgoingMessageWorker @AssistedInject constructor(
                 if (alreadyIngestedId != null) {
                     // Update local message with server UUID and mark sent
                     val localMsg = messageDao.getMessageByTempId(ownerUserId, syncItem.tempId)
-                    if (localMsg != null) {
-                        messageDao.deleteMessage(ownerUserId, localMsg.id)
-                        messageDao.insertMessage(
-                            localMsg.copy(
-                                id = alreadyIngestedId,
-                                status = "sent"
-                            )
-                        )
-                    }
+                    val serverEntity = localMsg?.copy(
+                        id = alreadyIngestedId,
+                        status = "sent"
+                    ) ?: com.oma.chat.data.local.entity.MessageEntity(
+                        ownerUserId = ownerUserId,
+                        id = alreadyIngestedId,
+                        tempId = syncItem.tempId,
+                        chatId = syncItem.receiverId,
+                        senderId = ownerUserId,
+                        senderName = "You",
+                        avatar = "",
+                        content = syncItem.content,
+                        type = syncItem.type,
+                        timestamp = syncItem.createdAt,
+                        status = "sent",
+                        replyToId = syncItem.replyToId
+                    )
+                    messageDao.reconcileServerMessage(ownerUserId, serverEntity)
                     syncQueueDao.removeFromQueue(syncItem.tempId)
                 } else {
                     // Send message via REST API
@@ -81,16 +90,27 @@ class OutgoingMessageWorker @AssistedInject constructor(
 
                     if (response.isSuccessful && response.body() != null) {
                         val serverMsg = response.body()!!
+                        val domainMsg = serverMsg.toDomain(ownerUserId, syncItem.receiverId)
                         val localMsg = messageDao.getMessageByTempId(ownerUserId, syncItem.tempId)
-                        if (localMsg != null) {
-                            messageDao.deleteMessage(ownerUserId, localMsg.id)
-                            messageDao.insertMessage(
-                                localMsg.copy(
-                                    id = serverMsg.id,
-                                    status = "sent"
-                                )
-                            )
-                        }
+                        val serverEntity = localMsg?.copy(
+                            id = domainMsg.id,
+                            status = "sent",
+                            timestamp = domainMsg.timestamp
+                        ) ?: com.oma.chat.data.local.entity.MessageEntity(
+                            ownerUserId = ownerUserId,
+                            id = domainMsg.id,
+                            tempId = syncItem.tempId,
+                            chatId = syncItem.receiverId,
+                            senderId = ownerUserId,
+                            senderName = "You",
+                            avatar = "",
+                            content = syncItem.content,
+                            type = syncItem.type,
+                            timestamp = domainMsg.timestamp,
+                            status = "sent",
+                            replyToId = syncItem.replyToId
+                        )
+                        messageDao.reconcileServerMessage(ownerUserId, serverEntity)
                         syncQueueDao.removeFromQueue(syncItem.tempId)
                     } else {
                         syncQueueDao.incrementRetryCount(syncItem.tempId)

@@ -89,3 +89,8 @@ data class MessagePinnedEvent(
     val chatId: String,
     val isPinned: Boolean
 )
+
+data class MessagesSeenEvent(
+    val readerId: String,
+    val chatId: String
+)

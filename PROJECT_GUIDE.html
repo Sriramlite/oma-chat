@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMA - Project Presentation & Examiner Q&A Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --accent-bg: #f1f5f9;
+        }
+
+        @media print {
+            .no-print { display: none; }
+            body { background: white !important; padding: 0 !important; }
+            .container { box-shadow: none !important; border: none !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            h2 { page-break-before: always; margin-top: 2rem !important; }
+            .hero { background: white !important; color: black !important; padding: 0 !important; border-bottom: 2px solid var(--primary); }
+            .hero-badge { display: none; }
+            .note, .tip, .important { border-left: 4px solid #ccc !important; background: #fafafa !important; }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            backdrop-filter: blur(4px);
+        }
+
+        .hero h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            letter-spacing: -0.5px;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        section {
+            margin-bottom: 50px;
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--accent-bg);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h2 i {
+            font-size: 1.4rem;
+            color: var(--primary);
+        }
+
+        h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 25px 0 15px 0;
+            color: var(--text-main);
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: var(--text-main);
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        strong {
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        /* Callout Styles */
+        .callout {
+            padding: 20px 25px;
+            border-radius: 16px;
+            margin: 30px 0;
+            display: flex;
+            gap: 15px;
+        }
+
+        .callout i {
+            font-size: 1.5rem;
+            margin-top: 3px;
+        }
+
+        .note {
+            background-color: #ebf8ff;
+            border-left: 5px solid #3182ce;
+            color: #2c5282;
+        }
+
+        .tip {
+            background-color: #f0fff4;
+            border-left: 5px solid #38a169;
+            color: #276749;
+        }
+
+        .important {
+            background-color: #fffaf0;
+            border-left: 5px solid #dd6b20;
+            color: #7b341e;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th {
+            background-color: var(--accent-bg);
+            color: var(--text-main);
+            font-weight: 600;
+            text-align: left;
+            padding: 15px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Q&A Section */
+        .qa-item {
+            background: var(--accent-bg);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+
+        .question {
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            font-size: 1.05rem;
+            display: block;
+        }
+
+        .answer {
+            color: var(--text-main);
+        }
+
+        /* Abbreviation Grid */
+        .abbr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 15px;
+        }
+
+        .abbr-card {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 12px;
+            transition: transform 0.2s;
+        }
+
+        .abbr-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .abbr-term {
+            font-weight: 700;
+            color: var(--primary);
+            margin-right: 8px;
+        }
+
+        /* Story Steps */
+        .story-step {
+            margin-bottom: 20px;
+            padding-left: 20px;
+            border-left: 2px dashed var(--primary);
+            position: relative;
+        }
+
+        .story-step::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 0;
+            width: 14px;
+            height: 14px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 40px;
+            text-align: center;
+            background: var(--accent-bg);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .print-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--primary);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 100px;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: none;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.2s;
+        }
+
+        .print-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+    <button onclick="window.print()" class="print-btn no-print">
+        <i class="fas fa-print"></i> Print to PDF / Word
+    </button>
+
+    <div class="container">
+        <div class="hero">
+            <div class="hero-badge">Team Preparation Guide</div>
+            <h1>OMA - Project Presentation</h1>
+            <p>A comprehensive guide to explaining the Online Messaging Application to examiners and stakeholders.</p>
+        </div>
+
+        <div class="content">
+            <section id="overview">
+                <h2><i class="fas fa-info-circle"></i> 1. Project Overview</h2>
+                <p><strong>What is OMA?</strong> OMA is a modern, real-time, cross-platform messaging application. It allows users to communicate instantly through text, images, and video calls. It’s built to be fast, secure, and visually premium, focusing on a seamless user experience across web and mobile (Android).</p>
+                
+                <h3>Key Features</h3>
+                <ul>
+                    <li><strong>Real-time Messaging:</strong> Instant message delivery using WebSocket technology.</li>
+                    <li><strong>Cross-Platform:</strong> Works on Android (via Capacitor) and Web browsers.</li>
+                    <li><strong>Media Sharing:</strong> Support for sending images, videos, and files.</li>
+                    <li><strong>Push Notifications:</strong> Users stay updated even when the app is closed.</li>
+                    <li><strong>Server Status Monitoring:</strong> Custom landing page monitors backend health.</li>
+                    <li><strong>Firebase Integration:</strong> Secure Google Login and OTP-based authentication.</li>
+                </ul>
+            </section>
+
+            <section id="simple-explanation">
+                <h2><i class="fas fa-lightbulb"></i> 2. Simple Analogies</h2>
+                <div class="callout note">
+                    <i class="fas fa-comment-dots"></i>
+                    <div>
+                        <strong> Rahul & Priya Analogy:</strong> Use these when explaining to someone without a technical background.
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <p><strong>1. The "Digital Post Office" (Backend):</strong> Think of our server as a high-speed Post Office. It checks who you are, stamps the time, and immediately delivers it to your friend.</p>
+                    <p><strong>2. The "Walkie-Talkie" (Sockets):</strong> Normal websites are like letters. OMA is like a Walkie-Talkie; you hear the message instantly without checking the mailbox.</p>
+                    <p><strong>3. The "Library" (Database):</strong> MongoDB is a giant library. Every message is a new book. When you open a chat, the app finds all the books between you two.</p>
+                    <p><strong>4. The "Magic Suitcase" (Capacitor):</strong> It wraps our beautiful website and turns it into an Android App you can install.</p>
+                </div>
+            </section>
+
+            <section id="story">
+                <h2><i class="fas fa-book-open"></i> 3. The Journey of a Message</h2>
+                <div class="callout tip">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <div>Tell this story if asked "How does it actually work?"</div>
+                </div>
+
+                <div class="story-step">
+                    <strong>1. The Starting Line:</strong> Rahul types "Hello". The app checks his <strong>Digital ID Card (JWT)</strong> to confirm his identity.
+                </div>
+                <div class="story-step">
+                    <strong>2. The Instant Flight:</strong> Thanks to <strong>Socket.io</strong>, the message flies instantly to the Main Office (Server).
+                </div>
+                <div class="story-step">
+                    <strong>3. The Record Keeper:</strong> The server writes it in the <strong>Great Library (Database)</strong> for future viewing.
+                </div>
+                <div class="story-step">
+                    <strong>4. The Delivery:</strong> If Priya is online, it's shouted over the socket. If offline, a <strong>Special Courier (Push Notification)</strong> is sent.
+                </div>
+                <div class="story-step">
+                    <strong>5. The Result:</strong> Priya opens the app on her phone and sees the message instantly.
+                </div>
+            </section>
+
+            <section id="stack">
+                <h2><i class="fas fa-layer-group"></i> 4. Technical Stack</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Layer</th>
+                            <th>Technology</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Frontend (Mobile)</td><td>Capacitor + HTML/JS</td><td>Native Android experience.</td></tr>
+                        <tr><td>Frontend (Web)</td><td>Vanilla HTML/CSS/JS</td><td>High performance, no overhead.</td></tr>
+                        <tr><td>Backend API</td><td>Node.js + Express</td><td>Logic, Auth, and Data handling.</td></tr>
+                        <tr><td>Real-time Engine</td><td>Socket.io</td><td>Instant bi-directional communication.</td></tr>
+                        <tr><td>Database</td><td>MongoDB</td><td>Scalable NoSQL storage for messages.</td></tr>
+                        <tr><td>Authentication</td><td>Firebase Auth</td><td>Secure logins & session management.</td></tr>
+                        <tr><td>Notifications</td><td>FCM</td><td>Mobile push notifications and alerts.</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="qa">
+                <h2><i class="fas fa-question-circle"></i> 5. Examiner Q&A</h2>
+                
+                <div class="qa-item">
+                    <span class="question">Q: Why choose MongoDB over MySQL?</span>
+                    <p class="answer">"Messaging data is unstructured. MongoDB allows us to store complex objects (replies, media) without complex joins, making it faster for chat."</p>
+                </div>
+
+                <div class="qa-item">
+                    <span class="question">Q: How do push notifications work when the app is closed?</span>
+                    <p class="answer">"We use Firebase Cloud Messaging. The server sends a request to Google's servers, which then push the notification to the device's unique token."</p>
+                </div>
+
+                <div class="qa-item">
+                    <span class="question">Q: Can this run on an iPhone?</span>
+                    <p class="answer">"Yes. Capacitor uses a single web codebase that can be exported for both Android and iOS with minimal changes."</p>
+                </div>
+
+                <div class="qa-item">
+                    <span class="question">Q: Why the Server Status indicator?</span>
+                    <p class="answer">"Free hosting like Render goes to sleep after 15 mins. The indicator wakes it up automatically before the user even starts chatting."</p>
+                </div>
+            </section>
+
+            <section id="abbr">
+                <h2><i class="fas fa-list-ul"></i> 6. Quick Abbreviations</h2>
+                <div class="abbr-grid">
+                    <div class="abbr-card"><span class="abbr-term">Firebase:</span> Security and login center.</div>
+                    <div class="abbr-card"><span class="abbr-term">Node.js:</span> The brain of our server.</div>
+                    <div class="abbr-card"><span class="abbr-term">MongoDB:</span> Digital storage vault.</div>
+                    <div class="abbr-card"><span class="abbr-term">Socket.io:</span> Instant messaging engine.</div>
+                    <div class="abbr-card"><span class="abbr-term">Capacitor:</span> Turns web code into mobile apps.</div>
+                    <div class="abbr-card"><span class="abbr-term">API:</span> The bridge between phone and server.</div>
+                    <div class="abbr-card"><span class="abbr-term">JWT:</span> Secure digital ID card.</div>
+                    <div class="abbr-card"><span class="abbr-term">UI/UX:</span> The look and feel of the app.</div>
+                </div>
+            </section>
+
+            <div class="callout important">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>Final Advice:</strong> Be confident. If you don't know an answer, focus on the user experience and how the technologies solve problems (Speed, Security, Ease of Use).
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2026 OMA Project Team &bull; Created for Academic Presentation</p>
+            <p style="margin-top:5px; font-size: 0.8rem;">Powered by Pdktdev.in</p>
+        </div>
+    </div>
+
+</body>
+</html>

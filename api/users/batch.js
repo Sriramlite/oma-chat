@@ -42,6 +42,7 @@ module.exports = async (req, res) => {
             const canSeeAvatar = await checkPrivacy(u, requesterPayload.id, db, 'profilePhoto');
             const canSeeBio = await checkPrivacy(u, requesterPayload.id, db, 'about');
             const canSeeLastSeen = await checkPrivacy(u, requesterPayload.id, db, 'lastSeen');
+            const canSeePhone = await checkPrivacy(u, requesterPayload.id, db, 'phone');
 
             return {
                 id: u.id,
@@ -49,6 +50,7 @@ module.exports = async (req, res) => {
                 username: u.username,
                 avatar: canSeeAvatar ? u.avatar : 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
                 bio: canSeeBio ? u.bio : '',
+                phone: canSeePhone ? (u.phone || null) : null,
                 lastSeen: canSeeLastSeen ? u.lastSeen : null,
                 battery: canSeeLastSeen ? u.battery : null, // Battery tied to status/lastseen privacy
                 status: u.status // Online status check could be more granular, but usually tied to lastseen

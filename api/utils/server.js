@@ -211,6 +211,45 @@ io.on('connection', (socket) => {
         io.to(String(data.receiverId)).emit('stop_typing', data);
     });
 
+    socket.on('mark_seen', async (data) => {
+        try {
+            const currentUserId = socket.userId || data?.userId;
+            const targetChatId = data?.chatId;
+            if (!currentUserId || !targetChatId) return;
+
+            const db = await connectToDatabase();
+            const usersCollection = db.collection('users');
+            const messagesCollection = db.collection('messages');
+
+            // Check privacy settings
+            const me = await usersCollection.findOne({ id: currentUserId });
+            if (me && me.settings && me.settings.readReceipts === false) return;
+
+            const partner = await usersCollection.findOne({ id: targetChatId });
+            if (partner && partner.settings && partner.settings.readReceipts === false) return;
+
+            const res = await messagesCollection.updateMany(
+                {
+                    senderId: targetChatId,
+                    receiverId: currentUserId,
+                    status: { $ne: 'seen' }
+                },
+                {
+                    $set: { status: 'seen' }
+                }
+            );
+
+            if (res.modifiedCount > 0) {
+                io.to(String(targetChatId)).emit('messages_seen', {
+                    readerId: currentUserId,
+                    chatId: currentUserId
+                });
+            }
+        } catch (e) {
+            console.error("Socket mark_seen error:", e);
+        }
+    });
+
     socket.on('offer', async (data) => {
         const { targetId } = data;
         const isOnline = onlineUsers.has(String(targetId)) && onlineUsers.get(String(targetId)).size > 0;
@@ -234,8 +273,9 @@ io.on('connection', (socket) => {
                 await sendPushNotification(targetUser.pushToken, title, body, {
                     type: 'call_offer',
                     callerId: data.callerId,
-                    callerName: data.callerName,
-                    callType: data.type
+                    callerName: data.callerName || 'Someone',
+                    callerAvatar: data.callerAvatar || '',
+                    callType: data.type || 'voice'
                 }, {
                     android: {
                         priority: 'high',

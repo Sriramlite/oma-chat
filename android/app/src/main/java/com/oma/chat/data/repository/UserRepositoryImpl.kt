@@ -33,19 +33,25 @@ class UserRepositoryImpl @Inject constructor(
     override fun getCurrentUser(): Flow<User?> {
         val ownerUserId = authPreferences.getUserId() ?: ""
         return userDao.getUserByIdFlow(ownerUserId).map { entity ->
-            entity?.let {
+            val prefUser = authPreferences.getUser()
+            if (entity != null) {
                 User(
-                    id = it.id,
-                    username = it.username,
-                    name = it.name,
-                    avatar = it.avatar,
-                    bio = it.bio,
-                    lastSeen = it.lastSeen,
-                    isBlocked = it.isBlocked,
-                    battery = it.batteryLevel,
-                    isCharging = it.isCharging
+                    id = entity.id,
+                    username = entity.username,
+                    name = entity.name,
+                    avatar = entity.avatar,
+                    bio = entity.bio,
+                    lastSeen = entity.lastSeen,
+                    phone = prefUser?.phone,
+                    isBlocked = entity.isBlocked,
+                    battery = entity.batteryLevel,
+                    isCharging = entity.isCharging,
+                    settings = prefUser?.settings ?: com.oma.chat.domain.model.UserPrivacySettings(),
+                    blockedUsers = prefUser?.blockedUsers ?: emptyList()
                 )
-            } ?: authPreferences.getUser()
+            } else {
+                prefUser
+            }
         }
     }
 
@@ -79,14 +85,16 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun updateProfile(
         name: String?,
         bio: String?,
-        avatar: String?
+        avatar: String?,
+        phone: String?
     ): Result<User> = withContext(ioDispatcher) {
         try {
             val response = userApi.updateProfile(
                 UpdateProfileRequest(
                     name = name,
                     bio = bio,
-                    avatar = avatar
+                    avatar = avatar,
+                    phone = phone
                 )
             )
             if (response.isSuccessful && response.body() != null) {
@@ -121,6 +129,7 @@ class UserRepositoryImpl @Inject constructor(
                 "lastSeenPrivacy" to settings.lastSeenPrivacy,
                 "profilePhotoPrivacy" to settings.profilePhotoPrivacy,
                 "aboutPrivacy" to settings.aboutPrivacy,
+                "phonePrivacy" to settings.phonePrivacy,
                 "readReceipts" to settings.readReceipts,
                 "shareBattery" to settings.shareBattery
             )

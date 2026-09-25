@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -32,7 +33,6 @@ import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
@@ -67,6 +67,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.oma.chat.domain.model.CallState
 import com.oma.chat.domain.model.CallType
+import com.oma.chat.presentation.components.OmaAvatar
 import com.oma.chat.presentation.theme.EmeraldPrimary
 import com.oma.chat.presentation.theme.ErrorRed
 import java.util.Locale
@@ -117,7 +118,7 @@ fun CallScreen(
     // Permissions check
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
+    ) {
         // Handled internally
     }
 
@@ -143,7 +144,7 @@ fun CallScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0F172A))
+            .background(Color(0xFF0B1110))
     ) {
         when (val state = callState) {
             is CallState.OutgoingRinging -> {
@@ -249,7 +250,7 @@ private fun RingingView(
         initialValue = 1f,
         targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000),
+            animation = tween(1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
@@ -276,7 +277,8 @@ private fun RingingView(
             Text(
                 text = statusText,
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White.copy(alpha = 0.7f)
+                color = EmeraldPrimary,
+                fontWeight = FontWeight.Medium
             )
         }
 
@@ -289,39 +291,19 @@ private fun RingingView(
                     .size(160.dp)
                     .scale(pulseScale)
                     .clip(CircleShape)
-                    .background(EmeraldPrimary.copy(alpha = 0.2f))
+                    .background(EmeraldPrimary.copy(alpha = 0.18f))
             )
-            if (avatar.isNotBlank()) {
-                AsyncImage(
-                    model = avatar,
-                    contentDescription = name,
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(EmeraldPrimary.copy(alpha = 0.3f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(60.dp),
-                        tint = Color.White
-                    )
-                }
-            }
+            OmaAvatar(
+                avatarUrl = avatar,
+                name = name,
+                size = 120.dp
+            )
         }
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(bottom = 24.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -392,28 +374,16 @@ private fun VoiceCallView(
 
         Box(
             modifier = Modifier
-                .size(140.dp)
+                .size(150.dp)
                 .clip(CircleShape)
-                .background(EmeraldPrimary.copy(alpha = 0.2f)),
+                .background(EmeraldPrimary.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
-            if (state.targetAvatar.isNotBlank()) {
-                AsyncImage(
-                    model = state.targetAvatar,
-                    contentDescription = state.targetName,
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.PhoneInTalk,
-                    contentDescription = null,
-                    modifier = Modifier.size(56.dp),
-                    tint = EmeraldPrimary
-                )
-            }
+            OmaAvatar(
+                avatarUrl = state.targetAvatar,
+                name = state.targetName,
+                size = 130.dp
+            )
         }
 
         CallControlsBar(
@@ -448,17 +418,16 @@ private fun VideoCallView(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF1E293B)),
+                    .background(Color(0xFF111918)),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(80.dp),
-                        tint = Color.White.copy(alpha = 0.6f)
+                    OmaAvatar(
+                        avatarUrl = state.targetAvatar,
+                        name = state.targetName,
+                        size = 90.dp
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
                     Text(
                         text = "${state.targetName}'s camera is off",
                         color = Color.White.copy(alpha = 0.8f),
@@ -475,8 +444,8 @@ private fun VideoCallView(
                 modifier = Modifier
                     .padding(top = 48.dp, end = 20.dp)
                     .size(width = 110.dp, height = 155.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .border(2.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(18.dp))
+                    .border(2.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(18.dp))
                     .align(Alignment.TopEnd)
             ) {
                 WebRtcSurfaceView(
@@ -543,7 +512,8 @@ private fun CallControlsBar(
 ) {
     Surface(
         shape = RoundedCornerShape(32.dp),
-        color = Color(0xFF1E293B).copy(alpha = 0.85f),
+        color = Color(0xFF17211F).copy(alpha = 0.90f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF243330)),
         modifier = Modifier.padding(horizontal = 16.dp)
     ) {
         Row(

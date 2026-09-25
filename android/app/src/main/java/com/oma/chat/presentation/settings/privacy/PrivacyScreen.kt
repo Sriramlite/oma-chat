@@ -1,7 +1,6 @@
 package com.oma.chat.presentation.settings.privacy
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,14 +51,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.oma.chat.presentation.components.OmaSectionHeader
 import com.oma.chat.presentation.theme.EmeraldPrimary
 import kotlinx.coroutines.flow.collectLatest
-
-private val SectionHeaderColor = Color(0xFF60A5FA)
-private val DarkCardBg = Color(0xFF1E293B)
-private val DarkCardBorder = Color(0xFF334155)
-private val SubtitleColor = Color(0xFF94A3B8)
-private val TitleColor = Color(0xFFF1F5F9)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,113 +96,127 @@ fun PrivacyScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(vertical = 12.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // --- VISIBILITY SECTION ---
             item {
-                PrivacySectionHeader(title = "VISIBILITY")
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                        OmaSectionHeader(title = "Visibility")
+
+                        PrivacyDropdownItem(
+                            title = "Last Seen & Online",
+                            subtitle = "Who can see your last seen status",
+                            selectedValue = uiState.lastSeenPrivacy,
+                            onOptionSelected = { viewModel.updateLastSeen(it) }
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+
+                        PrivacyDropdownItem(
+                            title = "Profile Photo",
+                            subtitle = "Who can see your profile picture",
+                            selectedValue = uiState.profilePhotoPrivacy,
+                            onOptionSelected = { viewModel.updateProfilePhoto(it) }
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+
+                        PrivacyDropdownItem(
+                            title = "About / Bio",
+                            subtitle = "Who can see your bio and details",
+                            selectedValue = uiState.aboutPrivacy,
+                            onOptionSelected = { viewModel.updateAbout(it) }
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+
+                        PrivacyDropdownItem(
+                            title = "Phone Number",
+                            subtitle = "Who can see your mobile number",
+                            selectedValue = uiState.phonePrivacy,
+                            onOptionSelected = { viewModel.updatePhone(it) }
+                        )
+                    }
+                }
             }
 
+            // --- MESSAGING & STATUS SECTION ---
             item {
-                PrivacyDropdownItem(
-                    title = "Last Seen",
-                    subtitle = "Who can see your last seen status",
-                    selectedValue = uiState.lastSeenPrivacy,
-                    onOptionSelected = { viewModel.updateLastSeen(it) }
-                )
-            }
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                        OmaSectionHeader(title = "Messaging & Live Status")
 
-            item {
-                PrivacyDropdownItem(
-                    title = "Profile Photo",
-                    subtitle = "Who can see your profile picture",
-                    selectedValue = uiState.profilePhotoPrivacy,
-                    onOptionSelected = { viewModel.updateProfilePhoto(it) }
-                )
-            }
+                        PrivacySwitchItem(
+                            title = "Read Receipts",
+                            subtitle = "If turned off, you won't send or receive read receipts (✓✓).",
+                            checked = uiState.readReceipts,
+                            onCheckedChange = { viewModel.toggleReadReceipts(it) }
+                        )
 
-            item {
-                PrivacyDropdownItem(
-                    title = "About / Bio",
-                    subtitle = "Who can see your bio",
-                    selectedValue = uiState.aboutPrivacy,
-                    onOptionSelected = { viewModel.updateAbout(it) }
-                )
-                PrivacyDivider()
-            }
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
 
-            // --- MESSAGING SECTION ---
-            item {
-                PrivacySectionHeader(title = "MESSAGING")
-            }
-
-            item {
-                PrivacySwitchItem(
-                    title = "Read Receipts",
-                    subtitle = "If turned off, you won't send or receive read receipts.",
-                    checked = uiState.readReceipts,
-                    onCheckedChange = { viewModel.toggleReadReceipts(it) }
-                )
-                PrivacyDivider()
-            }
-
-            // --- LIVE STATUS SECTION ---
-            item {
-                PrivacySectionHeader(title = "LIVE STATUS")
-            }
-
-            item {
-                PrivacySwitchItem(
-                    title = "Share Battery Status",
-                    subtitle = "Allow others to see your battery level.",
-                    checked = uiState.shareBattery,
-                    onCheckedChange = { viewModel.toggleShareBattery(it) }
-                )
-                PrivacyDivider()
+                        PrivacySwitchItem(
+                            title = "Share Battery Status",
+                            subtitle = "Allow active chat partners to see your battery percentage and charging state.",
+                            checked = uiState.shareBattery,
+                            onCheckedChange = { viewModel.toggleShareBattery(it) }
+                        )
+                    }
+                }
             }
 
             // --- CONNECTIONS SECTION ---
             item {
-                PrivacySectionHeader(title = "CONNECTIONS")
-            }
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                        OmaSectionHeader(title = "Connections")
 
-            item {
-                PrivacyNavigationItem(
-                    title = "Blocked Users",
-                    subtitle = "${uiState.blockedUsersCount} users",
-                    onClick = onNavigateToBlockedUsers
-                )
-                Spacer(modifier = Modifier.height(24.dp))
+                        PrivacyNavigationItem(
+                            title = "Blocked Users",
+                            subtitle = "${uiState.blockedUsersCount} contacts blocked",
+                            onClick = onNavigateToBlockedUsers
+                        )
+                    }
+                }
             }
         }
     }
-}
-
-@Composable
-private fun PrivacySectionHeader(title: String) {
-    Text(
-        text = title,
-        color = SectionHeaderColor,
-        fontWeight = FontWeight.Bold,
-        fontSize = 13.sp,
-        letterSpacing = 1.sp,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-    )
-}
-
-@Composable
-private fun PrivacyDivider() {
-    HorizontalDivider(
-        thickness = 0.5.dp,
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-        modifier = Modifier.padding(vertical = 6.dp)
-    )
 }
 
 @Composable
@@ -229,7 +237,8 @@ private fun PrivacyDropdownItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .clickable { expanded = true }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -241,43 +250,40 @@ private fun PrivacyDropdownItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = TitleColor
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = SubtitleColor,
-                lineHeight = 16.sp
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
         Box {
             Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = DarkCardBg,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .border(1.dp, DarkCardBorder, RoundedCornerShape(8.dp))
-                    .clickable { expanded = true }
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.clickable { expanded = true }
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = displayLabel,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = TitleColor
+                        color = EmeraldPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.labelMedium
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Select",
-                        tint = SubtitleColor,
-                        modifier = Modifier.size(18.dp)
+                        contentDescription = "Expand",
+                        tint = EmeraldPrimary,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
@@ -323,27 +329,26 @@ private fun PrivacySwitchItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(end = 16.dp)
+                .padding(end = 12.dp)
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = TitleColor
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = SubtitleColor,
-                lineHeight = 16.sp
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -351,10 +356,8 @@ private fun PrivacySwitchItem(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = EmeraldPrimary,
-                uncheckedThumbColor = Color(0xFFCBD5E1),
-                uncheckedTrackColor = Color(0xFF334155)
+                checkedThumbColor = EmeraldPrimary,
+                checkedTrackColor = EmeraldPrimary.copy(alpha = 0.4f)
             )
         )
     }
@@ -370,34 +373,30 @@ private fun PrivacyNavigationItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 16.dp)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = TitleColor
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = SubtitleColor
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-            contentDescription = "Navigate",
-            tint = SubtitleColor,
-            modifier = Modifier.size(16.dp)
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            modifier = Modifier.size(14.dp)
         )
     }
 }

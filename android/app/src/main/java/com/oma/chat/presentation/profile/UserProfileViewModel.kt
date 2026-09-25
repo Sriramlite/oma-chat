@@ -49,7 +49,8 @@ class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val socketManager: SocketManager,
     private val observePresenceUseCase: ObservePresenceUseCase,
-    private val deleteChatUseCase: DeleteChatUseCase
+    private val deleteChatUseCase: DeleteChatUseCase,
+    private val getMeUseCase: com.oma.chat.domain.usecase.user.GetMeUseCase
 ) : ViewModel() {
 
     val userId: String = checkNotNull(savedStateHandle["userId"])
@@ -76,6 +77,8 @@ class UserProfileViewModel @Inject constructor(
         viewModelScope.launch {
             userDao.getUserByIdFlow(userId).collect { entity ->
                 if (entity != null) {
+                    val isSelf = userId == myUserId
+                    val prefUser = if (isSelf) authPreferences.getUser() else null
                     val isBlocked = entity.isBlocked ||
                             authPreferences.getUser()?.blockedUsers?.contains(userId) == true
                     _uiState.update { current ->
@@ -87,6 +90,7 @@ class UserProfileViewModel @Inject constructor(
                                 avatar = entity.avatar,
                                 bio = entity.bio,
                                 lastSeen = entity.lastSeen,
+                                phone = if (isSelf) prefUser?.phone else (current.user?.phone ?: prefUser?.phone),
                                 isBlocked = isBlocked,
                                 battery = entity.batteryLevel,
                                 isCharging = entity.isCharging
@@ -99,31 +103,38 @@ class UserProfileViewModel @Inject constructor(
             }
         }
 
-        // 2. Refresh from backend batch API
+        // 2. Refresh from backend batch API or GetMe
         viewModelScope.launch {
             try {
-                val resp = userApi.batchGetUsers(BatchUsersRequest(listOf(userId)))
-                if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                    val u = resp.body()!!.first().toDomain()
-                    userDao.insertUser(
-                        UserEntity(
-                            id = u.id,
-                            username = u.username,
-                            name = u.name,
-                            avatar = u.avatar,
-                            bio = u.bio,
-                            lastSeen = u.lastSeen,
-                            isBlocked = u.isBlocked,
-                            batteryLevel = u.battery,
-                            isCharging = u.isCharging
+                if (userId == myUserId) {
+                    val me = getMeUseCase().getOrNull() ?: authPreferences.getUser()
+                    if (me != null) {
+                        _uiState.update { it.copy(user = me, isLoading = false) }
+                    }
+                } else {
+                    val resp = userApi.batchGetUsers(BatchUsersRequest(listOf(userId)))
+                    if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
+                        val u = resp.body()!!.first().toDomain()
+                        userDao.insertUser(
+                            UserEntity(
+                                id = u.id,
+                                username = u.username,
+                                name = u.name,
+                                avatar = u.avatar,
+                                bio = u.bio,
+                                lastSeen = u.lastSeen,
+                                isBlocked = u.isBlocked,
+                                batteryLevel = u.battery,
+                                isCharging = u.isCharging
+                            )
                         )
-                    )
-                    _uiState.update { current ->
-                        current.copy(
-                            user = u,
-                            isBlocked = u.isBlocked || authPreferences.getUser()?.blockedUsers?.contains(userId) == true,
-                            isLoading = false
-                        )
+                        _uiState.update { current ->
+                            current.copy(
+                                user = u,
+                                isBlocked = u.isBlocked || authPreferences.getUser()?.blockedUsers?.contains(userId) == true,
+                                isLoading = false
+                            )
+                        }
                     }
                 }
             } catch (e: Exception) {

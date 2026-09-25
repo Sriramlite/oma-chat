@@ -25,6 +25,7 @@ data class ProfileUiState(
     val name: String = "",
     val bio: String = "",
     val avatar: String = "",
+    val phone: String = "",
     val isUpdating: Boolean = false,
     val showChangePasswordDialog: Boolean = false,
     val showDeleteAccountDialog: Boolean = false,
@@ -71,7 +72,8 @@ class ProfileViewModel @Inject constructor(
                             user = user,
                             name = user.name,
                             bio = user.bio ?: "",
-                            avatar = user.avatar
+                            avatar = user.avatar,
+                            phone = user.phone ?: ""
                         )
                     }
                 }
@@ -95,6 +97,10 @@ class ProfileViewModel @Inject constructor(
 
     fun onAvatarChanged(avatar: String) {
         _uiState.update { it.copy(avatar = avatar) }
+    }
+
+    fun onPhoneChanged(phone: String) {
+        _uiState.update { it.copy(phone = phone) }
     }
 
     fun onOldPasswordChanged(password: String) {
@@ -137,10 +143,11 @@ class ProfileViewModel @Inject constructor(
         val name = _uiState.value.name.trim()
         val bio = _uiState.value.bio.trim()
         val avatar = _uiState.value.avatar.trim()
+        val phone = _uiState.value.phone.trim().ifBlank { null }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isUpdating = true, errorMessage = null) }
-            val result = updateProfileUseCase(name, bio, avatar)
+            val result = updateProfileUseCase(name, bio, avatar, phone)
             result.fold(
                 onSuccess = { user ->
                     _uiState.update {

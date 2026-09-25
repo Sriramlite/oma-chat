@@ -70,7 +70,7 @@ class ChatRepositoryImpl @Inject constructor(
                     isDeleted = domainMsg.isDeleted,
                     isEdited = domainMsg.isEdited
                 )
-                messageDao.insertMessage(entity)
+                messageDao.reconcileServerMessage(ownerUserId, entity)
 
                 // Update or create conversation preview
                 val existingConv = conversationDao.getConversationById(ownerUserId, effectiveChatId)
@@ -160,6 +160,14 @@ class ChatRepositoryImpl @Inject constructor(
             socketManager.messagePinnedEvents.collect { event ->
                 val ownerUserId = authPreferences.getUserId() ?: return@collect
                 messageDao.updateMessagePinned(ownerUserId, event.messageId, event.isPinned)
+            }
+        }
+
+        // Listen for real-time Read Receipts (messages_seen)
+        repositoryScope.launch {
+            socketManager.messagesSeenEvents.collect { event ->
+                val ownerUserId = authPreferences.getUserId() ?: return@collect
+                messageDao.markOutgoingMessagesAsSeen(ownerUserId, event.readerId)
             }
         }
     }
@@ -270,7 +278,7 @@ class ChatRepositoryImpl @Inject constructor(
                         isEdited = msg.isEdited
                     )
                 }
-                messageDao.insertMessages(entities)
+                messageDao.reconcileServerMessages(ownerUserId, entities)
                 Result.success(domainMessages)
             } else {
                 Result.failure(Exception("Failed to fetch chat history: ${response.code()}"))
@@ -340,8 +348,7 @@ class ChatRepositoryImpl @Inject constructor(
                 val body = response.body()!!
                 val serverMsg = body.toDomain(ownerUserId, receiverId)
 
-                // 3. Delete temporary entity and insert confirmed server entity
-                messageDao.deleteMessage(ownerUserId, tempId)
+                // 3. Reconcile temporary entity with confirmed server entity
                 val confirmedEntity = MessageEntity(
                     ownerUserId = ownerUserId,
                     id = serverMsg.id,
@@ -356,7 +363,7 @@ class ChatRepositoryImpl @Inject constructor(
                     status = "sent",
                     replyToId = replyToId
                 )
-                messageDao.insertMessage(confirmedEntity)
+                messageDao.reconcileServerMessage(ownerUserId, confirmedEntity)
                 Result.success(serverMsg)
             } else {
                 messageDao.updateMessageStatus(ownerUserId, tempId, "failed")
@@ -371,6 +378,7 @@ class ChatRepositoryImpl @Inject constructor(
     override suspend fun markChatAsRead(ownerUserId: String, chatId: String): Result<Unit> = withContext(ioDispatcher) {
         try {
             conversationDao.clearUnreadCount(ownerUserId, chatId)
+            socketManager.emitMarkSeen(chatId)
             val response = chatApi.markAsRead(ReadChatRequest(chatId))
             if (response.isSuccessful) {
                 Result.success(Unit)

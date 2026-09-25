@@ -149,13 +149,7 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override fun getCurrentUser(): Flow<User?> {
-        return authPreferences.isLoggedInState.map { isLoggedIn ->
-            if (isLoggedIn) {
-                authPreferences.getUser()
-            } else {
-                null
-            }
-        }
+        return authPreferences.currentUserState
     }
 
     override fun getStoredToken(): String? {

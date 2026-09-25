@@ -66,6 +66,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.oma.chat.domain.model.Group
 import com.oma.chat.domain.model.User
+import com.oma.chat.presentation.components.OmaAvatar
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -333,13 +334,10 @@ fun SelectedUserChip(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 8.dp)
         ) {
-            AsyncImage(
-                model = user.avatar,
-                contentDescription = user.name,
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
+            OmaAvatar(
+                avatarUrl = user.avatar,
+                name = user.name,
+                size = 24.dp
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
@@ -377,14 +375,10 @@ fun UserSelectionItem(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = user.avatar,
-            contentDescription = user.name,
-            modifier = Modifier
-                .size(46.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentScale = ContentScale.Crop
+        OmaAvatar(
+            avatarUrl = user.avatar,
+            name = user.name,
+            size = 46.dp
         )
 
         Spacer(modifier = Modifier.width(14.dp))

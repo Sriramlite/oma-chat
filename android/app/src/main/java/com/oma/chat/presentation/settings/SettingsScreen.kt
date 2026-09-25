@@ -1,7 +1,6 @@
 package com.oma.chat.presentation.settings
 
 import android.content.Intent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,22 +20,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.DataUsage
-import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.ReportProblem
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -55,8 +50,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -70,10 +63,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -82,7 +73,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import com.oma.chat.presentation.components.OmaAvatar
+import com.oma.chat.presentation.components.OmaSearchBar
+import com.oma.chat.presentation.components.OmaSectionHeader
+import com.oma.chat.presentation.components.OmaSettingsRow
 import com.oma.chat.presentation.theme.EmeraldPrimary
 import com.oma.chat.presentation.theme.ErrorRed
 import kotlinx.coroutines.flow.collectLatest
@@ -101,7 +95,6 @@ fun SettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
-    var isSearchActive by remember { mutableStateOf(false) }
 
     LaunchedEffect(key1 = true) {
         viewModel.eventFlow.collectLatest { event ->
@@ -117,48 +110,17 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    if (isSearchActive) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text("Search settings...") },
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else {
-                        Text(
-                            text = "Settings",
-                            fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    }
+                    Text(
+                        text = "Settings",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge
+                    )
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            if (isSearchActive) {
-                                isSearchActive = false
-                                searchQuery = ""
-                            } else {
-                                onNavigateBack()
-                            }
-                        }
-                    ) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { isSearchActive = !isSearchActive }) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search"
                         )
                     }
                 },
@@ -166,144 +128,234 @@ fun SettingsScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 1. Profile Header Card (WhatsApp Style)
+            // 1. Profile Header Card
             item {
-                ProfileHeaderCard(
-                    avatar = uiState.user?.avatar ?: "",
-                    name = uiState.user?.name ?: "User",
-                    status = uiState.user?.bio?.ifBlank { "Hey there! I am using OMA-CHAT" } ?: "Hey there! I am using OMA-CHAT",
-                    username = uiState.user?.username ?: "",
-                    onClick = onNavigateToProfile
-                )
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                )
-            }
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onNavigateToProfile)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        OmaAvatar(
+                            avatarUrl = uiState.user?.avatar,
+                            name = uiState.user?.name ?: "User",
+                            size = 60.dp
+                        )
 
-            // 2. Settings Items List
-            item {
-                SettingsItem(
-                    icon = Icons.Default.Key,
-                    title = "Account",
-                    subtitle = "Security notifications, change password, delete account",
-                    onClick = { viewModel.setShowChangePasswordDialog(true) }
-                )
-            }
+                        Spacer(modifier = Modifier.width(16.dp))
 
-            item {
-                SettingsItem(
-                    icon = Icons.Default.Lock,
-                    title = "Privacy",
-                    subtitle = "Last seen, profile photo, read receipts, blocked users",
-                    onClick = onNavigateToPrivacy
-                )
-            }
-
-            item {
-                SettingsItem(
-                    icon = Icons.AutoMirrored.Filled.Chat,
-                    title = "Chats",
-                    subtitle = "Theme, wallpapers, chat history",
-                    onClick = { viewModel.setShowThemeDialog(true) }
-                )
-            }
-
-            item {
-                SettingsItem(
-                    icon = Icons.Default.Notifications,
-                    title = "Notifications",
-                    subtitle = "Message, group & call tones, vibration",
-                    onClick = {
-                        viewModel.toggleNotifications(!uiState.isNotificationsEnabled)
-                    }
-                )
-            }
-
-            item {
-                SettingsItem(
-                    icon = Icons.Default.DataUsage,
-                    title = "Storage and data",
-                    subtitle = "Network usage, auto-download",
-                    onClick = {
-                        viewModel.setShowClearChatsDialog(true)
-                    }
-                )
-            }
-
-            item {
-                SettingsItem(
-                    icon = Icons.Default.Language,
-                    title = "App language",
-                    subtitle = "English (device's language)",
-                    onClick = {}
-                )
-            }
-
-            item {
-                SettingsItem(
-                    icon = Icons.Default.Info,
-                    iconTint = EmeraldPrimary,
-                    title = "Diagnostics & Test Center",
-                    subtitle = "Test microphone, audio levels, WebRTC STUN & console",
-                    onClick = onNavigateToDiagnostics
-                )
-            }
-
-            item {
-                SettingsItem(
-                    icon = Icons.AutoMirrored.Filled.HelpOutline,
-                    title = "Help & Support",
-                    subtitle = "Help center, report an issue, privacy policy",
-                    onClick = { viewModel.setShowReportIssueDialog(true) }
-                )
-            }
-
-            item {
-                SettingsItem(
-                    icon = Icons.Default.People,
-                    title = "Invite a friend",
-                    subtitle = "Share OMA-CHAT with your friends",
-                    onClick = {
-                        val sendIntent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            putExtra(Intent.EXTRA_TEXT, "Let's chat on OMA-CHAT! Download now: https://api.pdktdev.in")
-                            type = "text/plain"
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = uiState.user?.name ?: "User",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = uiState.user?.bio?.ifBlank { "Hey there! I am using OMA-CHAT" } ?: "Hey there! I am using OMA-CHAT",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (!uiState.user?.username.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "@${uiState.user?.username}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = EmeraldPrimary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
-                        context.startActivity(Intent.createChooser(sendIntent, "Invite via"))
+
+                        IconButton(onClick = onNavigateToProfile) {
+                            Icon(
+                                imageVector = Icons.Default.QrCode,
+                                contentDescription = "Profile",
+                                tint = EmeraldPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
-                )
+                }
             }
 
-            // 3. Logout Item
+            // 2. Account & Security Card
             item {
-                HorizontalDivider(
-                    thickness = 0.5.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-                SettingsItem(
-                    icon = Icons.AutoMirrored.Filled.ExitToApp,
-                    iconTint = ErrorRed,
-                    title = "Log out",
-                    titleColor = ErrorRed,
-                    subtitle = "Sign out of your account on this device",
-                    onClick = { viewModel.setShowLogoutConfirmDialog(true) }
-                )
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                        OmaSectionHeader(title = "Account")
+
+                        OmaSettingsRow(
+                            icon = Icons.Default.Key,
+                            title = "Security & Password",
+                            subtitle = "Update password and security credentials",
+                            onClick = { viewModel.setShowChangePasswordDialog(true) }
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+
+                        OmaSettingsRow(
+                            icon = Icons.Default.Lock,
+                            title = "Privacy",
+                            subtitle = "Last seen, profile photo, read receipts, blocked users",
+                            onClick = onNavigateToPrivacy
+                        )
+                    }
+                }
             }
 
-            // 4. WhatsApp-style Footer
+            // 3. Chats & Notifications Card
             item {
-                Spacer(modifier = Modifier.height(24.dp))
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                        OmaSectionHeader(title = "Preferences")
+
+                        OmaSettingsRow(
+                            icon = Icons.AutoMirrored.Filled.Chat,
+                            title = "Chats & Theme",
+                            subtitle = "Theme, wallpapers, chat history",
+                            onClick = { viewModel.setShowThemeDialog(true) }
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+
+                        OmaSettingsRow(
+                            icon = Icons.Default.Notifications,
+                            title = "Notifications",
+                            subtitle = "Message, group & call tones",
+                            onClick = { viewModel.toggleNotifications(!uiState.isNotificationsEnabled) }
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+
+                        OmaSettingsRow(
+                            icon = Icons.Default.DataUsage,
+                            title = "Storage and data",
+                            subtitle = "Cache & local isolated storage",
+                            onClick = { viewModel.setShowClearChatsDialog(true) }
+                        )
+                    }
+                }
+            }
+
+            // 4. Diagnostics & Support Card
+            item {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                        OmaSectionHeader(title = "Tools & Support")
+
+                        OmaSettingsRow(
+                            icon = Icons.Default.Info,
+                            title = "Diagnostics & Test Center",
+                            subtitle = "Test audio, WebRTC STUN/TURN, console",
+                            onClick = onNavigateToDiagnostics
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+
+                        OmaSettingsRow(
+                            icon = Icons.AutoMirrored.Filled.HelpOutline,
+                            title = "Help & Feedback",
+                            subtitle = "Report an issue, terms & policies",
+                            onClick = { viewModel.setShowReportIssueDialog(true) }
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+
+                        OmaSettingsRow(
+                            icon = Icons.Default.People,
+                            title = "Invite a friend",
+                            subtitle = "Share OMA-CHAT NxtGen",
+                            onClick = {
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, "Let's chat on OMA-CHAT! Download now: https://api.pdktdev.in")
+                                    type = "text/plain"
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, "Invite via"))
+                            }
+                        )
+                    }
+                }
+            }
+
+            // 5. Logout Card
+            item {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OmaSettingsRow(
+                        icon = Icons.AutoMirrored.Filled.ExitToApp,
+                        iconTint = ErrorRed,
+                        iconBgColor = ErrorRed.copy(alpha = 0.12f),
+                        title = "Log out",
+                        titleColor = ErrorRed,
+                        subtitle = "Sign out from this device",
+                        showChevron = false,
+                        onClick = { viewModel.setShowLogoutConfirmDialog(true) }
+                    )
+                }
+            }
+
+            // 6. Brand Footer
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -322,11 +374,12 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "v1.0.0 (Native Android)",
+                        text = "v2.0 Native Android Client",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -379,6 +432,10 @@ fun SettingsScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = EmeraldPrimary
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -389,6 +446,10 @@ fun SettingsScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = EmeraldPrimary
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
                     if (uiState.error != null) {
@@ -405,6 +466,7 @@ fun SettingsScreen(
                 Button(
                     onClick = { viewModel.submitChangePassword() },
                     colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                    shape = RoundedCornerShape(12.dp),
                     enabled = !uiState.isLoading
                 ) {
                     if (uiState.isLoading) {
@@ -430,7 +492,7 @@ fun SettingsScreen(
             text = {
                 Column {
                     Text(
-                        text = "Describe your issue or suggestions to the OMA moderation and support team:",
+                        text = "Describe your issue or suggestions to the OMA support team:",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -440,6 +502,10 @@ fun SettingsScreen(
                         onValueChange = { viewModel.onReportReasonChanged(it) },
                         placeholder = { Text("Enter details...") },
                         maxLines = 4,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = EmeraldPrimary
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(110.dp)
@@ -450,6 +516,7 @@ fun SettingsScreen(
                 Button(
                     onClick = { viewModel.submitReportIssue() },
                     colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                    shape = RoundedCornerShape(12.dp),
                     enabled = !uiState.isLoading
                 ) {
                     if (uiState.isLoading) {
@@ -478,6 +545,7 @@ fun SettingsScreen(
             confirmButton = {
                 Button(
                     onClick = { viewModel.setShowClearChatsDialog(false) },
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
                 ) {
                     Text("OK")
@@ -500,6 +568,7 @@ fun SettingsScreen(
                         viewModel.setShowLogoutConfirmDialog(false)
                         viewModel.logout()
                     },
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
                 ) {
                     Text("Log Out", color = Color.White)
@@ -511,129 +580,6 @@ fun SettingsScreen(
                 }
             }
         )
-    }
-}
-
-@Composable
-private fun ProfileHeaderCard(
-    avatar: String,
-    name: String,
-    status: String,
-    username: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        color = Color.Transparent
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // Large Avatar with Emerald border
-            com.oma.chat.presentation.common.avatar.AvatarImage(
-                avatar = avatar,
-                name = name,
-                size = 64.dp
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Name & Status
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = status,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (username.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "@$username",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = EmeraldPrimary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // QR Code / Forward Icon shortcut
-            IconButton(onClick = onClick) {
-                Icon(
-                    imageVector = Icons.Default.QrCode,
-                    contentDescription = "QR Code",
-                    tint = EmeraldPrimary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingsItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    titleColor: Color = MaterialTheme.colorScheme.onSurface
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        color = Color.Transparent
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = iconTint,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Spacer(modifier = Modifier.width(20.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = titleColor
-                )
-                if (subtitle.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
     }
 }
 

@@ -38,6 +38,7 @@ import androidx.core.content.ContextCompat
 
 import androidx.lifecycle.lifecycleScope
 import com.oma.chat.data.battery.BatteryMonitor
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -48,6 +49,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var batteryMonitor: BatteryMonitor
 
+    private val _navigationIntent = kotlinx.coroutines.flow.MutableStateFlow<android.content.Intent?>(null)
+    val navigationIntent: kotlinx.coroutines.flow.StateFlow<android.content.Intent?> = _navigationIntent.asStateFlow()
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { _ ->
@@ -57,6 +61,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        _navigationIntent.value = intent
         checkAndRequestPermissions()
 
         batteryMonitor.startMonitoring(lifecycleScope)
@@ -67,10 +72,19 @@ class MainActivity : ComponentActivity() {
 
                 when (val state = uiState) {
                     is MainUiState.Loading -> SplashScreen()
-                    is MainUiState.Ready -> NavGraph(startDestination = state.startDestination)
+                    is MainUiState.Ready -> NavGraph(
+                        startDestination = state.startDestination,
+                        navigationIntent = navigationIntent
+                    )
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        _navigationIntent.value = intent
     }
 
     override fun onDestroy() {

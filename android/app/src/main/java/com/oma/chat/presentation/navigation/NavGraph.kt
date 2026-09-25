@@ -32,9 +32,36 @@ import com.oma.chat.presentation.settings.SettingsScreen
 fun NavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String,
-    callViewModel: CallViewModel = hiltViewModel()
+    callViewModel: CallViewModel = hiltViewModel(),
+    navigationIntent: kotlinx.coroutines.flow.StateFlow<android.content.Intent?>? = null
 ) {
     val callState by callViewModel.callState.collectAsState()
+    val navIntent by (navigationIntent ?: kotlinx.coroutines.flow.MutableStateFlow(null)).collectAsState()
+
+    androidx.compose.runtime.LaunchedEffect(navIntent) {
+        val intent = navIntent ?: return@LaunchedEffect
+        val chatId = intent.getStringExtra("chatId")
+        val chatName = intent.getStringExtra("chatName") ?: "Chat"
+        val isIncomingCall = intent.getBooleanExtra("incomingCall", false) ||
+                intent.action == "com.oma.chat.ACTION_ANSWER_CALL"
+        val autoAccept = intent.getBooleanExtra("autoAccept", false) ||
+                intent.action == "com.oma.chat.ACTION_ANSWER_CALL"
+        val callerId = intent.getStringExtra("callerId") ?: ""
+        val callerName = intent.getStringExtra("callerName") ?: "Caller"
+        val callTypeStr = intent.getStringExtra("callType") ?: "voice"
+        val callType = if (callTypeStr.equals("video", ignoreCase = true)) com.oma.chat.domain.model.CallType.VIDEO else com.oma.chat.domain.model.CallType.VOICE
+
+        if (!chatId.isNullOrBlank()) {
+            navController.navigate(Screen.Chat.createRoute(chatId, chatName)) {
+                popUpTo(Screen.Home.route)
+            }
+        } else if (isIncomingCall && callerId.isNotBlank()) {
+            if (autoAccept) {
+                callViewModel.acceptCall(callerId, "", callType)
+                navController.navigate(Screen.Call.route)
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(

@@ -1,5 +1,11 @@
 package com.oma.chat.presentation.profile
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.Base64
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,14 +27,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -57,27 +59,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import com.oma.chat.presentation.components.OmaAvatar
+import com.oma.chat.presentation.components.OmaPrimaryButton
+import com.oma.chat.presentation.components.OmaSectionHeader
+import com.oma.chat.presentation.components.OmaSettingsRow
 import com.oma.chat.presentation.theme.EmeraldPrimary
 import com.oma.chat.presentation.theme.ErrorRed
 import kotlinx.coroutines.flow.collectLatest
-
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.net.Uri
-import android.util.Base64
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.ui.platform.LocalContext
 import java.io.ByteArrayOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -179,7 +174,7 @@ fun ProfileScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
@@ -188,11 +183,10 @@ fun ProfileScreen(
                             .clickable { photoPickerLauncher.launch("image/*") },
                         contentAlignment = Alignment.Center
                     ) {
-                        com.oma.chat.presentation.common.avatar.AvatarImage(
-                            avatar = uiState.avatar,
+                        OmaAvatar(
+                            avatarUrl = uiState.avatar,
                             name = uiState.name,
-                            size = 100.dp,
-                            modifier = Modifier.fillMaxSize()
+                            size = 100.dp
                         )
 
                         // Floating Camera Badge
@@ -215,7 +209,7 @@ fun ProfileScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     TextButton(onClick = { photoPickerLauncher.launch("image/*") }) {
                         Text(
@@ -226,7 +220,7 @@ fun ProfileScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
                         text = uiState.user?.name ?: "User",
@@ -255,21 +249,20 @@ fun ProfileScreen(
             // Edit Profile Card
             item {
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Text(
-                            text = "Personal Information",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                        OmaSectionHeader(
+                            title = "Personal Information",
+                            modifier = Modifier.padding(0.dp)
                         )
 
                         OutlinedTextField(
@@ -278,7 +271,10 @@ fun ProfileScreen(
                             label = { Text("Display Name") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = EmeraldPrimary
+                            )
                         )
 
                         OutlinedTextField(
@@ -286,8 +282,11 @@ fun ProfileScreen(
                             onValueChange = viewModel::onBioChanged,
                             label = { Text("Bio / Status") },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            maxLines = 3
+                            shape = RoundedCornerShape(14.dp),
+                            maxLines = 3,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = EmeraldPrimary
+                            )
                         )
 
                         OutlinedTextField(
@@ -296,37 +295,33 @@ fun ProfileScreen(
                             label = { Text("Avatar URL") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = EmeraldPrimary
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = uiState.phone,
+                            onValueChange = viewModel::onPhoneChanged,
+                            label = { Text("Phone Number") },
+                            placeholder = { Text("+1...") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = EmeraldPrimary
+                            )
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        Button(
+                        OmaPrimaryButton(
+                            text = "Save Profile",
                             onClick = viewModel::updateProfile,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = EmeraldPrimary,
-                                contentColor = Color.White
-                            ),
-                            enabled = !uiState.isUpdating
-                        ) {
-                            if (uiState.isUpdating) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = Color.White,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Save Profile", fontWeight = FontWeight.Bold)
-                            }
-                        }
+                            isLoading = uiState.isUpdating,
+                            leadingIcon = Icons.Default.Check
+                        )
                     }
                 }
             }
@@ -334,8 +329,9 @@ fun ProfileScreen(
             // Account Security Card
             item {
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -343,60 +339,33 @@ fun ProfileScreen(
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
                     ) {
-                        Text(
-                            text = "Account & Security",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        OmaSectionHeader(
+                            title = "Account & Security",
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                         )
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.toggleChangePasswordDialog(true) }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                text = "Change Password",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                        OmaSettingsRow(
+                            icon = Icons.Default.Lock,
+                            title = "Change Password",
+                            subtitle = "Update your account password",
+                            onClick = { viewModel.toggleChangePasswordDialog(true) }
+                        )
 
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                         )
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.logout() }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                text = "Log Out",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                        OmaSettingsRow(
+                            icon = Icons.AutoMirrored.Filled.ExitToApp,
+                            title = "Log Out",
+                            subtitle = "Sign out from this device",
+                            iconTint = ErrorRed,
+                            iconBgColor = ErrorRed.copy(alpha = 0.12f),
+                            titleColor = ErrorRed,
+                            showChevron = false,
+                            onClick = { viewModel.logout() }
+                        )
                     }
                 }
             }
@@ -404,8 +373,9 @@ fun ProfileScreen(
             // Danger Zone Card
             item {
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = ErrorRed.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(20.dp),
+                    color = ErrorRed.copy(alpha = 0.08f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, ErrorRed.copy(alpha = 0.2f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -415,11 +385,20 @@ fun ProfileScreen(
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteForever,
-                            contentDescription = null,
-                            tint = ErrorRed
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(ErrorRed.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteForever,
+                                contentDescription = null,
+                                tint = ErrorRed,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(
@@ -453,6 +432,10 @@ fun ProfileScreen(
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = EmeraldPrimary
+                            ),
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
@@ -462,6 +445,10 @@ fun ProfileScreen(
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = EmeraldPrimary
+                            ),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -470,6 +457,7 @@ fun ProfileScreen(
                     Button(
                         onClick = viewModel::changePassword,
                         colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                        shape = RoundedCornerShape(12.dp),
                         enabled = !uiState.isChangingPassword
                     ) {
                         if (uiState.isChangingPassword) {
@@ -502,6 +490,10 @@ fun ProfileScreen(
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ErrorRed
+                            ),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -510,6 +502,7 @@ fun ProfileScreen(
                     Button(
                         onClick = viewModel::deleteAccount,
                         colors = ButtonDefaults.buttonColors(containerColor = ErrorRed),
+                        shape = RoundedCornerShape(12.dp),
                         enabled = !uiState.isDeletingAccount
                     ) {
                         if (uiState.isDeletingAccount) {

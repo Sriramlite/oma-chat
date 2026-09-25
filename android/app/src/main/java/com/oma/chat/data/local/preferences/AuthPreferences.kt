@@ -44,6 +44,13 @@ class AuthPreferences @Inject constructor(
     private val _isLoggedInState = MutableStateFlow(hasToken())
     val isLoggedInState: StateFlow<Boolean> = _isLoggedInState.asStateFlow()
 
+    private val _currentUserState = MutableStateFlow<User?>(null)
+    val currentUserState: StateFlow<User?> = _currentUserState.asStateFlow()
+
+    init {
+        _currentUserState.value = getUser()
+    }
+
     fun saveAuthSession(token: String, user: User) {
         prefs.edit()
             .putString(KEY_AUTH_TOKEN, token)
@@ -51,6 +58,7 @@ class AuthPreferences @Inject constructor(
             .putString(KEY_USER_ID, user.id)
             .apply()
         _isLoggedInState.value = true
+        _currentUserState.value = user
     }
 
     fun updateUserData(user: User) {
@@ -58,6 +66,7 @@ class AuthPreferences @Inject constructor(
             .putString(KEY_USER_DATA, gson.toJson(user))
             .putString(KEY_USER_ID, user.id)
             .apply()
+        _currentUserState.value = user
     }
 
     fun getToken(): String? {
@@ -84,6 +93,7 @@ class AuthPreferences @Inject constructor(
     fun clear() {
         prefs.edit().clear().apply()
         _isLoggedInState.value = false
+        _currentUserState.value = null
     }
 
     companion object {

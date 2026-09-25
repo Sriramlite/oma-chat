@@ -53,6 +53,13 @@ module.exports = async (req, res) => {
 
         if (result.modifiedCount > 0) {
             console.log(`[Read] Chat ${chatId} marked ${result.modifiedCount} messages as SEEN for ${user.username}`);
+            const io = req.app ? req.app.get('io') : null;
+            if (io) {
+                io.to(String(chatId)).emit('messages_seen', {
+                    readerId: user.id,
+                    chatId: user.id
+                });
+            }
         }
         res.status(200).json({ success: true, updated: result.modifiedCount });
     } catch (e) {

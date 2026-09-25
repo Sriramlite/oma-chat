@@ -27,6 +27,7 @@ data class PrivacyUiState(
     val lastSeenPrivacy: String = "everyone", // "everyone", "contacts", "nobody"
     val profilePhotoPrivacy: String = "everyone",
     val aboutPrivacy: String = "everyone",
+    val phonePrivacy: String = "everyone",
     val readReceipts: Boolean = true,
     val shareBattery: Boolean = true,
     val blockedUsersCount: Int = 0,
@@ -70,6 +71,7 @@ class PrivacyViewModel @Inject constructor(
                             lastSeenPrivacy = s.lastSeenPrivacy,
                             profilePhotoPrivacy = s.profilePhotoPrivacy,
                             aboutPrivacy = s.aboutPrivacy,
+                            phonePrivacy = s.phonePrivacy,
                             readReceipts = s.readReceipts,
                             shareBattery = s.shareBattery,
                             blockedUsersCount = user.blockedUsers.size
@@ -102,6 +104,11 @@ class PrivacyViewModel @Inject constructor(
         savePrivacySettings(updated)
     }
 
+    fun updatePhone(value: String) {
+        val updated = currentSettings().copy(phonePrivacy = value)
+        savePrivacySettings(updated)
+    }
+
     fun toggleReadReceipts(enabled: Boolean) {
         val updated = currentSettings().copy(readReceipts = enabled)
         savePrivacySettings(updated)
@@ -118,6 +125,7 @@ class PrivacyViewModel @Inject constructor(
             lastSeenPrivacy = s.lastSeenPrivacy,
             profilePhotoPrivacy = s.profilePhotoPrivacy,
             aboutPrivacy = s.aboutPrivacy,
+            phonePrivacy = s.phonePrivacy,
             readReceipts = s.readReceipts,
             shareBattery = s.shareBattery
         )
@@ -130,6 +138,7 @@ class PrivacyViewModel @Inject constructor(
                 lastSeenPrivacy = settings.lastSeenPrivacy,
                 profilePhotoPrivacy = settings.profilePhotoPrivacy,
                 aboutPrivacy = settings.aboutPrivacy,
+                phonePrivacy = settings.phonePrivacy,
                 readReceipts = settings.readReceipts,
                 shareBattery = settings.shareBattery
             )

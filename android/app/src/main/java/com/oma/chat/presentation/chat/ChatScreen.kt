@@ -1,15 +1,21 @@
 package com.oma.chat.presentation.chat
 
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import com.oma.chat.presentation.common.wallpaper.BookshelfWallpaper
+import android.content.pm.PackageManager
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -37,33 +43,47 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.SentimentSatisfiedAlt
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import com.oma.chat.presentation.components.BatteryStatusBadge
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -83,17 +103,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.oma.chat.domain.model.CallType
 import com.oma.chat.domain.model.Message
 import com.oma.chat.domain.model.MessageStatus
+import com.oma.chat.presentation.common.wallpaper.BookshelfWallpaper
+import com.oma.chat.presentation.components.BatteryStatusBadge
+import com.oma.chat.presentation.components.OmaAvatar
+import com.oma.chat.presentation.components.OmaTypingDots
 import com.oma.chat.presentation.theme.DarkIncomingBubble
 import com.oma.chat.presentation.theme.DarkOutgoingBubble
 import com.oma.chat.presentation.theme.EmeraldPrimary
@@ -101,22 +130,11 @@ import com.oma.chat.presentation.theme.ErrorRed
 import com.oma.chat.presentation.theme.LightIncomingBubble
 import com.oma.chat.presentation.theme.LightOutgoingBubble
 import com.oma.chat.presentation.theme.StatusOnline
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Videocam
-import android.Manifest
-import android.content.pm.PackageManager
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
-import com.oma.chat.domain.model.CallType
-
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -135,6 +153,26 @@ fun ChatScreen(
     var editingTargetMessage by remember { mutableStateOf<Message?>(null) }
     var pendingCallType by remember { mutableStateOf<CallType?>(null) }
     var showBatterySlide by remember { mutableStateOf(false) }
+    var showEmojiSheet by remember { mutableStateOf(false) }
+    var showAttachmentSheet by remember { mutableStateOf(false) }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            Toast.makeText(context, "Attachment selected: ${it.lastPathSegment}", Toast.LENGTH_SHORT).show()
+            viewModel.onMessageInputChange(uiState.messageInput + " [Attachment: ${it.lastPathSegment}] ")
+        }
+    }
+
+    val documentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            Toast.makeText(context, "Document selected: ${it.lastPathSegment}", Toast.LENGTH_SHORT).show()
+            viewModel.onMessageInputChange(uiState.messageInput + " [Document: ${it.lastPathSegment}] ")
+        }
+    }
 
     LaunchedEffect(uiState.partnerBatteryLevel) {
         if (uiState.partnerBatteryLevel != null) {
@@ -166,14 +204,6 @@ fun ChatScreen(
         }
         else -> "offline"
     }
-
-    val batteryText = if (uiState.partnerBatteryLevel != null) {
-        if (uiState.isPartnerCharging) {
-            "⚡ ${uiState.partnerBatteryLevel}% Charging"
-        } else {
-            "🔋 ${uiState.partnerBatteryLevel}%"
-        }
-    } else null
 
     val callPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -242,48 +272,15 @@ fun ChatScreen(
                                 }
                             }
                     ) {
-                        Box {
-                            if (uiState.partnerAvatar.isNotBlank()) {
-                                AsyncImage(
-                                    model = uiState.partnerAvatar,
-                                    contentDescription = uiState.chatName,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(CircleShape)
-                                )
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(CircleShape)
-                                        .background(EmeraldPrimary.copy(alpha = 0.15f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = null,
-                                        tint = EmeraldPrimary,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                            }
+                        OmaAvatar(
+                            avatarUrl = uiState.partnerAvatar,
+                            name = uiState.chatName,
+                            size = 40.dp,
+                            isOnline = uiState.isPartnerOnline,
+                            showOnlineBadge = true
+                        )
 
-                            if (uiState.isPartnerOnline) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(10.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surface)
-                                        .padding(1.5.dp)
-                                        .clip(CircleShape)
-                                        .background(StatusOnline)
-                                        .align(Alignment.BottomEnd)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
 
                         Column {
                             Text(
@@ -293,12 +290,18 @@ fun ChatScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             if (uiState.isPartnerTyping) {
-                                Text(
-                                    text = "typing...",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = EmeraldPrimary,
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = "typing",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = EmeraldPrimary,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    OmaTypingDots(dotSize = 3.5.dp)
+                                }
                             } else if (uiState.partnerBatteryLevel != null) {
                                 AnimatedContent(
                                     targetState = showBatterySlide,
@@ -351,9 +354,7 @@ fun ChatScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = {
-                            requestCallWithPermissions(CallType.VOICE)
-                        }
+                        onClick = { requestCallWithPermissions(CallType.VOICE) }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Call,
@@ -362,9 +363,7 @@ fun ChatScreen(
                         )
                     }
                     IconButton(
-                        onClick = {
-                            requestCallWithPermissions(CallType.VIDEO)
-                        }
+                        onClick = { requestCallWithPermissions(CallType.VIDEO) }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Videocam,
@@ -434,17 +433,17 @@ fun ChatScreen(
             // Default Animated Bookshelf Wallpaper
             BookshelfWallpaper(modifier = Modifier.fillMaxSize())
 
-            // Subtle dark overlay to ensure maximum message contrast and readability
+            // Subtle overlay to ensure maximum message contrast and readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.30f))
+                    .background(Color.Black.copy(alpha = 0.25f))
             )
 
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Messages List
+                // Messages Stream
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
@@ -453,73 +452,192 @@ fun ChatScreen(
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                items(
-                    items = uiState.messages,
-                    key = { it.id }
-                ) { message ->
-                    val isOutgoing = message.senderId == viewModel.ownerUserId
-                    MessageBubble(
-                        message = message,
-                        isOutgoing = isOutgoing,
-                        onLongClick = { viewModel.selectMessage(message) }
-                    )
+                    items(
+                        items = uiState.messages,
+                        key = { it.id }
+                    ) { message ->
+                        val isOutgoing = message.senderId == viewModel.ownerUserId
+                        ModernMessageBubble(
+                            message = message,
+                            isOutgoing = isOutgoing,
+                            onLongClick = { viewModel.selectMessage(message) }
+                        )
+                    }
                 }
-            }
 
-            // Input Bar
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 2.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Partner typing banner indicator
+                AnimatedVisibility(
+                    visible = uiState.isPartnerTyping,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
                 ) {
-                    OutlinedTextField(
-                        value = uiState.messageInput,
-                        onValueChange = { viewModel.onMessageInputChange(it) },
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Message...") },
-                        maxLines = 4,
-                        shape = RoundedCornerShape(24.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = EmeraldPrimary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                        ),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Send
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onSend = { viewModel.sendMessage() }
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    IconButton(
-                        onClick = { viewModel.sendMessage() },
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(CircleShape)
-                            .background(EmeraldPrimary)
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OmaTypingDots(dotSize = 5.dp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "${uiState.chatName} is typing...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = EmeraldPrimary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+
+                // Modern Bottom Composer Input Bar
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 3.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Composer Capsule
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            border = androidx.compose.foundation.BorderStroke(
+                                0.8.dp,
+                                MaterialTheme.colorScheme.outlineVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = { showEmojiSheet = true },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SentimentSatisfiedAlt,
+                                        contentDescription = "Emoji",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(4.dp))
+
+                                Box(
+                                    modifier = Modifier.weight(1f),
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
+                                    if (uiState.messageInput.isEmpty()) {
+                                        Text(
+                                            text = "Message...",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                        )
+                                    }
+
+                                    BasicTextField(
+                                        value = uiState.messageInput,
+                                        onValueChange = { viewModel.onMessageInputChange(it) },
+                                        singleLine = false,
+                                        maxLines = 4,
+                                        textStyle = TextStyle(
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Normal
+                                        ),
+                                        cursorBrush = SolidColor(EmeraldPrimary),
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Text,
+                                            imeAction = ImeAction.Send
+                                        ),
+                                        keyboardActions = KeyboardActions(
+                                            onSend = { viewModel.sendMessage() }
+                                        ),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(4.dp))
+
+                                IconButton(
+                                    onClick = { showAttachmentSheet = true },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AttachFile,
+                                        contentDescription = "Attach",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Smooth Send / Mic Button Transition
+                        AnimatedContent(
+                            targetState = uiState.messageInput.isNotBlank(),
+                            transitionSpec = {
+                                (scaleIn(animationSpec = tween(200)) + fadeIn()).togetherWith(
+                                    scaleOut(animationSpec = tween(200)) + fadeOut()
+                                )
+                            },
+                            label = "send_mic_transition"
+                        ) { hasText ->
+                            if (hasText) {
+                                IconButton(
+                                    onClick = { viewModel.sendMessage() },
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(CircleShape)
+                                        .background(EmeraldPrimary)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Send,
+                                        contentDescription = "Send",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            } else {
+                                IconButton(
+                                    onClick = {
+                                        Toast.makeText(context, "Voice recording ready", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(CircleShape)
+                                        .background(EmeraldPrimary)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Mic,
+                                        contentDescription = "Voice Message",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
-    }
 
-    // Message Actions Bottom Sheet
+        // Message Actions Bottom Sheet
         uiState.selectedMessage?.let { selectedMsg ->
             val isMyMessage = selectedMsg.senderId == viewModel.ownerUserId
             ModalBottomSheet(
@@ -663,12 +781,54 @@ fun ChatScreen(
                 }
             )
         }
+
+        // Emoji Selection Bottom Sheet
+        if (showEmojiSheet) {
+            EmojiPickerBottomSheet(
+                onDismiss = { showEmojiSheet = false },
+                onEmojiSelected = { emoji ->
+                    viewModel.onMessageInputChange(uiState.messageInput + emoji)
+                },
+                onBackspace = {
+                    if (uiState.messageInput.isNotEmpty()) {
+                        viewModel.onMessageInputChange(uiState.messageInput.dropLast(1))
+                    }
+                }
+            )
+        }
+
+        // Attachment Selection Bottom Sheet
+        if (showAttachmentSheet) {
+            AttachmentPickerBottomSheet(
+                onDismiss = { showAttachmentSheet = false },
+                onCameraClick = {
+                    galleryLauncher.launch("image/*")
+                },
+                onGalleryClick = {
+                    galleryLauncher.launch("image/*")
+                },
+                onDocumentClick = {
+                    documentLauncher.launch("*/*")
+                },
+                onAudioClick = {
+                    documentLauncher.launch("audio/*")
+                },
+                onLocationClick = {
+                    viewModel.onMessageInputChange(uiState.messageInput + " 📍 [Location Shared] ")
+                    Toast.makeText(context, "Location attached", Toast.LENGTH_SHORT).show()
+                },
+                onContactClick = {
+                    viewModel.onMessageInputChange(uiState.messageInput + " 👤 [Contact Shared] ")
+                    Toast.makeText(context, "Contact attached", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
     }
 }
 
 @Composable
 private fun ActionRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     label: String,
     color: Color = MaterialTheme.colorScheme.onSurface,
     onClick: () -> Unit
@@ -689,7 +849,7 @@ private fun ActionRow(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun MessageBubble(
+private fun ModernMessageBubble(
     message: Message,
     isOutgoing: Boolean,
     onLongClick: () -> Unit
@@ -707,22 +867,22 @@ private fun MessageBubble(
     ) {
         Surface(
             shape = RoundedCornerShape(
-                topStart = 14.dp,
-                topEnd = 14.dp,
-                bottomStart = if (isOutgoing) 14.dp else 2.dp,
-                bottomEnd = if (isOutgoing) 2.dp else 14.dp
+                topStart = 18.dp,
+                topEnd = 18.dp,
+                bottomStart = if (isOutgoing) 18.dp else 4.dp,
+                bottomEnd = if (isOutgoing) 4.dp else 18.dp
             ),
             color = bubbleColor,
             shadowElevation = 1.dp,
             modifier = Modifier
-                .widthIn(max = 280.dp)
+                .widthIn(max = 290.dp)
                 .combinedClickable(
                     onClick = {},
                     onLongClick = onLongClick
                 )
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp)
             ) {
                 // Pin / Star indicators
                 if (message.isPinned || message.isStarred) {
@@ -754,10 +914,10 @@ private fun MessageBubble(
                     text = message.content,
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (message.isDeleted) textColor.copy(alpha = 0.5f) else textColor,
-                    lineHeight = 20.sp
+                    lineHeight = 21.sp
                 )
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
 
                 Row(
                     modifier = Modifier.align(Alignment.End),
@@ -768,16 +928,16 @@ private fun MessageBubble(
                             text = "edited",
                             style = MaterialTheme.typography.labelSmall,
                             fontSize = 9.sp,
-                            color = textColor.copy(alpha = 0.5f)
+                            color = textColor.copy(alpha = 0.55f)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                     }
 
                     Text(
-                        text = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(message.timestamp)),
+                        text = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(message.timestamp)),
                         style = MaterialTheme.typography.labelSmall,
                         fontSize = 10.sp,
-                        color = textColor.copy(alpha = 0.6f)
+                        color = textColor.copy(alpha = 0.65f)
                     )
 
                     if (isOutgoing) {
@@ -828,5 +988,285 @@ private fun MessageBubble(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EmojiPickerBottomSheet(
+    onDismiss: () -> Unit,
+    onEmojiSelected: (String) -> Unit,
+    onBackspace: () -> Unit
+) {
+    val categories = listOf(
+        "😀" to listOf(
+            "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "🥲", "🥹", "😊", "😇",
+            "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛",
+            "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🥸", "🤩", "🥳", "😏", "😒",
+            "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢",
+            "😭", "😮‍💨", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨",
+            "😰", "😥", "😓", "🫣", "🤗", "🫡", "🤔", "🫢", "🤫", "🤥", "😶", "😶‍🌫️"
+        ),
+        "👍" to listOf(
+            "👋", "🤚", "🖐️", "✋", "🖖", "🫱", "🫲", "🫳", "🫴", "👌", "🤌", "🤏",
+            "✌️", "🤞", "🫰", "🤟", "🤘", "🤙", "👈", "👉", "👆", "🖕", "👇", "☝️",
+            "🫵", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "🫶", "👐", "🤲",
+            "🤝", "🙏", "✍️", "💅", "🤳", "💪", "🦾", "🦿", "🦵", "🦶", "👂", "🦻", "👃", "👀"
+        ),
+        "❤️" to listOf(
+            "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❤️‍🔥", "❤️‍🩹",
+            "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "☮️", "✝️", "☪️",
+            "🔥", "✨", "💫", "⭐", "🌟", "⚡", "💥", "💯", "💢", "💨", "🎉", "🎊"
+        ),
+        "🐶" to listOf(
+            "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐻‍❄️", "🐨", "🐯", "🦁",
+            "🐮", "🐷", "🐸", "🐵", "🙈", "🙉", "🙊", "🐒", "🐔", "🐧", "🐦", "🐤",
+            "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🪱", "🐛", "🦋"
+        ),
+        "🍕" to listOf(
+            "🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈", "🍒",
+            "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🥑", "🍔", "🍟", "🍕", "🌭", "🥪",
+            "🌮", "🌯", "🫔", "🥙", "🧆", "🍜", "🍝", "🍣", "🍱", "🥟", "🍦", "🎂", "☕"
+        ),
+        "🚀" to listOf(
+            "🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚐", "🛻", "🚚",
+            "🚛", "🚜", "🛵", "🏍️", "🛺", "🚲", "🛴", "✈️", "🛫", "🛬", "🚀", "🛸", "🚁"
+        )
+    )
+
+    var selectedTab by remember { mutableStateOf(0) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = null
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
+        ) {
+            // Top Tab Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    categories.forEachIndexed { index, (icon, _) ->
+                        Surface(
+                            onClick = { selectedTab = index },
+                            shape = CircleShape,
+                            color = if (selectedTab == index) EmeraldPrimary.copy(alpha = 0.18f) else Color.Transparent,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = icon,
+                                    fontSize = 18.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Backspace button
+                IconButton(
+                    onClick = onBackspace,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Backspace,
+                        contentDescription = "Backspace",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+            )
+
+            // Emoji Grid
+            val currentEmojis = categories[selectedTab].second
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(260.dp)
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(currentEmojis.chunked(7)) { rowEmojis ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        rowEmojis.forEach { emoji ->
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .clickable { onEmojiSelected(emoji) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = emoji,
+                                    fontSize = 24.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AttachmentPickerBottomSheet(
+    onDismiss: () -> Unit,
+    onCameraClick: () -> Unit,
+    onGalleryClick: () -> Unit,
+    onDocumentClick: () -> Unit,
+    onAudioClick: () -> Unit,
+    onLocationClick: () -> Unit,
+    onContactClick: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = null
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 20.dp)
+        ) {
+            Text(
+                text = "Share Content",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 18.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                AttachmentOptionItem(
+                    title = "Camera",
+                    icon = Icons.Default.CameraAlt,
+                    backgroundColor = Color(0xFFE91E63),
+                    onClick = {
+                        onDismiss()
+                        onCameraClick()
+                    }
+                )
+                AttachmentOptionItem(
+                    title = "Gallery",
+                    icon = Icons.Default.Image,
+                    backgroundColor = Color(0xFF9C27B0),
+                    onClick = {
+                        onDismiss()
+                        onGalleryClick()
+                    }
+                )
+                AttachmentOptionItem(
+                    title = "Document",
+                    icon = Icons.Default.Description,
+                    backgroundColor = Color(0xFF3F51B5),
+                    onClick = {
+                        onDismiss()
+                        onDocumentClick()
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                AttachmentOptionItem(
+                    title = "Audio",
+                    icon = Icons.Default.Audiotrack,
+                    backgroundColor = Color(0xFFFF9800),
+                    onClick = {
+                        onDismiss()
+                        onAudioClick()
+                    }
+                )
+                AttachmentOptionItem(
+                    title = "Location",
+                    icon = Icons.Default.LocationOn,
+                    backgroundColor = Color(0xFF4CAF50),
+                    onClick = {
+                        onDismiss()
+                        onLocationClick()
+                    }
+                )
+                AttachmentOptionItem(
+                    title = "Contact",
+                    icon = Icons.Default.AccountCircle,
+                    backgroundColor = Color(0xFF00BCD4),
+                    onClick = {
+                        onDismiss()
+                        onContactClick()
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+fun AttachmentOptionItem(
+    title: String,
+    icon: ImageVector,
+    backgroundColor: Color,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    ) {
+        Surface(
+            modifier = Modifier.size(56.dp),
+            shape = CircleShape,
+            color = backgroundColor
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

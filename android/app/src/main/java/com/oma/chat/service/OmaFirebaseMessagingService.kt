@@ -89,6 +89,47 @@ class OmaFirebaseMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Direct Reply RemoteInput Action
+        val remoteInput = androidx.core.app.RemoteInput.Builder(com.oma.chat.receiver.NotificationActionReceiver.KEY_TEXT_REPLY)
+            .setLabel("Reply to $title...")
+            .build()
+
+        val replyIntent = Intent(this, com.oma.chat.receiver.NotificationActionReceiver::class.java).apply {
+            action = com.oma.chat.receiver.NotificationActionReceiver.ACTION_DIRECT_REPLY
+            putExtra(com.oma.chat.receiver.NotificationActionReceiver.EXTRA_CHAT_ID, senderId)
+            putExtra(com.oma.chat.receiver.NotificationActionReceiver.EXTRA_CHAT_NAME, title)
+        }
+        val replyPendingIntent = PendingIntent.getBroadcast(
+            this,
+            senderId.hashCode() + 1,
+            replyIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
+        val replyAction = NotificationCompat.Action.Builder(
+            R.mipmap.ic_launcher,
+            "Reply",
+            replyPendingIntent
+        ).addRemoteInput(remoteInput)
+            .setAllowGeneratedReplies(true)
+            .build()
+
+        // Mark as Read Action
+        val markReadIntent = Intent(this, com.oma.chat.receiver.NotificationActionReceiver::class.java).apply {
+            action = com.oma.chat.receiver.NotificationActionReceiver.ACTION_MARK_AS_READ
+            putExtra(com.oma.chat.receiver.NotificationActionReceiver.EXTRA_CHAT_ID, senderId)
+        }
+        val markReadPendingIntent = PendingIntent.getBroadcast(
+            this,
+            senderId.hashCode() + 2,
+            markReadIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val markReadAction = NotificationCompat.Action.Builder(
+            R.mipmap.ic_launcher,
+            "Mark as Read",
+            markReadPendingIntent
+        ).build()
+
         val defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
@@ -97,7 +138,10 @@ class OmaFirebaseMessagingService : FirebaseMessagingService() {
             .setAutoCancel(true)
             .setSound(defaultSoundUri)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setContentIntent(pendingIntent)
+            .addAction(replyAction)
+            .addAction(markReadAction)
 
         notificationManager.notify(senderId.hashCode(), notificationBuilder.build())
     }
@@ -119,6 +163,7 @@ class OmaFirebaseMessagingService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
+        // Tap on notification body -> Opens incoming call screen
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("incomingCall", true)
@@ -133,18 +178,60 @@ class OmaFirebaseMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Answer Action Button
+        val answerIntent = Intent(this, MainActivity::class.java).apply {
+            action = com.oma.chat.receiver.NotificationActionReceiver.ACTION_ANSWER_CALL
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("incomingCall", true)
+            putExtra("autoAccept", true)
+            putExtra("callerId", callerId)
+            putExtra("callerName", callerName)
+            putExtra("callType", callType)
+        }
+        val answerPendingIntent = PendingIntent.getActivity(
+            this,
+            1002,
+            answerIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val answerAction = NotificationCompat.Action.Builder(
+            R.mipmap.ic_launcher,
+            "Answer",
+            answerPendingIntent
+        ).build()
+
+        // Decline Action Button
+        val declineIntent = Intent(this, com.oma.chat.receiver.NotificationActionReceiver::class.java).apply {
+            action = com.oma.chat.receiver.NotificationActionReceiver.ACTION_DECLINE_CALL
+            putExtra(com.oma.chat.receiver.NotificationActionReceiver.EXTRA_CALLER_ID, callerId)
+        }
+        val declinePendingIntent = PendingIntent.getBroadcast(
+            this,
+            1003,
+            declineIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val declineAction = NotificationCompat.Action.Builder(
+            R.mipmap.ic_launcher,
+            "Decline",
+            declinePendingIntent
+        ).build()
+
         val ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Incoming $callType Call")
+            .setContentTitle("Incoming ${callType.replaceFirstChar { it.uppercase() }} Call")
             .setContentText("$callerName is calling you...")
             .setAutoCancel(true)
+            .setOngoing(true)
             .setSound(ringtoneUri)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setFullScreenIntent(pendingIntent, true)
             .setContentIntent(pendingIntent)
+            .addAction(declineAction)
+            .addAction(answerAction)
 
-        notificationManager.notify(1001, notificationBuilder.build())
+        notificationManager.notify(com.oma.chat.receiver.NotificationActionReceiver.NOTIFICATION_ID_CALL, notificationBuilder.build())
     }
 }

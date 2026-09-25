@@ -49,7 +49,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import com.oma.chat.presentation.components.BatteryStatusBadge
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -71,6 +70,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.oma.chat.domain.model.CallType
+import com.oma.chat.presentation.components.BatteryStatusBadge
+import com.oma.chat.presentation.components.OmaAvatar
+import com.oma.chat.presentation.components.OmaSectionHeader
+import com.oma.chat.presentation.components.OmaSettingsRow
 import com.oma.chat.presentation.theme.EmeraldPrimary
 import com.oma.chat.presentation.theme.ErrorRed
 import com.oma.chat.presentation.theme.StatusOnline
@@ -118,7 +121,8 @@ fun UserProfileScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         if (uiState.isLoading && uiState.user == null) {
             Box(
@@ -146,45 +150,13 @@ fun UserProfileScreen(
                             .padding(bottom = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Box(contentAlignment = Alignment.BottomEnd) {
-                            if (user?.avatar?.isNotBlank() == true) {
-                                AsyncImage(
-                                    model = user.avatar,
-                                    contentDescription = user.name,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(130.dp)
-                                        .clip(CircleShape)
-                                )
-                            } else {
-                                Surface(
-                                    modifier = Modifier.size(130.dp),
-                                    shape = CircleShape,
-                                    color = EmeraldPrimary.copy(alpha = 0.15f)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Default.Person,
-                                            contentDescription = null,
-                                            tint = EmeraldPrimary,
-                                            modifier = Modifier.size(70.dp)
-                                        )
-                                    }
-                                }
-                            }
-
-                            if (uiState.isOnline) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(22.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surface)
-                                        .padding(3.dp)
-                                        .clip(CircleShape)
-                                        .background(StatusOnline)
-                                )
-                            }
-                        }
+                        OmaAvatar(
+                            avatarUrl = user?.avatar,
+                            name = user?.name ?: "User",
+                            size = 110.dp,
+                            isOnline = uiState.isOnline,
+                            showOnlineBadge = true
+                        )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
@@ -244,7 +216,7 @@ fun UserProfileScreen(
                     }
                 }
 
-                // 2. WhatsApp-style Quick Action Buttons
+                // 2. Modern Quick Action Buttons
                 if (!uiState.isMe && user != null) {
                     item {
                         Surface(
@@ -302,14 +274,12 @@ fun UserProfileScreen(
                         tonalElevation = 1.dp
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "About and phone number",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                            OmaSectionHeader(
+                                title = "About and Phone Number",
+                                modifier = Modifier.padding(0.dp)
                             )
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
                             // Bio
                             Text(
@@ -523,100 +493,108 @@ fun UserProfileScreen(
                 }
             }
         }
-    }
 
-    // Dialogs
-    if (showBlockConfirmDialog) {
-        val action = if (uiState.isBlocked) "Unblock" else "Block"
-        AlertDialog(
-            onDismissRequest = { showBlockConfirmDialog = false },
-            title = { Text(text = "$action Contact?") },
-            text = {
-                Text(
-                    if (uiState.isBlocked) "Do you want to unblock this contact?"
-                    else "Blocked contacts will not be able to call you or send you messages."
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showBlockConfirmDialog = false
-                        viewModel.toggleBlockUser()
-                    }
-                ) {
-                    Text(action, color = ErrorRed, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showBlockConfirmDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    if (showReportDialog) {
-        AlertDialog(
-            onDismissRequest = { showReportDialog = false },
-            title = { Text(text = "Report User") },
-            text = {
-                Column {
-                    Text("Please describe the issue or reason for reporting this user:")
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = reportReason,
-                        onValueChange = { reportReason = it },
-                        placeholder = { Text("Spam, harassment, inappropriate content...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = EmeraldPrimary,
-                            cursorColor = EmeraldPrimary
-                        )
+        // Block Confirmation Dialog
+        if (showBlockConfirmDialog) {
+            val partnerName = uiState.user?.name ?: "this contact"
+            AlertDialog(
+                onDismissRequest = { showBlockConfirmDialog = false },
+                title = {
+                    Text(text = if (uiState.isBlocked) "Unblock $partnerName?" else "Block $partnerName?")
+                },
+                text = {
+                    Text(
+                        text = "Blocked contacts will no longer be able to call you or send you messages."
                     )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showBlockConfirmDialog = false
+                            viewModel.toggleBlockUser()
+                        }
+                    ) {
+                        Text(
+                            text = if (uiState.isBlocked) "Unblock" else "Block",
+                            color = ErrorRed,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showBlockConfirmDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (reportReason.isNotBlank()) {
+            )
+        }
+
+        // Report Dialog
+        if (showReportDialog) {
+            val partnerName = uiState.user?.name ?: "contact"
+            AlertDialog(
+                onDismissRequest = { showReportDialog = false },
+                title = { Text(text = "Report $partnerName") },
+                text = {
+                    Column {
+                        Text(text = "Please specify a reason for reporting this contact:")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = reportReason,
+                            onValueChange = { reportReason = it },
+                            placeholder = { Text("Reason (e.g., spam, harassment)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            maxLines = 3,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = EmeraldPrimary
+                            )
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
                             showReportDialog = false
                             viewModel.reportUser(reportReason)
                             reportReason = ""
-                        }
+                        },
+                        enabled = reportReason.isNotBlank()
+                    ) {
+                        Text(text = "Report", color = ErrorRed, fontWeight = FontWeight.Bold)
                     }
-                ) {
-                    Text("Submit Report", color = ErrorRed, fontWeight = FontWeight.Bold)
+                },
+                dismissButton = {
+                    TextButton(onClick = { showReportDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showReportDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
+            )
+        }
 
-    if (showDeleteChatConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteChatConfirmDialog = false },
-            title = { Text("Delete Chat?") },
-            text = { Text("Are you sure you want to delete this chat history? This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteChatConfirmDialog = false
-                        viewModel.deleteChat()
+        // Delete Chat Dialog
+        if (showDeleteChatConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteChatConfirmDialog = false },
+                title = { Text(text = "Delete this chat?") },
+                text = { Text(text = "Messages will be deleted from this device and cannot be recovered.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteChatConfirmDialog = false
+                            viewModel.deleteChat()
+                        }
+                    ) {
+                        Text(text = "Delete", color = ErrorRed, fontWeight = FontWeight.Bold)
                     }
-                ) {
-                    Text("Delete", color = ErrorRed, fontWeight = FontWeight.Bold)
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteChatConfirmDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteChatConfirmDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
+            )
+        }
     }
 }
 
@@ -632,21 +610,21 @@ private fun ProfileActionButton(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        Surface(
-            modifier = Modifier.size(46.dp),
-            shape = CircleShape,
-            color = tint.copy(alpha = 0.12f)
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .clip(CircleShape)
+                .background(tint.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = tint,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = tint,
+                modifier = Modifier.size(24.dp)
+            )
         }
         Spacer(modifier = Modifier.height(6.dp))
         Text(
@@ -662,14 +640,14 @@ private fun ProfileActionButton(
 private fun ProfileSettingItem(
     icon: ImageVector,
     title: String,
-    subtitle: String? = null,
+    subtitle: String,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -685,30 +663,27 @@ private fun ProfileSettingItem(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
 
-private fun formatLastSeen(lastSeen: Long): String {
-    val diff = System.currentTimeMillis() - lastSeen
-    val seconds = diff / 1000
-    val minutes = seconds / 60
+private fun formatLastSeen(timestamp: Long): String {
+    val diff = System.currentTimeMillis() - timestamp
+    val minutes = diff / (1000 * 60)
     val hours = minutes / 60
     val days = hours / 24
 
     return when {
-        seconds < 60 -> "just now"
+        minutes < 1 -> "just now"
         minutes < 60 -> "${minutes}m ago"
         hours < 24 -> "${hours}h ago"
         days == 1L -> "yesterday"
         days < 7 -> "${days}d ago"
-        else -> "long time ago"
+        else -> "a while ago"
     }
 }

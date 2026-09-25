@@ -57,6 +57,7 @@ data class UserSettingsDto(
     @SerializedName("lastSeenPrivacy") val lastSeenPrivacy: String? = "everyone",
     @SerializedName("profilePhotoPrivacy") val profilePhotoPrivacy: String? = "everyone",
     @SerializedName("aboutPrivacy") val aboutPrivacy: String? = "everyone",
+    @SerializedName("phonePrivacy") val phonePrivacy: String? = "everyone",
     @SerializedName("readReceipts") val readReceipts: Boolean? = true,
     @SerializedName("shareBattery") val shareBattery: Boolean? = true
 ) {
@@ -65,6 +66,7 @@ data class UserSettingsDto(
             lastSeenPrivacy = lastSeenPrivacy ?: "everyone",
             profilePhotoPrivacy = profilePhotoPrivacy ?: "everyone",
             aboutPrivacy = aboutPrivacy ?: "everyone",
+            phonePrivacy = phonePrivacy ?: "everyone",
             readReceipts = readReceipts ?: true,
             shareBattery = shareBattery ?: true
         )

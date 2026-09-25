@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.oma.chat.domain.model.User
+import com.oma.chat.presentation.components.OmaAvatar
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -145,29 +146,11 @@ fun GroupInfoScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(96.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (group?.avatar?.isNotBlank() == true) {
-                                AsyncImage(
-                                    model = group.avatar,
-                                    contentDescription = group.name,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Group,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
+                        OmaAvatar(
+                            avatarUrl = group?.avatar,
+                            name = group?.name ?: "Group",
+                            size = 96.dp
+                        )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
@@ -329,14 +312,10 @@ fun MemberItem(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = user.avatar,
-            contentDescription = user.name,
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentScale = ContentScale.Crop
+        OmaAvatar(
+            avatarUrl = user.avatar,
+            name = user.name,
+            size = 44.dp
         )
 
         Spacer(modifier = Modifier.width(14.dp))
@@ -523,14 +502,10 @@ fun AddMemberBottomSheet(
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            AsyncImage(
-                                model = user.avatar,
-                                contentDescription = user.name,
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                                contentScale = ContentScale.Crop
+                            OmaAvatar(
+                                avatarUrl = user.avatar,
+                                name = user.name,
+                                size = 40.dp
                             )
 
                             Spacer(modifier = Modifier.width(12.dp))

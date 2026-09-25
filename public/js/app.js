@@ -123,7 +123,7 @@ function updateStateChats(newChatsOrSingle) {
         chatMap.set(c.id, { ...existing, ...c });
     });
     
-    state.chats = Array.from(chatMap.values());
+    state.chats = Array.from(chatMap.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 }
 
 // --- CACHE HELPERS (Optimized: Per-Chat Keys) ---
@@ -5634,6 +5634,16 @@ function initSocket() {
                         if (msg.senderId !== state.user.user.id) {
                             api.markAsRead(state.activeChatId).catch(console.error);
                         }
+
+                        // Instantly update active chat in sidebar
+                        const activeChat = state.chats && state.chats.find(c => c.id === state.activeChatId);
+                        if (activeChat) {
+                            activeChat.lastMsg = msg.type === 'text' ? (msg.senderId === state.user.user.id ? `You: ${msg.content}` : msg.content) : 'Media';
+                            activeChat.time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            activeChat.timestamp = msg.timestamp;
+                            state.chats.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                            refreshSidebar();
+                        }
                     }
                 }
             } else {
@@ -5651,6 +5661,8 @@ function initSocket() {
                     if (targetChat) {
                         targetChat.lastMsg = `You: ${msg.type === 'text' ? msg.content : 'Media'}`;
                         targetChat.time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        targetChat.timestamp = msg.timestamp;
+                        state.chats.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                         refreshSidebar();
                     }
                     return;
@@ -5672,6 +5684,33 @@ function initSocket() {
                 if (msg.senderId !== state.user.user.id) {
                     window.showCustomAlert(`New message from ${msg.senderName}`, 'info');
                 }
+            }
+        });
+
+        // Real-Time Read Receipts (messages_seen) Listener
+        socket.on('messages_seen', (data) => {
+            console.log('[Socket] messages_seen received:', data);
+            if (!data || !data.readerId) return;
+
+            // If user is currently looking at the chat with the person who just read the messages
+            if (state.activeChatId === data.readerId) {
+                if (state.messages) {
+                    state.messages.forEach(m => {
+                        if (m.senderId === state.user.user.id && m.status !== 'seen') {
+                            m.status = 'seen';
+                        }
+                    });
+                    saveChatToCache(state.activeChatId, state.messages);
+                }
+
+                // Update all outgoing tick icons to double cyan checkmarks
+                const bubbles = document.querySelectorAll('.message-bubble.message-outgoing, .message.sent');
+                bubbles.forEach(bubble => {
+                    const tick = bubble.querySelector('.tick-icon, .message-status');
+                    if (tick) {
+                        tick.innerHTML = '<i class="fas fa-check-double" style="color:#67e8f9;"></i>';
+                    }
+                });
             }
         });
 

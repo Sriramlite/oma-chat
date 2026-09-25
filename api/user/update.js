@@ -15,16 +15,17 @@ module.exports = async (req, res) => {
         const userPayload = verifyToken(authHeader.split(' ')[1]);
         if (!userPayload) return res.status(401).json({ error: 'Invalid Token' });
 
-        const { name, avatar, bio, privacy, battery } = req.body;
+        const { name, avatar, bio, phone, privacy, battery } = req.body;
 
         const db = await connectToDatabase();
         const usersCollection = db.collection('users');
 
         const updateFields = {};
-        if (name) updateFields.name = name;
-        if (avatar) updateFields.avatar = avatar;
-        if (bio) updateFields.bio = bio;
-        if (battery) updateFields.battery = battery;
+        if (name !== undefined) updateFields.name = name;
+        if (avatar !== undefined) updateFields.avatar = avatar;
+        if (bio !== undefined) updateFields.bio = bio;
+        if (phone !== undefined) updateFields.phone = phone;
+        if (battery !== undefined) updateFields.battery = battery;
 
         const operations = {};
         if (Object.keys(updateFields).length > 0) {

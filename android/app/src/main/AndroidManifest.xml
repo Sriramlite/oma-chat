@@ -58,6 +58,16 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name=".receiver.NotificationActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.oma.chat.ACTION_DIRECT_REPLY" />
+                <action android:name="com.oma.chat.ACTION_MARK_AS_READ" />
+                <action android:name="com.oma.chat.ACTION_DECLINE_CALL" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

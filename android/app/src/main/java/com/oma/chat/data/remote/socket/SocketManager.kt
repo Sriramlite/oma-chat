@@ -72,6 +72,9 @@ class SocketManager @Inject constructor(
     private val _messagePinnedEvents = MutableSharedFlow<MessagePinnedEvent>(extraBufferCapacity = 64)
     val messagePinnedEvents: SharedFlow<MessagePinnedEvent> = _messagePinnedEvents.asSharedFlow()
 
+    private val _messagesSeenEvents = MutableSharedFlow<MessagesSeenEvent>(extraBufferCapacity = 64)
+    val messagesSeenEvents: SharedFlow<MessagesSeenEvent> = _messagesSeenEvents.asSharedFlow()
+
     fun connect() {
         if (socket?.connected() == true) return
 
@@ -262,6 +265,31 @@ class SocketManager @Inject constructor(
                                             messageId = messageId,
                                             chatId = chatId,
                                             isPinned = isPinned
+                                        )
+                                    )
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                on("messages_seen") { args ->
+                    args.firstOrNull()?.let { data ->
+                        try {
+                            val json = when (data) {
+                                is JSONObject -> data
+                                else -> JSONObject(data.toString())
+                            }
+                            val readerId = json.optString("readerId")
+                            val chatId = json.optString("chatId")
+                            if (readerId.isNotBlank()) {
+                                scope.launch {
+                                    _messagesSeenEvents.emit(
+                                        MessagesSeenEvent(
+                                            readerId = readerId,
+                                            chatId = chatId
                                         )
                                     )
                                 }
@@ -697,6 +725,21 @@ class SocketManager @Inject constructor(
                 put("charging", charging)
             }
             socket?.emit("battery", json)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun emitMarkSeen(chatId: String) {
+        try {
+            val myId = authPreferences.getUserId() ?: ""
+            if (myId.isNotBlank() && chatId.isNotBlank()) {
+                val json = JSONObject().apply {
+                    put("userId", myId)
+                    put("chatId", chatId)
+                }
+                socket?.emit("mark_seen", json)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

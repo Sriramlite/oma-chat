@@ -4,6 +4,7 @@ data class UserPrivacySettings(
     val lastSeenPrivacy: String = "everyone",
     val profilePhotoPrivacy: String = "everyone",
     val aboutPrivacy: String = "everyone",
+    val phonePrivacy: String = "everyone",
     val readReceipts: Boolean = true,
     val shareBattery: Boolean = true
 )
