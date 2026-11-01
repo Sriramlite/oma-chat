@@ -1,0 +1,362 @@
+
+Traceback (most recent call last):
+  File "/home/linuxguru/.local/lib/python3.8/site-packages/xyzservices/lib.py", line 45, in __getattr__
+    return self.__getitem__(key)
+KeyError: 'openstreetMap'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.8/idlelib/run.py", line 559, in runcode
+    exec(code, self.locals)
+  File "/home/linuxguru/Desktop/Sriram IT/ex6.py", line 9, in <module>
+    ctx.add_basemap(ax,crs=data.crs,sources=ctx.providers.openstreetMap.Mapnik)
+  File "/home/linuxguru/.local/lib/python3.8/site-packages/xyzservices/lib.py", line 47, in __getattr__
+    raise AttributeError(key) from err
+AttributeError: openstreetMap
+>>> 
+
+Yes — this error is just a capitalization mistake in your code.
+
+You have:
+
+ctx.providers.openstreetMap.Mapnik
+
+but the correct name is:
+
+ctx.providers.OpenStreetMap.Mapnik
+
+Python is case-sensitive, so openstreetMap and OpenStreetMap are different.
+Use this corrected code
+
+import geopandas as gpd
+import contextily as ctx
+import matplotlib.pyplot as plt
+from shapely.geometry import Point, LineString, Polygon
+
+data = gpd.read_file(
+    '/home/linuxguru/Desktop/Sriram IT/content/gadm41_IND_shp/gadm41_IND_0.shp'
+)
+
+data = data.to_crs(epsg=3857)
+
+ax = data.plot(figsize=(10, 10), edgecolor='black')
+
+ctx.add_basemap(
+    ax,
+    crs=data.crs,
+    source=ctx.providers.OpenStreetMap.Mapnik
+)
+
+plt.show()
+
+One more correction
+
+Your original code has:
+
+sources=
+
+It should be:
+
+source=
+
+So this:
+
+ctx.add_basemap(ax,crs=data.crs,sources=ctx.providers.openstreetMap.Mapnik)
+
+should become:
+
+ctx.add_basemap(ax, crs=data.crs, source=ctx.providers.OpenStreetMap.Mapnik)
+
+In short:
+Your code	Correct
+openstreetMap	OpenStreetMap
+sources=	source=
+
+Run the corrected code above. If you then get an error involving Stamen.Terrain, send it to me—we'll fix that next.
+
+Traceback (most recent call last):
+  File "/home/linuxguru/.local/lib/python3.8/site-packages/xyzservices/lib.py", line 45, in __getattr__
+    return self.__getitem__(key)
+KeyError: 'Stamen'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.8/idlelib/run.py", line 559, in runcode
+    exec(code, self.locals)
+  File "/home/linuxguru/Desktop/Sriram IT/ex6.py", line 10, in <module>
+    ctx.add_basemap(ax,crs=data.crs,source=ctx.providers.Stamen.Terrain)             
+  File "/home/linuxguru/.local/lib/python3.8/site-packages/xyzservices/lib.py", line 47, in __getattr__
+    raise AttributeError(key) from err
+AttributeError: Stamen
+
+That's the next issue, and your shapefile is working now. 👍
+
+The problem is that your installed version of xyzservices does not provide:
+
+ctx.providers.Stamen.Terrain
+
+So you have two choices.
+Easiest fix for your practical
+
+Replace:
+
+ctx.add_basemap(ax, crs=data.crs, source=ctx.providers.Stamen.Terrain)
+
+with:
+
+ctx.add_basemap(ax, crs=data.crs, source=ctx.providers.OpenStreetMap.Mapnik)
+
+But if your practical specifically requires two different basemaps, use another available provider.
+
+First, you can see what providers your computer has:
+
+print(ctx.providers)
+
+Complete working version
+
+For now, I recommend running this:
+
+import geopandas as gpd
+import contextily as ctx
+import matplotlib.pyplot as plt
+from shapely.geometry import Point, LineString, Polygon
+
+data = gpd.read_file(
+    '/home/linuxguru/Desktop/Sriram IT/content/gadm41_IND_shp/gadm41_IND_0.shp'
+)
+
+data = data.to_crs(epsg=3857)
+
+ax = data.plot(figsize=(10, 10), edgecolor='black')
+
+ctx.add_basemap(
+    ax,
+    crs=data.crs,
+    source=ctx.providers.OpenStreetMap.Mapnik
+)
+
+plt.show()
+
+Why the original practical fails
+
+Your teacher's original code was probably written with an older version of Contextily/xyzservices where:
+
+ctx.providers.Stamen.Terrain
+
+was available.
+
+Your newer installation doesn't have that provider under Stamen, so Python gives:
+
+AttributeError: Stamen
+
+Don't worry about the shapefile now—the shapefile part is fixed. The remaining issue is only the basemap provider.
+
+after running give no error or output
+
+Good — no error means the code is running successfully. The issue is that the map window/output is not being displayed in your IDLE setup.
+
+Let's make the program save the map as an image so we can confirm it worked.
+
+Use this exact code:
+
+import geopandas as gpd
+import contextily as ctx
+import matplotlib.pyplot as plt
+
+print("Reading shapefile...")
+
+data = gpd.read_file(
+    '/home/linuxguru/Desktop/Sriram IT/content/gadm41_IND_shp/gadm41_IND_0.shp'
+)
+
+print("Shapefile loaded successfully!")
+print(data.head())
+
+# Convert to Web Mercator
+data = data.to_crs(epsg=3857)
+
+# Plot India
+ax = data.plot(
+    figsize=(10, 10),
+    edgecolor='black',
+    facecolor='lightblue'
+)
+
+# Add OpenStreetMap basemap
+ctx.add_basemap(
+    ax,
+    source=ctx.providers.OpenStreetMap.Mapnik
+)
+
+plt.title("India Map")
+
+# Save the output
+plt.savefig(
+    '/home/linuxguru/Desktop/Sriram IT/india_map.png',
+    dpi=300,
+    bbox_inches='tight'
+)
+
+print("Map saved successfully!")
+print("Location: /home/linuxguru/Desktop/Sriram IT/india_map.png")
+
+plt.show()
+
+After you run it
+
+Look at the Shell window in IDLE. You should see something like:
+
+Reading shapefile...
+Shapefile loaded successfully!
+...
+Map saved successfully!
+Location: /home/linuxguru/Desktop/Sriram IT/india_map.png
+
+Then go to:
+
+Desktop → Sriram IT → india_map.png
+
+and double-click it.
+If you see the map
+
+Then everything is working correctly. ✅
+If the Shell itself shows absolutely nothing
+
+Then tell me that, because we should check whether IDLE is actually executing the file. You can also add this as the very first line:
+
+print("PROGRAM STARTED")
+
+and run it again.
+
+Warning (from warnings module):
+  File "/home/linuxguru/Desktop/Sriram IT/ex6.py", line 10
+    path_to_data=gpd.datasets.get_path('nybb')
+FutureWarning: The geopandas.dataset module is deprecated and will be removed in GeoPandas 1.0. You can get the original 'nybb' data from the geodatasets package.
+
+from geodatasets import get_path
+path_to_file = get_path('nybb')
+
+>>> 
+
+import geopandas as gpd
+import contextily as ctx
+import matplotlib.pyplot as plt
+from shapely.geometry import  Point,LineString,Polygon
+data = gpd.read_file(
+    '/home/linuxguru/Desktop/Sriram IT/content/gadm41_IND_shp/gadm41_IND_0.shp')
+data = data.to_crs(epsg=3857)
+ax=data.plot(figsize=(10,10),edgecolor='black')
+ctx.add_basemap(ax,crs=data.crs,source=ctx.providers.OpenStreetMap.Mapnik)
+path_to_data=gpd.datasets.get_path('nybb')
+gdf=gpd.read_file(path_to_data)
+gdf=gdf.set_index('BoroName')
+gdf['area']=gdf.area
+gdf['area']
+            
+
+You're very close. There are two separate things happening here.
+1. The warning is not an error
+
+This:
+
+FutureWarning: The geopandas.dataset module is deprecated
+
+comes from this line:
+
+path_to_data = gpd.datasets.get_path('nybb')
+
+It means your version of GeoPandas is moving the nybb sample dataset to another package.
+
+Use:
+
+from geodatasets import get_path
+path_to_data = get_path('nybb')
+
+If geodatasets isn't installed, run this in the terminal:
+
+pip3 install geodatasets
+
+2. Your map isn't being displayed
+
+You also need:
+
+plt.show()
+
+And this:
+
+gdf['area']
+
+doesn't necessarily display anything when running a .py file. Use:
+
+print(gdf['area'])
+
+Use this complete code
+
+import geopandas as gpd
+import contextily as ctx
+import matplotlib.pyplot as plt
+from shapely.geometry import Point, LineString, Polygon
+from geodatasets import get_path
+
+# India shapefile
+data = gpd.read_file(
+    '/home/linuxguru/Desktop/Sriram IT/content/gadm41_IND_shp/gadm41_IND_0.shp'
+)
+
+# Convert coordinate system for basemap
+data = data.to_crs(epsg=3857)
+
+# Plot India
+ax = data.plot(
+    figsize=(10, 10),
+    edgecolor='black',
+    facecolor='lightblue'
+)
+
+# Add OpenStreetMap basemap
+ctx.add_basemap(
+    ax,
+    crs=data.crs,
+    source=ctx.providers.OpenStreetMap.Mapnik
+)
+
+plt.title("India Map")
+plt.show()
+
+
+# -----------------------------
+# NYC area calculation
+# -----------------------------
+
+path_to_data = get_path('nybb')
+
+gdf = gpd.read_file(path_to_data)
+
+gdf = gdf.set_index('BoroName')
+
+gdf['area'] = gdf.area
+
+print("\nArea of New York boroughs:")
+print(gdf['area'])
+
+One important point
+
+Your practical appears to contain two different exercises:
+
+Part 1: India map
+
+data = gpd.read_file(...)
+ctx.add_basemap(...)
+
+Part 2: Calculate area of New York boroughs
+
+gdf = gpd.read_file(path_to_data)
+gdf['area'] = gdf.area
+
+So don't worry about the nybb warning—it isn't related to your India shapefile.
+
+After running the corrected code, you should get the India map in a window, and the Shell should print the borough areas.
+
+

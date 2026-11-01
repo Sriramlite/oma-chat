@@ -1,0 +1,15 @@
+import matplotlib.pyplot as plt
+import numpy as np
+fig=plt.figure(figsize=(8,6))
+ax=fig.add_subplot(111,projection='3d')
+x=np.linspace(-5,5,100)
+y=np.linspace(-5,5,100)
+x,y=np.meshgrid(x,y)
+z=np.sin(np.sqrt(x**2+y**2))
+surf=ax.plot_surface(x,y,z,cmap='viridis',edgecolor='none')
+ax.set_title('sd surface plot')
+ax.set_xlabel('xAxis')
+ax.set_ylabel('yAxis')
+ax.set_zlabel('zAxis')
+fig.colorbar(surf,ax=ax,shrink=0.5,aspect=5)
+plt.show()

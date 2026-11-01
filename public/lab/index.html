@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Python lab programs and downloads">
+  <title>Python Lab | Program Downloads</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #e6eaf0;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --surface: #ffffff;
+      --page: #f5f7fb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    .wrap {
+      width: min(920px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 64px;
+    }
+
+    .hero {
+      padding: 30px;
+      border-radius: 22px;
+      color: white;
+      background: linear-gradient(120deg, #172554, #1d4ed8);
+      box-shadow: 0 16px 38px rgba(29, 78, 216, .16);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #bfdbfe;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 40px);
+      letter-spacing: -.04em;
+    }
+
+    .intro {
+      margin: 10px 0 0;
+      color: #dbeafe;
+      max-width: 580px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .btn.primary {
+      background: white;
+      color: #1d4ed8;
+    }
+
+    .btn.secondary {
+      border: 1px solid rgba(255, 255, 255, .45);
+      color: white;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 28px 0 14px;
+    }
+
+    .toolbar h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .count {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .search {
+      width: 100%;
+      margin: 0 0 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: white;
+      color: var(--ink);
+      font: inherit;
+      outline: none;
+    }
+
+    .search:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px #dbeafe;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .program {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .file-icon {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      border-radius: 11px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .program-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .program h2 {
+      overflow-wrap: anywhere;
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .program p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .download {
+      padding: 8px 12px;
+      border-radius: 9px;
+      background: #eff6ff;
+      color: var(--blue-dark);
+      font-size: 13px;
+      font-weight: 750;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .download:hover,
+    .btn.primary:hover {
+      filter: brightness(.96);
+    }
+
+    .empty {
+      display: none;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      background: white;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+    }
+
+    footer {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      .wrap {
+        padding-top: 20px;
+      }
+
+      .hero {
+        padding: 23px;
+        border-radius: 17px;
+      }
+
+      .toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .program {
+        padding: 11px;
+        gap: 10px;
+      }
+
+      .download {
+        padding: 8px 9px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <p class="eyebrow">Practical Lab Resources</p>
+      <h1>Python Lab Programs</h1>
+      <p class="intro">Find your lab exercise and download its Python source file. Supporting datasets and resources
+        should remain in this folder.</p>
+      <div class="actions">
+        <a class="btn primary" href="../lab.zip" download>Download All Programs (ZIP)</a>
+        <a class="btn secondary" href="../">Back to Home</a>
+      </div>
+    </header>
+
+    <section aria-labelledby="program-heading">
+      <div class="toolbar">
+        <h2 id="program-heading">Available programs</h2>
+        <span class="count">42 Python files</span>
+      </div>
+      <a href="../lab.zip" download>
+        Download All Programs (ZIP)
+      </a>
+      <a href="../FDS.zip" download>
+        Download All Programs (ZIP)
+      </a>
+      <input class="search" id="search" type="search" placeholder="Search programs, e.g. ex3a.py"
+        aria-label="Search programs">
+      <div class="list" id="program-list">
+        <article class="program" data-name="ex10.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex10.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex10.py" download aria-label="Download ex10.py">Download</a>
+        </article>
+        <article class="program" data-name="ex1array.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex1array.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex1array.py" download aria-label="Download ex1array.py">Download</a>
+        </article>
+        <article class="program" data-name="ex2ao.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex2ao.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex2ao.py" download aria-label="Download ex2ao.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3a.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3a.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3a.py" download aria-label="Download ex3a.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3b.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3b.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3b.py" download aria-label="Download ex3b.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3bdictionary.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3bdictionary.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3bdictionary.py" download aria-label="Download ex3bdictionary.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3c.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3c.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3c.py" download aria-label="Download ex3c.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3d.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3d.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3d.py" download aria-label="Download ex3d.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3e.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3e.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3e.py" download aria-label="Download ex3e.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3f1.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3f1.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3f1.py" download aria-label="Download ex3f1.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3f2.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3f2.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3f2.py" download aria-label="Download ex3f2.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3f3.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3f3.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3f3.py" download aria-label="Download ex3f3.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3f4.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3f4.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3f4.py" download aria-label="Download ex3f4.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3f5.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3f5.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3f5.py" download aria-label="Download ex3f5.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3g1.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3g1.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3g1.py" download aria-label="Download ex3g1.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3g2.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3g2.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3g2.py" download aria-label="Download ex3g2.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3j1.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3j1.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3j1.py" download aria-label="Download ex3j1.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3j2.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3j2.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3j2.py" download aria-label="Download ex3j2.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3j3.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3j3.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3j3.py" download aria-label="Download ex3j3.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3k1.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3k1.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3k1.py" download aria-label="Download ex3k1.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3k2.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3k2.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3k2.py" download aria-label="Download ex3k2.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3k3.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3k3.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3k3.py" download aria-label="Download ex3k3.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3l.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3l.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3l.py" download aria-label="Download ex3l.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3m.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3m.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3m.py" download aria-label="Download ex3m.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3m2.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3m2.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3m2.py" download aria-label="Download ex3m2.py">Download</a>
+        </article>
+        <article class="program" data-name="ex3n.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex3n.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex3n.py" download aria-label="Download ex3n.py">Download</a>
+        </article>
+        <article class="program" data-name="ex4a.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex4a.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex4a.py" download aria-label="Download ex4a.py">Download</a>
+        </article>
+        <article class="program" data-name="ex4b.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex4b.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex4b.py" download aria-label="Download ex4b.py">Download</a>
+        </article>
+        <article class="program" data-name="ex4c.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex4c.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex4c.py" download aria-label="Download ex4c.py">Download</a>
+        </article>
+        <article class="program" data-name="ex4d (1).py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex4d (1).py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex4d (1).py" download aria-label="Download ex4d (1).py">Download</a>
+        </article>
+        <article class="program" data-name="ex4d.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex4d.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex4d.py" download aria-label="Download ex4d.py">Download</a>
+        </article>
+        <article class="program" data-name="ex5a.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex5a.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex5a.py" download aria-label="Download ex5a.py">Download</a>
+        </article>
+        <article class="program" data-name="ex5b.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex5b.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex5b.py" download aria-label="Download ex5b.py">Download</a>
+        </article>
+        <article class="program" data-name="ex5c.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex5c.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex5c.py" download aria-label="Download ex5c.py">Download</a>
+        </article>
+        <article class="program" data-name="ex5d.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex5d.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex5d.py" download aria-label="Download ex5d.py">Download</a>
+        </article>
+        <article class="program" data-name="ex6.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex6.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex6.py" download aria-label="Download ex6.py">Download</a>
+        </article>
+        <article class="program" data-name="ex7a.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex7a.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex7a.py" download aria-label="Download ex7a.py">Download</a>
+        </article>
+        <article class="program" data-name="ex7b.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex7b.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex7b.py" download aria-label="Download ex7b.py">Download</a>
+        </article>
+        <article class="program" data-name="ex7c.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex7c.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex7c.py" download aria-label="Download ex7c.py">Download</a>
+        </article>
+        <article class="program" data-name="ex7d.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex7d.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex7d.py" download aria-label="Download ex7d.py">Download</a>
+        </article>
+        <article class="program" data-name="ex8.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex8.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex8.py" download aria-label="Download ex8.py">Download</a>
+        </article>
+        <article class="program" data-name="ex9.py">
+          <div class="file-icon">PY</div>
+          <div class="program-info">
+            <h2>ex9.py</h2>
+            <p>Python program</p>
+          </div>
+          <a class="download" href="ex9.py" download aria-label="Download ex9.py">Download</a>
+        </article>
+      </div>
+      <div class="empty" id="empty">No matching programs found.</div>
+    </section>
+    <footer>Python Lab · Download the source files and run them in your Python environment.</footer>
+  </main>
+  <script>
+    const search = document.getElementById('search');
+    const programs = [...document.querySelectorAll('.program')];
+    const empty = document.getElementById('empty');
+    search.addEventListener('input', () => {
+      const query = search.value.trim().toLowerCase();
+      let visible = 0;
+      for (const item of programs) {
+        const match = item.dataset.name.includes(query);
+        item.hidden = !match;
+        if (match) visible++;
+      }
+      empty.style.display = visible ? 'none' : 'block';
+    });
+  </script>
+</body>
+
+</html>
