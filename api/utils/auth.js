@@ -1,13 +1,12 @@
 const jwt = require('jsonwebtoken');
 
-const SECRET = process.env.JWT_SECRET || "oma_default_fallback_secret_2024";
-
 if (!process.env.JWT_SECRET) {
-    console.warn("[Auth] WARNING: JWT_SECRET is not defined in environment variables. Using fallback.");
-} else {
-    const masked = SECRET.length > 8 ? `${SECRET.slice(0, 3)}...${SECRET.slice(-3)}` : "***";
-    console.log(`[Auth] JWT Secret Loaded: ${masked}`);
+    throw new Error("JWT_SECRET is required");
 }
+
+const SECRET = process.env.JWT_SECRET;
+
+
 
 function generateToken(user) {
     return jwt.sign({ id: user.id, username: user.username }, SECRET, { expiresIn: '7d' });
