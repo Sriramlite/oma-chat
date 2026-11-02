@@ -1,0 +1,30 @@
+import numpy as np
+from scipy import stats
+
+# Sample data
+sample1 = np.array([12, 15, 14, 10, 13])
+sample2 = np.array([18, 20, 17, 19, 21])
+
+# Calculate means
+mean1 = np.mean(sample1)
+mean2 = np.mean(sample2)
+
+# Perform Independent T-Test
+t_statistic, p_value = stats.ttest_ind(
+    sample1, sample2, equal_var=True
+)
+
+# Display results
+print("Sample 1:", sample1)
+print("Sample 2:", sample2)
+
+print("Mean of Sample 1:", mean1)
+print("Mean of Sample 2:", mean2)
+
+print("\nT-Statistic:", round(t_statistic, 4))
+print("P-Value:", round(p_value, 4))
+
+if p_value<0.05:
+    print("Means are significantly different")
+else:
+    print("Means are not significantly different")

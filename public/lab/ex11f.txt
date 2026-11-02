@@ -1,0 +1,38 @@
+import numpy as np
+from scipy import stats
+
+# Sample data
+sample1 = np.array([12, 15, 14, 10, 13])
+sample2 = np.array([18, 20, 17, 19, 21])
+
+# Calculate variances
+var1 = np.var(sample1, ddof=1)
+var2 = np.var(sample2, ddof=1)
+
+# Calculate F-statistic
+f_statistic = var1 / var2
+
+# Degrees of freedom
+df1 = len(sample1) - 1
+df2 = len(sample2) - 1
+
+# Calculate p-value
+p_value = 2 * min(
+    stats.f.cdf(f_statistic, df1, df2),
+    stats.f.sf(f_statistic, df1, df2)
+)
+
+# Display results
+print("Sample 1:", sample1)
+print("Sample 2:", sample2)
+
+print("Variance of Sample 1:", var1)
+print("Variance of Sample 2:", var2)
+
+print("\nF-Statistic:", round(f_statistic, 4))
+print("P-Value:", round(p_value, 4))
+
+if p_value<0.05:
+    print("Variances are significantly different")
+else:
+    print("Variances are not significantly different")
