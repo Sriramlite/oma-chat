@@ -1,0 +1,63 @@
+========================================================================
+       LINUX LXTERMINAL EXECUTION INSTRUCTIONS FOR JAVA PROGRAMS
+========================================================================
+
+------------------------------------------------------------------------
+1. EXERCISE 7 - JAVAFX PROGRAMS (RUNNING IN LINUX LXTERMINAL)
+------------------------------------------------------------------------
+The Exercise 7 files use JavaFX and are in package 'application'.
+Ensure OpenJFX is installed on the system (at /usr/share/openjfx/lib).
+
+--- [A] ex7(controls).java -> application/ButtonTest.java ---
+
+Compile:
+javac --module-path /usr/share/openjfx/lib --add-modules javafx.controls -d . "ex7(controls).java"
+(or if renamed inside application directory):
+javac --module-path /usr/share/openjfx/lib --add-modules javafx.controls -d . application/ButtonTest.java
+
+Run:
+java --module-path /usr/share/openjfx/lib --add-modules javafx.controls application.ButtonTest
+
+
+--- [B] ex7(layouts).java -> application/Label_Test.java ---
+
+Compile:
+javac --module-path /usr/share/openjfx/lib --add-modules javafx.controls -d . "ex7(layouts).java"
+(or if renamed inside application directory):
+javac --module-path /usr/share/openjfx/lib --add-modules javafx.controls -d . application/Label_Test.java
+
+Run:
+java --module-path /usr/share/openjfx/lib --add-modules javafx.controls application.Label_Test
+
+
+--- [C] ex7(Menu).java -> application/MenuExample.java ---
+
+Compile:
+javac --module-path /usr/share/openjfx/lib --add-modules javafx.controls -d . "ex7(Menu).java"
+(or if renamed inside application directory):
+javac --module-path /usr/share/openjfx/lib --add-modules javafx.controls -d . application/MenuExample.java
+
+Run:
+java --module-path /usr/share/openjfx/lib --add-modules javafx.controls application.MenuExample
+
+
+------------------------------------------------------------------------
+2. STANDARD JAVA LAB PROGRAMS (EX1 TO EX6, EX8, EX9) & ADDITIONAL
+------------------------------------------------------------------------
+For all other standard non-JavaFX console & Swing programs:
+
+Compile:
+javac FileName.java
+
+Run:
+java ClassName
+
+Example:
+javac "ex1a(LINEAR SEARCH).java"
+java LinearSearch
+
+Example for Additional Programs:
+javac Q1_SequentialSearch.java
+java Q1_SequentialSearch
+
+========================================================================

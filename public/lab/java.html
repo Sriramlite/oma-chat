@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Java lab programs and source code downloads">
-  <title>Java Lab | Program Downloads</title>
+  <meta name="description" content="Java lab programs and additional practical exam source codes">
+  <title>Java Lab | Program Downloads &amp; Additional Questions</title>
   <style>
     :root {
       color-scheme: light;
@@ -36,7 +36,7 @@
     .wrap {
       width: min(920px, calc(100% - 32px));
       margin: 0 auto;
-      padding: 48px 0 64px;
+      padding: 40px 0 64px;
     }
 
     .hero {
@@ -65,7 +65,7 @@
     .intro {
       margin: 10px 0 0;
       color: #dbeafe;
-      max-width: 580px;
+      max-width: 620px;
     }
 
     .actions {
@@ -83,7 +83,9 @@
       padding: 0 16px;
       border-radius: 10px;
       font-weight: 700;
+      font-size: 14px;
       text-decoration: none;
+      transition: filter .15s ease;
     }
 
     .btn.primary {
@@ -96,12 +98,135 @@
       color: white;
     }
 
+    .btn:hover {
+      filter: brightness(.95);
+    }
+
+    /* Terminal Guide Banner */
+    .terminal-card {
+      margin: 24px 0 16px;
+      padding: 18px 20px;
+      background: #0f172a;
+      color: #f1f5f9;
+      border-radius: 14px;
+      border: 1px solid #334155;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .terminal-title {
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .terminal-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #0369a1;
+      color: #f0f9ff;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    .terminal-code {
+      background: #020617;
+      padding: 12px 14px;
+      border-radius: 9px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12.5px;
+      color: #7dd3fc;
+      overflow-x: auto;
+      line-height: 1.6;
+      border: 1px solid #1e293b;
+      margin: 6px 0 10px;
+    }
+
+    .terminal-code span.cmd {
+      color: #f8fafc;
+      font-weight: 600;
+    }
+
+    .terminal-code span.comment {
+      color: #64748b;
+    }
+
+    .terminal-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .terminal-link {
+      color: #38bdf8;
+      text-decoration: underline;
+      font-weight: 600;
+    }
+
+    /* Category Switcher Tabs */
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin: 24px 0 14px;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: 12px;
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 8px 18px;
+      border-radius: 9px;
+      font-weight: 750;
+      font-size: 13.5px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: white;
+      color: var(--blue-dark);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, .08);
+    }
+
+    .tab-count {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 12px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
     .toolbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
-      margin: 28px 0 14px;
+      margin: 16px 0 12px;
     }
 
     .toolbar h2 {
@@ -145,6 +270,11 @@
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 14px;
+      transition: transform .1s ease, border-color .1s ease;
+    }
+
+    .program:hover {
+      border-color: #bfdbfe;
     }
 
     .file-icon {
@@ -159,6 +289,11 @@
       font-size: 11px;
       font-weight: 900;
       letter-spacing: -0.02em;
+    }
+
+    .file-icon.exam {
+      background: #fef3c7;
+      color: #b45309;
     }
 
     .program-info {
@@ -189,14 +324,13 @@
       white-space: nowrap;
     }
 
-    .download:hover,
-    .btn.primary:hover {
-      filter: brightness(.96);
+    .download:hover {
+      filter: brightness(.94);
     }
 
     .empty {
       display: none;
-      padding: 24px;
+      padding: 28px;
       text-align: center;
       color: var(--muted);
       background: white;
@@ -205,20 +339,25 @@
     }
 
     footer {
-      margin-top: 24px;
+      margin-top: 28px;
       color: var(--muted);
       font-size: 12px;
       text-align: center;
     }
 
-    @media (max-width: 520px) {
+    @media (max-width: 600px) {
       .wrap {
         padding-top: 20px;
       }
 
       .hero {
-        padding: 23px;
+        padding: 22px;
         border-radius: 17px;
+      }
+
+      .tab-bar {
+        width: 100%;
+        overflow-x: auto;
       }
 
       .toolbar {
@@ -242,24 +381,63 @@
 <body>
   <main class="wrap">
     <header class="hero">
-      <p class="eyebrow">Practical Lab Resources</p>
+      <p class="eyebrow">Practical Lab &amp; Exam Portal</p>
       <h1>Java Lab Programs</h1>
-      <p class="intro">Find your lab exercise and download its Java source file. Review algorithms, object-oriented concepts, and GUI applications.</p>
+      <p class="intro">Download practical syllabus exercises and exam questions. Includes OOP, searching/sorting, data structures, exceptions, multithreading, and GUI programs.</p>
       <div class="actions">
-        <a class="btn primary" href="java.zip" download>Download All Programs (ZIP)</a>
+        <a class="btn primary" href="java.zip" download>Download All (ZIP · 13 KB)</a>
+        <a class="btn secondary" href="additional.zip" download>Download Additional (ZIP · 16 KB)</a>
+        <a class="btn secondary" href="java/instructions.txt" download>LXTerminal Guide (TXT)</a>
         <a class="btn secondary" href="index.html">Back to Labs</a>
       </div>
     </header>
 
+    <!-- LXTerminal Execution Card -->
+    <section class="terminal-card" aria-labelledby="terminal-heading">
+      <div class="terminal-header">
+        <div class="terminal-title" id="terminal-heading">
+          <span>🐧 Linux LXTerminal Execution Guide (ex7 JavaFX)</span>
+          <span class="terminal-badge">OpenJFX</span>
+        </div>
+        <a class="terminal-link" href="java/instructions.txt" download>Download instructions.txt ↓</a>
+      </div>
+      <div class="terminal-code">
+<span class="comment"># Compile ex7 JavaFX application:</span>
+<span class="cmd">javac --module-path /usr/share/openjfx/lib --add-modules javafx.controls -d . application/ButtonTest.java</span>
+
+<span class="comment"># Run in LXTerminal:</span>
+<span class="cmd">java --module-path /usr/share/openjfx/lib --add-modules javafx.controls application.ButtonTest</span>
+      </div>
+      <div class="terminal-actions">
+        <span>Applies to <strong>ex7(controls).java</strong>, <strong>ex7(layouts).java</strong>, and <strong>ex7(Menu).java</strong>. See instructions.txt for all commands.</span>
+      </div>
+    </section>
+
+    <!-- Category Tabs: Lab Programs & Additional Programs -->
+    <div class="tab-bar" role="tablist" aria-label="Program categories">
+      <button class="tab-btn active" id="tab-lab" role="tab" aria-selected="true" data-filter="lab">
+        📘 Lab Programs <span class="tab-count">13</span>
+      </button>
+      <button class="tab-btn" id="tab-additional" role="tab" aria-selected="false" data-filter="additional">
+        ⚡ Additional Programs <span class="tab-count">16</span>
+      </button>
+      <button class="tab-btn" id="tab-all" role="tab" aria-selected="false" data-filter="all">
+        All Programs <span class="tab-count">29</span>
+      </button>
+    </div>
+
     <section aria-labelledby="program-heading">
       <div class="toolbar">
-        <h2 id="program-heading">Available programs</h2>
-        <span class="count">13 Java files</span>
+        <h2 id="program-heading">Available Programs</h2>
+        <span class="count" id="count-display">Showing 13 Lab Programs</span>
       </div>
-      <input class="search" id="search" type="search" placeholder="Search programs, e.g. ex1a or search"
+      <input class="search" id="search" type="search" placeholder="Search by name, question or keyword (e.g. stack, sort, ex7, gpa)..."
         aria-label="Search programs">
+
       <div class="list" id="program-list">
-        <article class="program" data-name="ex1a(linear search).java linear search ex1a">
+
+        <!-- ==================== LAB PROGRAMS (13) ==================== -->
+        <article class="program" data-category="lab" data-name="ex1a(linear search).java linear search ex1a">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex1a(LINEAR SEARCH).java</h2>
@@ -268,7 +446,7 @@
           <a class="download" href="java/ex1a(LINEAR SEARCH).java" download aria-label="Download ex1a(LINEAR SEARCH).java">Download</a>
         </article>
 
-        <article class="program" data-name="ex1b(binary search).java binary search ex1b">
+        <article class="program" data-category="lab" data-name="ex1b(binary search).java binary search ex1b">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex1b(BINARY SEARCH).java</h2>
@@ -277,7 +455,7 @@
           <a class="download" href="java/ex1b(BINARY SEARCH).java" download aria-label="Download ex1b(BINARY SEARCH).java">Download</a>
         </article>
 
-        <article class="program" data-name="ex2a(implementation of stack using classes and objects).java stack classes objects ex2a">
+        <article class="program" data-category="lab" data-name="ex2a(implementation of stack using classes and objects).java stack classes objects ex2a">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex2a(IMPLEMENTATION OF STACK USING CLASSES AND OBJECTS).java</h2>
@@ -286,7 +464,7 @@
           <a class="download" href="java/ex2a(IMPLEMENTATION OF STACK USING CLASSES AND OBJECTS).java" download aria-label="Download ex2a(IMPLEMENTATION OF STACK USING CLASSES AND OBJECTS).java">Download</a>
         </article>
 
-        <article class="program" data-name="ex2b(implementation of queue).java queue ex2b">
+        <article class="program" data-category="lab" data-name="ex2b(implementation of queue).java queue ex2b">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex2b(IMPLEMENTATION OF QUEUE).java</h2>
@@ -295,7 +473,7 @@
           <a class="download" href="java/ex2b(IMPLEMENTATION OF QUEUE).java" download aria-label="Download ex2b(IMPLEMENTATION OF QUEUE).java">Download</a>
         </article>
 
-        <article class="program" data-name="ex3(java interface).java interface ex3">
+        <article class="program" data-category="lab" data-name="ex3(java interface).java interface ex3">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex3(JAVA INTERFACE).java</h2>
@@ -304,7 +482,7 @@
           <a class="download" href="java/ex3(JAVA INTERFACE).java" download aria-label="Download ex3(JAVA INTERFACE).java">Download</a>
         </article>
 
-        <article class="program" data-name="ex4(user defined exceptions).java user defined exception custom exceptions ex4">
+        <article class="program" data-category="lab" data-name="ex4(user defined exceptions).java user defined exception custom exceptions ex4">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex4(USER DEFINED EXCEPTIONS).java</h2>
@@ -313,7 +491,7 @@
           <a class="download" href="java/ex4(USER DEFINED EXCEPTIONS).java" download aria-label="Download ex4(USER DEFINED EXCEPTIONS).java">Download</a>
         </article>
 
-        <article class="program" data-name="ex5(file operation).java file operation io streams ex5">
+        <article class="program" data-category="lab" data-name="ex5(file operation).java file operation io streams ex5">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex5(FILE OPERATION).java</h2>
@@ -322,7 +500,7 @@
           <a class="download" href="java/ex5(FILE OPERATION).java" download aria-label="Download ex5(FILE OPERATION).java">Download</a>
         </article>
 
-        <article class="program" data-name="ex6(generic function).java generic function generics ex6">
+        <article class="program" data-category="lab" data-name="ex6(generic function).java generic function generics ex6">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex6(GENERIC FUNCTION).java</h2>
@@ -331,34 +509,34 @@
           <a class="download" href="java/ex6(GENERIC FUNCTION).java" download aria-label="Download ex6(GENERIC FUNCTION).java">Download</a>
         </article>
 
-        <article class="program" data-name="ex7(controls).java controls gui awt swing ex7">
+        <article class="program" data-category="lab" data-name="ex7(controls).java controls gui awt swing javafx buttontest ex7">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex7(controls).java</h2>
-            <p>GUI Controls (AWT / Swing Components)</p>
+            <p>JavaFX Controls (ButtonTest) · Run via LXTerminal</p>
           </div>
           <a class="download" href="java/ex7(controls).java" download aria-label="Download ex7(controls).java">Download</a>
         </article>
 
-        <article class="program" data-name="ex7(layouts).java layouts gui layout manager awt swing ex7">
+        <article class="program" data-category="lab" data-name="ex7(layouts).java layouts gui layout manager awt swing javafx label_test ex7">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex7(layouts).java</h2>
-            <p>GUI Layout Managers</p>
+            <p>JavaFX Layout Managers (Label_Test) · Run via LXTerminal</p>
           </div>
           <a class="download" href="java/ex7(layouts).java" download aria-label="Download ex7(layouts).java">Download</a>
         </article>
 
-        <article class="program" data-name="ex7(menu).java menu gui menubar awt swing ex7">
+        <article class="program" data-category="lab" data-name="ex7(menu).java menu gui menubar awt swing javafx menuexample ex7">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex7(Menu).java</h2>
-            <p>GUI Menu Implementation</p>
+            <p>JavaFX Menu Bar Implementation (MenuExample) · Run via LXTerminal</p>
           </div>
           <a class="download" href="java/ex7(Menu).java" download aria-label="Download ex7(Menu).java">Download</a>
         </article>
 
-        <article class="program" data-name="ex8selectionsort.java selection sort algorithm ex8">
+        <article class="program" data-category="lab" data-name="ex8selectionsort.java selection sort algorithm ex8">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex8selectionsort.java</h2>
@@ -367,7 +545,7 @@
           <a class="download" href="java/ex8selectionsort.java" download aria-label="Download ex8selectionsort.java">Download</a>
         </article>
 
-        <article class="program" data-name="ex9abstractclass.java abstract class polymorphism inheritance ex9">
+        <article class="program" data-category="lab" data-name="ex9abstractclass.java abstract class polymorphism inheritance ex9">
           <div class="file-icon">JAVA</div>
           <div class="program-info">
             <h2>ex9abstractclass.java</h2>
@@ -375,25 +553,215 @@
           </div>
           <a class="download" href="java/ex9abstractclass.java" download aria-label="Download ex9abstractclass.java">Download</a>
         </article>
+
+
+        <!-- ==================== ADDITIONAL PROGRAMS (16) ==================== -->
+        <article class="program" data-category="additional" data-name="q1_sequentialsearch.java 1 sequential search selection insertion sorting q1" hidden>
+          <div class="file-icon exam">Q1</div>
+          <div class="program-info">
+            <h2>Q1_SequentialSearch.java</h2>
+            <p>1. Sequential (Linear) Search with Selection &amp; Insertion Sort</p>
+          </div>
+          <a class="download" href="java/additional/Q1_SequentialSearch.java" download aria-label="Download Q1_SequentialSearch.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q2_binarysearch.java 2 binary search sorting selection insertion q2" hidden>
+          <div class="file-icon exam">Q2</div>
+          <div class="program-info">
+            <h2>Q2_BinarySearch.java</h2>
+            <p>2. Binary Search with Sorting Algorithm (Selection Sort)</p>
+          </div>
+          <a class="download" href="java/additional/Q2_BinarySearch.java" download aria-label="Download Q2_BinarySearch.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q3_stack.java 3 stack data structures classes objects push pop peek q3" hidden>
+          <div class="file-icon exam">Q3</div>
+          <div class="program-info">
+            <h2>Q3_Stack.java</h2>
+            <p>3. Stack Data Structure Using Classes &amp; Objects (Push, Pop, Peek)</p>
+          </div>
+          <a class="download" href="java/additional/Q3_Stack.java" download aria-label="Download Q3_Stack.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q4_queue.java 4 queue data structures classes objects enqueue dequeue q4" hidden>
+          <div class="file-icon exam">Q4</div>
+          <div class="program-info">
+            <h2>Q4_Queue.java</h2>
+            <p>4. Queue Data Structure Using Classes &amp; Objects (Enqueue, Dequeue)</p>
+          </div>
+          <a class="download" href="java/additional/Q4_Queue.java" download aria-label="Download Q4_Queue.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q5_abstractshapearea.java 5 abstract class calculating area different shape rectangle triangle circle q5" hidden>
+          <div class="file-icon exam">Q5</div>
+          <div class="program-info">
+            <h2>Q5_AbstractShapeArea.java</h2>
+            <p>5. Abstract Class for Area Calculation (Rectangle, Triangle, Circle)</p>
+          </div>
+          <a class="download" href="java/additional/Q5_AbstractShapeArea.java" download aria-label="Download Q5_AbstractShapeArea.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q6_interfaceshapearea.java 6 interface calculating area different shape rectangle circle triangle q6" hidden>
+          <div class="file-icon exam">Q6</div>
+          <div class="program-info">
+            <h2>Q6_InterfaceShapeArea.java</h2>
+            <p>6. Interface for Calculating Area of Shapes</p>
+          </div>
+          <a class="download" href="java/additional/Q6_InterfaceShapeArea.java" download aria-label="Download Q6_InterfaceShapeArea.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q7_userdefinedexception.java 7 user defined exceptions handling custom age voting q7" hidden>
+          <div class="file-icon exam">Q7</div>
+          <div class="program-info">
+            <h2>Q7_UserDefinedException.java</h2>
+            <p>7. User Defined Exception Handling (InvalidAgeException)</p>
+          </div>
+          <a class="download" href="java/additional/Q7_UserDefinedException.java" download aria-label="Download Q7_UserDefinedException.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q8_multithreadedapp.java 8 multi-threaded application number generator square cube thread q8" hidden>
+          <div class="file-icon exam">Q8</div>
+          <div class="program-info">
+            <h2>Q8_MultiThreadedApp.java</h2>
+            <p>8. Multi-Threaded Application (Number Generator, Square &amp; Cube Threads)</p>
+          </div>
+          <a class="download" href="java/additional/Q8_MultiThreadedApp.java" download aria-label="Download Q8_MultiThreadedApp.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q9_genericclass.java 9 generic class container type flexibility q9" hidden>
+          <div class="file-icon exam">Q9</div>
+          <div class="program-info">
+            <h2>Q9_GenericClass.java</h2>
+            <p>9. Generic Class Implementation (Container&lt;T&gt;)</p>
+          </div>
+          <a class="download" href="java/additional/Q9_GenericClass.java" download aria-label="Download Q9_GenericClass.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q10_calculatorminiproject.java 10 calculator mini project event driven decimal scientific swing gui q10" hidden>
+          <div class="file-icon exam">Q10</div>
+          <div class="program-info">
+            <h2>Q10_CalculatorMiniProject.java</h2>
+            <p>10. Event-Driven Scientific &amp; Decimal Calculator Mini Project (Swing)</p>
+          </div>
+          <a class="download" href="java/additional/Q10_CalculatorMiniProject.java" download aria-label="Download Q10_CalculatorMiniProject.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q11_monthname.java 11 integer between 1 and 12 display name of month switch q11" hidden>
+          <div class="file-icon exam">Q11</div>
+          <div class="program-info">
+            <h2>Q11_MonthName.java</h2>
+            <p>11. Month Name Display (Integer 1 to 12 with Validation)</p>
+          </div>
+          <a class="download" href="java/additional/Q11_MonthName.java" download aria-label="Download Q11_MonthName.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q12_gpacalculator.java 12 gpa 5 subjects marks credits user defined exception mark subject name code q12" hidden>
+          <div class="file-icon exam">Q12</div>
+          <div class="program-info">
+            <h2>Q12_GPACalculator.java</h2>
+            <p>12. 5-Subject GPA Calculator with Custom Subject &amp; Marks Exceptions</p>
+          </div>
+          <a class="download" href="java/additional/Q12_GPACalculator.java" download aria-label="Download Q12_GPACalculator.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q13_distanceconverter.java 13 distance converter meter km miles packages q13" hidden>
+          <div class="file-icon exam">Q13</div>
+          <div class="program-info">
+            <h2>Q13_DistanceConverter.java</h2>
+            <p>13. Distance Converter Package (Meter to KM, Miles to KM &amp; vice versa)</p>
+          </div>
+          <a class="download" href="java/additional/Q13_DistanceConverter.java" download aria-label="Download Q13_DistanceConverter.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q14_dogconstructor.java 14 dog class instance variables name color parameterized constructor q14" hidden>
+          <div class="file-icon exam">Q14</div>
+          <div class="program-info">
+            <h2>Q14_DogConstructor.java</h2>
+            <p>14. Dog Class with Parameterized Constructor (Name and Color)</p>
+          </div>
+          <a class="download" href="java/additional/Q14_DogConstructor.java" download aria-label="Download Q14_DogConstructor.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q15_employeepayroll.java 15 employee class programmer assistant professor associate professor basic pay da hra pf payslip q15" hidden>
+          <div class="file-icon exam">Q15</div>
+          <div class="program-info">
+            <h2>Q15_EmployeePayroll.java</h2>
+            <p>15. Employee Payroll Hierarchy &amp; Pay Slip Generator (DA, HRA, PF)</p>
+          </div>
+          <a class="download" href="java/additional/Q15_EmployeePayroll.java" download aria-label="Download Q15_EmployeePayroll.java">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q16_shapeprintarea.java 16 shape abstract class two integers printarea rectangle triangle circle q16" hidden>
+          <div class="file-icon exam">Q16</div>
+          <div class="program-info">
+            <h2>Q16_ShapePrintArea.java</h2>
+            <p>16. Abstract Shape Class with printArea() (Rectangle, Triangle, Circle)</p>
+          </div>
+          <a class="download" href="java/additional/Q16_ShapePrintArea.java" download aria-label="Download Q16_ShapePrintArea.java">Download</a>
+        </article>
+
       </div>
       <div class="empty" id="empty">No matching programs found.</div>
     </section>
-    <footer>Java Lab · Download the source files and run them in your Java environment.</footer>
+
+    <footer>Java Lab Repository · Designed for rapid examination practical access</footer>
   </main>
+
   <script>
     const search = document.getElementById('search');
     const programs = [...document.querySelectorAll('.program')];
     const empty = document.getElementById('empty');
-    search.addEventListener('input', () => {
+    const countDisplay = document.getElementById('countDisplay') || document.getElementById('count-display');
+    const tabBtns = [...document.querySelectorAll('.tab-btn')];
+
+    let currentFilter = 'lab'; // default filter
+
+    function updateView() {
       const query = search.value.trim().toLowerCase();
       let visible = 0;
+
       for (const item of programs) {
-        const match = item.dataset.name.includes(query);
-        item.hidden = !match;
-        if (match) visible++;
+        const cat = item.dataset.category;
+        const matchesCategory = (currentFilter === 'all') || (cat === currentFilter);
+        const matchesSearch = item.dataset.name.toLowerCase().includes(query);
+
+        if (matchesCategory && matchesSearch) {
+          item.hidden = false;
+          visible++;
+        } else {
+          item.hidden = true;
+        }
       }
+
       empty.style.display = visible ? 'none' : 'block';
+
+      let label = 'Programs';
+      if (currentFilter === 'lab') label = 'Lab Programs';
+      else if (currentFilter === 'additional') label = 'Additional Exam Programs';
+      else label = 'Total Programs';
+
+      countDisplay.textContent = `Showing ${visible} ${label}`;
+    }
+
+    // Tab buttons event
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        currentFilter = btn.dataset.filter;
+        updateView();
+      });
     });
+
+    // Search event
+    search.addEventListener('input', updateView);
+
+    // Initial render
+    updateView();
   </script>
 </body>
 
