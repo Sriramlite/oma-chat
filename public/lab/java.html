@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Java lab programs and source code downloads">
+  <title>Java Lab | Program Downloads</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #e6eaf0;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --surface: #ffffff;
+      --page: #f5f7fb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    .wrap {
+      width: min(920px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 64px;
+    }
+
+    .hero {
+      padding: 30px;
+      border-radius: 22px;
+      color: white;
+      background: linear-gradient(120deg, #172554, #1d4ed8);
+      box-shadow: 0 16px 38px rgba(29, 78, 216, .16);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #bfdbfe;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 40px);
+      letter-spacing: -.04em;
+    }
+
+    .intro {
+      margin: 10px 0 0;
+      color: #dbeafe;
+      max-width: 580px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .btn.primary {
+      background: white;
+      color: #1d4ed8;
+    }
+
+    .btn.secondary {
+      border: 1px solid rgba(255, 255, 255, .45);
+      color: white;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 28px 0 14px;
+    }
+
+    .toolbar h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .count {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .search {
+      width: 100%;
+      margin: 0 0 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: white;
+      color: var(--ink);
+      font: inherit;
+      outline: none;
+    }
+
+    .search:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px #dbeafe;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .program {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .file-icon {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      flex: 0 0 44px;
+      border-radius: 11px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .program-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .program h2 {
+      overflow-wrap: anywhere;
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .program p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .download {
+      padding: 8px 12px;
+      border-radius: 9px;
+      background: #eff6ff;
+      color: var(--blue-dark);
+      font-size: 13px;
+      font-weight: 750;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .download:hover,
+    .btn.primary:hover {
+      filter: brightness(.96);
+    }
+
+    .empty {
+      display: none;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      background: white;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+    }
+
+    footer {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      .wrap {
+        padding-top: 20px;
+      }
+
+      .hero {
+        padding: 23px;
+        border-radius: 17px;
+      }
+
+      .toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .program {
+        padding: 11px;
+        gap: 10px;
+      }
+
+      .download {
+        padding: 8px 9px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <p class="eyebrow">Practical Lab Resources</p>
+      <h1>Java Lab Programs</h1>
+      <p class="intro">Find your lab exercise and download its Java source file. Review algorithms, object-oriented concepts, and GUI applications.</p>
+      <div class="actions">
+        <a class="btn primary" href="java.zip" download>Download All Programs (ZIP)</a>
+        <a class="btn secondary" href="index.html">Back to Labs</a>
+      </div>
+    </header>
+
+    <section aria-labelledby="program-heading">
+      <div class="toolbar">
+        <h2 id="program-heading">Available programs</h2>
+        <span class="count">13 Java files</span>
+      </div>
+      <input class="search" id="search" type="search" placeholder="Search programs, e.g. ex1a or search"
+        aria-label="Search programs">
+      <div class="list" id="program-list">
+        <article class="program" data-name="ex1a(linear search).java linear search ex1a">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex1a(LINEAR SEARCH).java</h2>
+            <p>Linear Search Algorithm</p>
+          </div>
+          <a class="download" href="java/ex1a(LINEAR SEARCH).java" download aria-label="Download ex1a(LINEAR SEARCH).java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex1b(binary search).java binary search ex1b">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex1b(BINARY SEARCH).java</h2>
+            <p>Binary Search Algorithm</p>
+          </div>
+          <a class="download" href="java/ex1b(BINARY SEARCH).java" download aria-label="Download ex1b(BINARY SEARCH).java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex2a(implementation of stack using classes and objects).java stack classes objects ex2a">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex2a(IMPLEMENTATION OF STACK USING CLASSES AND OBJECTS).java</h2>
+            <p>Stack Implementation Using Classes &amp; Objects</p>
+          </div>
+          <a class="download" href="java/ex2a(IMPLEMENTATION OF STACK USING CLASSES AND OBJECTS).java" download aria-label="Download ex2a(IMPLEMENTATION OF STACK USING CLASSES AND OBJECTS).java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex2b(implementation of queue).java queue ex2b">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex2b(IMPLEMENTATION OF QUEUE).java</h2>
+            <p>Queue Implementation</p>
+          </div>
+          <a class="download" href="java/ex2b(IMPLEMENTATION OF QUEUE).java" download aria-label="Download ex2b(IMPLEMENTATION OF QUEUE).java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex3(java interface).java interface ex3">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex3(JAVA INTERFACE).java</h2>
+            <p>Java Interface Implementation</p>
+          </div>
+          <a class="download" href="java/ex3(JAVA INTERFACE).java" download aria-label="Download ex3(JAVA INTERFACE).java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex4(user defined exceptions).java user defined exception custom exceptions ex4">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex4(USER DEFINED EXCEPTIONS).java</h2>
+            <p>User Defined Custom Exceptions</p>
+          </div>
+          <a class="download" href="java/ex4(USER DEFINED EXCEPTIONS).java" download aria-label="Download ex4(USER DEFINED EXCEPTIONS).java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex5(file operation).java file operation io streams ex5">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex5(FILE OPERATION).java</h2>
+            <p>File Operations (Read, Write &amp; Stream)</p>
+          </div>
+          <a class="download" href="java/ex5(FILE OPERATION).java" download aria-label="Download ex5(FILE OPERATION).java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex6(generic function).java generic function generics ex6">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex6(GENERIC FUNCTION).java</h2>
+            <p>Generic Functions &amp; Generics</p>
+          </div>
+          <a class="download" href="java/ex6(GENERIC FUNCTION).java" download aria-label="Download ex6(GENERIC FUNCTION).java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex7(controls).java controls gui awt swing ex7">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex7(controls).java</h2>
+            <p>GUI Controls (AWT / Swing Components)</p>
+          </div>
+          <a class="download" href="java/ex7(controls).java" download aria-label="Download ex7(controls).java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex7(layouts).java layouts gui layout manager awt swing ex7">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex7(layouts).java</h2>
+            <p>GUI Layout Managers</p>
+          </div>
+          <a class="download" href="java/ex7(layouts).java" download aria-label="Download ex7(layouts).java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex7(menu).java menu gui menubar awt swing ex7">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex7(Menu).java</h2>
+            <p>GUI Menu Implementation</p>
+          </div>
+          <a class="download" href="java/ex7(Menu).java" download aria-label="Download ex7(Menu).java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex8selectionsort.java selection sort algorithm ex8">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex8selectionsort.java</h2>
+            <p>Selection Sort Algorithm</p>
+          </div>
+          <a class="download" href="java/ex8selectionsort.java" download aria-label="Download ex8selectionsort.java">Download</a>
+        </article>
+
+        <article class="program" data-name="ex9abstractclass.java abstract class polymorphism inheritance ex9">
+          <div class="file-icon">JAVA</div>
+          <div class="program-info">
+            <h2>ex9abstractclass.java</h2>
+            <p>Abstract Class &amp; Polymorphism</p>
+          </div>
+          <a class="download" href="java/ex9abstractclass.java" download aria-label="Download ex9abstractclass.java">Download</a>
+        </article>
+      </div>
+      <div class="empty" id="empty">No matching programs found.</div>
+    </section>
+    <footer>Java Lab · Download the source files and run them in your Java environment.</footer>
+  </main>
+  <script>
+    const search = document.getElementById('search');
+    const programs = [...document.querySelectorAll('.program')];
+    const empty = document.getElementById('empty');
+    search.addEventListener('input', () => {
+      const query = search.value.trim().toLowerCase();
+      let visible = 0;
+      for (const item of programs) {
+        const match = item.dataset.name.includes(query);
+        item.hidden = !match;
+        if (match) visible++;
+      }
+      empty.style.display = visible ? 'none' : 'block';
+    });
+  </script>
+</body>
+
+</html>
