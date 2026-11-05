@@ -1,0 +1,49 @@
+-- EXPERIMENT 6: SUBQUERIES
+CREATE DATABASE IF NOT EXISTS ex6_subqueries;
+USE ex6_subqueries;
+DROP TABLE IF EXISTS sworks;
+DROP TABLE IF EXISTS spros;
+DROP TABLE IF EXISTS sempls;
+DROP TABLE IF EXISTS sdments;
+CREATE TABLE sempls (
+ eno INT PRIMARY KEY, ename VARCHAR(20), edob VARCHAR(15), gender VARCHAR(10),
+ doj VARCHAR(20), desg VARCHAR(30), bpay DECIMAL(10,2), dno INT
+);
+INSERT INTO sempls VALUES
+(1,'bala','15/1/84','m','16th july','lec',7000,1),
+(2,'kala','13/9/84','m','18th july','lec',10000,2),
+(3,'mala','17/6/85','f','19th june','lec',19000,1),
+(4,'nila','20/6/85','f','19th june','sr.lec',20000,1),
+(5,'vina','2/1/85','f','12th july','prof.',50000,2);
+CREATE TABLE sdments (dno INT PRIMARY KEY,dname VARCHAR(30));
+INSERT INTO sdments VALUES (1,'cse'),(2,'it');
+CREATE TABLE spros (pno INT PRIMARY KEY,pname VARCHAR(30),dno INT);
+INSERT INTO spros VALUES (81,'aaa',1),(82,'bbb',1),(83,'ccc',1),(84,'ddd',2),(85,'eee',2);
+CREATE TABLE sworks (
+ eno INT,pno INT,datework VARCHAR(20),intime INT,outtime INT,
+ PRIMARY KEY (eno,pno,datework)
+);
+INSERT INTO sworks VALUES
+(1,81,'11th july',9,10),(1,82,'11th july',10,11),(1,83,'11th july',11,12),
+(1,84,'11th july',12,13),(1,85,'11th july',13,14),(2,85,'12th july',8,9);
+SELECT * FROM sempls;
+SELECT * FROM sdments;
+SELECT * FROM spros;
+SELECT * FROM sworks;
+-- Query 1: employees earning below average pay
+SELECT * FROM sempls WHERE bpay<(SELECT AVG(bpay) FROM sempls);
+-- Query 2: employee count by department
+SELECT dno,COUNT(eno) AS employee_count FROM sempls GROUP BY dno;
+-- Query 3: salary range
+SELECT * FROM sempls WHERE bpay BETWEEN 10000 AND 20000;
+-- Query 4: projects controlled by CSE department
+SELECT e.eno,e.ename,d.dname,p.pno,p.pname
+FROM sempls e JOIN sdments d ON d.dno=e.dno
+JOIN spros p ON p.dno=d.dno WHERE d.dname='cse';
+-- Query 5: employees with more than four projects on a day
+SELECT e.eno,e.ename,e.dno,w.datework
+FROM sempls e JOIN sworks w ON w.eno=e.eno
+JOIN (SELECT eno,datework FROM sworks GROUP BY eno,datework
+      HAVING COUNT(DISTINCT pno)>4) x
+ON x.eno=w.eno AND x.datework=w.datework
+GROUP BY e.eno,e.ename,e.dno,w.datework;

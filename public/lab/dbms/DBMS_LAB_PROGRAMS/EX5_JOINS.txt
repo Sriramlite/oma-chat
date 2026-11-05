@@ -1,0 +1,25 @@
+-- EXPERIMENT 5: TYPES OF JOINS
+CREATE DATABASE IF NOT EXISTS ex5_joins;
+USE ex5_joins;
+DROP TABLE IF EXISTS t1;
+DROP TABLE IF EXISTS t2;
+CREATE TABLE t1 (id INT PRIMARY KEY, pattern VARCHAR(50) NOT NULL);
+CREATE TABLE t2 (id CHAR(1) PRIMARY KEY, pattern VARCHAR(50) NOT NULL);
+INSERT INTO t1 VALUES (1,'divot'),(2,'brick'),(3,'grid');
+INSERT INTO t2 VALUES ('a','brick'),('b','grid'),('c','diamond');
+-- CROSS / CARTESIAN JOIN
+SELECT t1.id AS t1_id,t2.id AS t2_id FROM t1 CROSS JOIN t2;
+-- EQUI / INNER JOIN
+SELECT t1.id AS t1_id,t2.id AS t2_id FROM t1 INNER JOIN t2 ON t1.pattern=t2.pattern;
+-- LEFT OUTER JOIN
+SELECT t1.id AS t1_id,t2.id AS t2_id FROM t1 LEFT JOIN t2 ON t1.pattern=t2.pattern ORDER BY t1.id;
+-- RIGHT OUTER JOIN
+SELECT t1.id AS t1_id,t2.id AS t2_id FROM t1 RIGHT JOIN t2 ON t1.pattern=t2.pattern ORDER BY t2.id;
+-- NON-EQUI JOIN
+SELECT t1.id AS t1_id,t2.id AS t2_id FROM t1 JOIN t2 ON t1.id<ASCII(t2.id);
+-- SELF JOIN
+DROP TABLE IF EXISTS employee;
+CREATE TABLE employee (emp_id INT PRIMARY KEY, emp_name VARCHAR(30), manager_id INT NULL);
+INSERT INTO employee VALUES (1,'Arun',NULL),(2,'Bala',1),(3,'Charan',1);
+SELECT e.emp_name AS employee,m.emp_name AS manager
+FROM employee e LEFT JOIN employee m ON e.manager_id=m.emp_id;

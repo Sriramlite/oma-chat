@@ -1,0 +1,31 @@
+-- EXPERIMENT 8: CONSTRAINTS
+CREATE DATABASE IF NOT EXISTS ex8_constraints;
+USE ex8_constraints;
+DROP TABLE IF EXISTS student_department;
+DROP TABLE IF EXISTS student_detail;
+DROP TABLE IF EXISTS student_unique;
+DROP TABLE IF EXISTS student_required;
+DROP TABLE IF EXISTS cse1;
+DROP TABLE IF EXISTS department;
+CREATE TABLE cse1 (roll INT PRIMARY KEY,name VARCHAR(20),city VARCHAR(20));
+DESCRIBE cse1;
+CREATE TABLE student_required (roll INT PRIMARY KEY,name VARCHAR(20) NOT NULL,city VARCHAR(20));
+DESCRIBE student_required;
+CREATE TABLE student_unique (roll INT UNIQUE,name VARCHAR(20),city VARCHAR(20));
+DESCRIBE student_unique;
+CREATE TABLE student_detail (
+ roll INT PRIMARY KEY,name VARCHAR(20) NOT NULL,
+ city VARCHAR(20) DEFAULT 'Unknown',mark INT DEFAULT 40,
+ CONSTRAINT chk_mark CHECK (mark BETWEEN 0 AND 100)
+);
+INSERT INTO student_detail (roll,name,city,mark) VALUES (1,'PRAGATI','AUSA',84);
+INSERT INTO student_detail (roll,name,mark) VALUES (2,'SWARUPA',64);
+SELECT * FROM student_detail;
+CREATE TABLE department (dept_id INT PRIMARY KEY,dept_name VARCHAR(30) NOT NULL);
+INSERT INTO department VALUES (10,'CSE');
+CREATE TABLE student_department (
+ roll INT PRIMARY KEY,name VARCHAR(20) NOT NULL,dept_id INT,
+ CONSTRAINT fk_student_department FOREIGN KEY (dept_id) REFERENCES department(dept_id)
+);
+INSERT INTO student_department VALUES (1,'RAM',10);
+SELECT * FROM student_department;

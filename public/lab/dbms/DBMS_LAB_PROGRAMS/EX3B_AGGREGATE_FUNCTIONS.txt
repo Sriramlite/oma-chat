@@ -1,0 +1,12 @@
+-- EXPERIMENT 3B: AGGREGATE FUNCTIONS
+CREATE DATABASE IF NOT EXISTS ex3b_aggregate;
+USE ex3b_aggregate;
+DROP TABLE IF EXISTS student;
+CREATE TABLE student (rollno INT, sname VARCHAR(20), marks INT);
+INSERT INTO student VALUES (1001,'yamini',95),(1002,'rose',84),(1003,'jennie',98);
+SELECT * FROM student;
+SELECT COUNT(marks) AS total_marks_entries FROM student;
+SELECT SUM(marks) AS total_marks FROM student;
+SELECT AVG(marks) AS average_marks FROM student;
+SELECT MAX(marks) AS highest_marks FROM student;
+SELECT MIN(marks) AS lowest_marks FROM student;

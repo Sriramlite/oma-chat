@@ -1,0 +1,27 @@
+-- Q19: LIBRARY MANAGEMENT TABLES AND RELATIONSHIPS
+CREATE DATABASE IF NOT EXISTS q19_library;
+USE q19_library;
+DROP TABLE IF EXISTS issues;
+DROP TABLE IF EXISTS books;
+DROP TABLE IF EXISTS members;
+CREATE TABLE books (
+ book_id INT PRIMARY KEY, title VARCHAR(100) NOT NULL,
+ author VARCHAR(80), isbn VARCHAR(20) UNIQUE
+);
+CREATE TABLE members (
+ member_id INT PRIMARY KEY, member_name VARCHAR(60) NOT NULL,
+ phone VARCHAR(20) UNIQUE
+);
+CREATE TABLE issues (
+ issue_id INT PRIMARY KEY, book_id INT NOT NULL,
+ member_id INT NOT NULL, issue_date DATE NOT NULL,
+ return_date DATE NULL,
+ FOREIGN KEY(book_id) REFERENCES books(book_id),
+ FOREIGN KEY(member_id) REFERENCES members(member_id)
+);
+INSERT INTO books VALUES (1,'Database Systems','Ramakrishnan','ISBN001');
+INSERT INTO members VALUES (101,'Arun','9876543210');
+INSERT INTO issues VALUES (1001,1,101,CURRENT_DATE,NULL);
+SELECT i.issue_id,b.title,m.member_name,i.issue_date,i.return_date
+FROM issues i JOIN books b ON b.book_id=i.book_id
+JOIN members m ON m.member_id=i.member_id;

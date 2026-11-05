@@ -1,0 +1,19 @@
+-- Q3: TRANSACTION USING SAVEPOINT, ROLLBACK AND COMMIT
+CREATE DATABASE IF NOT EXISTS q03_transactions;
+USE q03_transactions;
+DROP TABLE IF EXISTS accounts;
+CREATE TABLE accounts (
+ account_id INT PRIMARY KEY, holder_name VARCHAR(40), balance DECIMAL(12,2)
+) ENGINE=InnoDB;
+INSERT INTO accounts VALUES (1,'Arun',10000),(2,'Bala',8000);
+SELECT * FROM accounts;
+START TRANSACTION;
+UPDATE accounts SET balance=balance-1000 WHERE account_id=1;
+SAVEPOINT after_debit;
+UPDATE accounts SET balance=balance+1000 WHERE account_id=2;
+-- Undo only the credit operation:
+ROLLBACK TO SAVEPOINT after_debit;
+-- Apply the intended credit, then permanently save both changes:
+UPDATE accounts SET balance=balance+1000 WHERE account_id=2;
+COMMIT;
+SELECT * FROM accounts;

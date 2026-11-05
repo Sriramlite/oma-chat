@@ -1,0 +1,24 @@
+-- Q2: RELATED TABLES AND DIFFERENT JOINS
+CREATE DATABASE IF NOT EXISTS q02_joins;
+USE q02_joins;
+DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS departments;
+CREATE TABLE departments (dept_id INT PRIMARY KEY, dept_name VARCHAR(40));
+CREATE TABLE employees (
+ emp_id INT PRIMARY KEY, emp_name VARCHAR(40), dept_id INT NULL,
+ FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+);
+INSERT INTO departments VALUES (10,'HR'),(20,'IT'),(30,'Sales'),(40,'Finance');
+INSERT INTO employees VALUES
+(1,'Anu',10),(2,'Bala',20),(3,'Charan',20),(4,'Divya',NULL);
+-- Matching rows
+SELECT e.emp_id,e.emp_name,d.dept_name
+FROM employees e INNER JOIN departments d ON e.dept_id=d.dept_id;
+-- All employees, including those without a matching department
+SELECT e.emp_id,e.emp_name,d.dept_name
+FROM employees e LEFT JOIN departments d ON e.dept_id=d.dept_id;
+-- All departments, including departments without employees
+SELECT e.emp_id,e.emp_name,d.dept_name
+FROM employees e RIGHT JOIN departments d ON e.dept_id=d.dept_id;
+-- All combinations
+SELECT e.emp_name,d.dept_name FROM employees e CROSS JOIN departments d;

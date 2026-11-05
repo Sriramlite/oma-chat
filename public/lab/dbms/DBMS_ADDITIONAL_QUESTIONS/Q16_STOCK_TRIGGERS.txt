@@ -1,0 +1,51 @@
+-- Q16: UPDATE STOCK AND RECORD SALES TRANSACTIONS WITH TRIGGERS
+CREATE DATABASE IF NOT EXISTS q16_stock;
+USE q16_stock;
+DROP TRIGGER IF EXISTS trg_sale_after_insert;
+DROP TRIGGER IF EXISTS trg_sale_after_delete;
+DROP TABLE IF EXISTS stock_transactions;
+DROP TABLE IF EXISTS sales;
+DROP TABLE IF EXISTS products;
+CREATE TABLE products (
+ product_id INT PRIMARY KEY, product_name VARCHAR(60),
+ stock_qty INT NOT NULL CHECK(stock_qty>=0)
+);
+CREATE TABLE sales (
+ sale_id INT PRIMARY KEY, product_id INT NOT NULL,
+ quantity INT NOT NULL CHECK(quantity>0),
+ FOREIGN KEY(product_id) REFERENCES products(product_id)
+);
+CREATE TABLE stock_transactions (
+ transaction_id INT AUTO_INCREMENT PRIMARY KEY,
+ product_id INT, sale_id INT, transaction_type VARCHAR(20),
+ quantity INT, transaction_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+INSERT INTO products VALUES (1,'Keyboard',20),(2,'Mouse',30);
+DELIMITER //
+CREATE TRIGGER trg_sale_after_insert
+AFTER INSERT ON sales
+FOR EACH ROW
+BEGIN
+ UPDATE products SET stock_qty=stock_qty-NEW.quantity
+ WHERE product_id=NEW.product_id;
+ INSERT INTO stock_transactions(product_id,sale_id,transaction_type,quantity)
+ VALUES(NEW.product_id,NEW.sale_id,'SALE',NEW.quantity);
+END//
+CREATE TRIGGER trg_sale_after_delete
+AFTER DELETE ON sales
+FOR EACH ROW
+BEGIN
+ UPDATE products SET stock_qty=stock_qty+OLD.quantity
+ WHERE product_id=OLD.product_id;
+ INSERT INTO stock_transactions(product_id,sale_id,transaction_type,quantity)
+ VALUES(OLD.product_id,OLD.sale_id,'SALE_CANCELLED',OLD.quantity);
+END//
+DELIMITER ;
+-- Insert only a quantity that is available in stock.
+INSERT INTO sales VALUES (1001,1,3);
+SELECT * FROM products;
+SELECT * FROM stock_transactions;
+-- Deleting the sale restores stock:
+DELETE FROM sales WHERE sale_id=1001;
+SELECT * FROM products;
+SELECT * FROM stock_transactions;

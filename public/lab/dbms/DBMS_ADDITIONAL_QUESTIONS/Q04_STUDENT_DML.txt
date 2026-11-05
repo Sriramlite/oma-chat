@@ -1,0 +1,22 @@
+-- Q4: ADD, MODIFY, DELETE AND DISPLAY STUDENT RECORDS
+CREATE DATABASE IF NOT EXISTS q04_student;
+USE q04_student;
+DROP TABLE IF EXISTS students;
+CREATE TABLE students (
+ student_id INT PRIMARY KEY, student_name VARCHAR(50),
+ course VARCHAR(40), marks INT
+);
+-- Add records
+INSERT INTO students VALUES
+(1,'Arun','Computer Science',85),
+(2,'Bala','Commerce',76),
+(3,'Charan','Computer Science',90);
+-- Display records
+SELECT * FROM students;
+-- Modify student details
+UPDATE students SET marks=88,course='Computer Engineering' WHERE student_id=1;
+SELECT * FROM students;
+-- Remove a selected record
+DELETE FROM students WHERE student_id=2;
+-- Display updated table
+SELECT * FROM students;

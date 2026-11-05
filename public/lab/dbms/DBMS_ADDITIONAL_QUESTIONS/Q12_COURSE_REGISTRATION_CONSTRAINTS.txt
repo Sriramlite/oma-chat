@@ -1,0 +1,30 @@
+-- Q12: COURSE REGISTRATION WITH INTEGRITY CONSTRAINTS
+CREATE DATABASE IF NOT EXISTS q12_course_registration;
+USE q12_course_registration;
+DROP TABLE IF EXISTS registrations;
+DROP TABLE IF EXISTS courses;
+DROP TABLE IF EXISTS students;
+CREATE TABLE students (
+ student_id INT PRIMARY KEY,
+ student_name VARCHAR(60) NOT NULL,
+ email VARCHAR(100) NOT NULL UNIQUE
+);
+CREATE TABLE courses (
+ course_id INT PRIMARY KEY,
+ course_name VARCHAR(80) NOT NULL UNIQUE,
+ credits INT NOT NULL CHECK (credits BETWEEN 1 AND 6)
+);
+CREATE TABLE registrations (
+ registration_id INT AUTO_INCREMENT PRIMARY KEY,
+ student_id INT NOT NULL,
+ course_id INT NOT NULL,
+ registration_date DATE NOT NULL,
+ CONSTRAINT uq_student_course UNIQUE(student_id,course_id),
+ CONSTRAINT fk_reg_student FOREIGN KEY(student_id) REFERENCES students(student_id),
+ CONSTRAINT fk_reg_course FOREIGN KEY(course_id) REFERENCES courses(course_id)
+);
+INSERT INTO students VALUES (1,'Arun','arun@example.com');
+INSERT INTO courses VALUES (101,'Database Management',4);
+INSERT INTO registrations(student_id,course_id,registration_date)
+VALUES (1,101,CURRENT_DATE);
+SELECT * FROM registrations;

@@ -1,0 +1,35 @@
+-- EXPERIMENT 10: STORED PROCEDURES
+CREATE DATABASE IF NOT EXISTS ex10_procedures;
+USE ex10_procedures;
+DROP PROCEDURE IF EXISTS GetEmployeeByID;
+DROP PROCEDURE IF EXISTS GetEmployeeSalary;
+DROP PROCEDURE IF EXISTS UpdateBonus;
+DROP TABLE IF EXISTS Employees;
+CREATE TABLE Employees (
+ EmployeeID INT PRIMARY KEY,FirstName VARCHAR(50),LastName VARCHAR(50),
+ Department VARCHAR(50),Salary DECIMAL(10,2)
+);
+INSERT INTO Employees VALUES
+(1,'John','Doe','HR',50000),(2,'Jane','Smith','IT',60000),
+(3,'Alice','Johnson','Finance',70000);
+DELIMITER //
+CREATE PROCEDURE GetEmployeeByID(IN emp_id INT)
+BEGIN
+ SELECT * FROM Employees WHERE EmployeeID=emp_id;
+END//
+CREATE PROCEDURE GetEmployeeSalary(IN emp_id INT,OUT emp_salary DECIMAL(10,2))
+BEGIN
+ SELECT Salary INTO emp_salary FROM Employees WHERE EmployeeID=emp_id;
+END//
+CREATE PROCEDURE UpdateBonus(INOUT bonus_amount DECIMAL(10,2))
+BEGIN
+ SET bonus_amount=bonus_amount+500;
+END//
+DELIMITER ;
+CALL GetEmployeeByID(2);
+SET @salary=0;
+CALL GetEmployeeSalary(2,@salary);
+SELECT @salary AS EmployeeSalary;
+SET @bonus=1500;
+CALL UpdateBonus(@bonus);
+SELECT @bonus AS UpdatedBonus;

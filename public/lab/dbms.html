@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DBMS lab practical experiments and additional exam MySQL scripts">
+  <title>DBMS Lab | MySQL Scripts &amp; Additional Questions</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #e6eaf0;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --surface: #ffffff;
+      --page: #f5f7fb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    .wrap {
+      width: min(920px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+    }
+
+    .hero {
+      padding: 30px;
+      border-radius: 22px;
+      color: white;
+      background: linear-gradient(120deg, #092c48, #0284c7);
+      box-shadow: 0 16px 38px rgba(2, 132, 199, .18);
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #bae6fd;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 40px);
+      letter-spacing: -.04em;
+    }
+
+    .intro {
+      margin: 10px 0 0;
+      color: #e0f2fe;
+      max-width: 640px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      transition: filter .15s ease;
+    }
+
+    .btn.primary {
+      background: white;
+      color: #0369a1;
+    }
+
+    .btn.secondary {
+      border: 1px solid rgba(255, 255, 255, .45);
+      color: white;
+    }
+
+    .btn:hover {
+      filter: brightness(.95);
+    }
+
+    /* Terminal Guide Banner */
+    .terminal-card {
+      margin: 24px 0 16px;
+      padding: 18px 20px;
+      background: #0f172a;
+      color: #f1f5f9;
+      border-radius: 14px;
+      border: 1px solid #334155;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .terminal-title {
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .terminal-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #0284c7;
+      color: #f0f9ff;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    .terminal-code {
+      background: #020617;
+      padding: 12px 14px;
+      border-radius: 9px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12.5px;
+      color: #7dd3fc;
+      overflow-x: auto;
+      line-height: 1.6;
+      border: 1px solid #1e293b;
+      margin: 6px 0 10px;
+    }
+
+    .terminal-code span.cmd {
+      color: #f8fafc;
+      font-weight: 600;
+    }
+
+    .terminal-code span.comment {
+      color: #64748b;
+    }
+
+    .terminal-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .terminal-link {
+      color: #38bdf8;
+      text-decoration: underline;
+      font-weight: 600;
+    }
+
+    /* Category Switcher Tabs */
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin: 24px 0 14px;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: 12px;
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 8px 18px;
+      border-radius: 9px;
+      font-weight: 750;
+      font-size: 13.5px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: white;
+      color: #0369a1;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, .08);
+    }
+
+    .tab-count {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 12px;
+      background: #f0f9ff;
+      color: #0284c7;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 16px 0 12px;
+    }
+
+    .toolbar h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .count {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .search {
+      width: 100%;
+      margin: 0 0 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: white;
+      color: var(--ink);
+      font: inherit;
+      outline: none;
+    }
+
+    .search:focus {
+      border-color: #7dd3fc;
+      box-shadow: 0 0 0 3px #e0f2fe;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .program {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      transition: transform .1s ease, border-color .1s ease;
+    }
+
+    .program:hover {
+      border-color: #bae6fd;
+    }
+
+    .file-icon {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      flex: 0 0 44px;
+      border-radius: 11px;
+      background: #f0f9ff;
+      color: #0284c7;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .file-icon.exam {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .program-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .program h2 {
+      overflow-wrap: anywhere;
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .program p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .download {
+      padding: 8px 12px;
+      border-radius: 9px;
+      background: #f0f9ff;
+      color: #0369a1;
+      font-size: 13px;
+      font-weight: 750;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .download:hover {
+      filter: brightness(.94);
+    }
+
+    .empty {
+      display: none;
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+      background: white;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+    }
+
+    footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      .wrap {
+        padding-top: 20px;
+      }
+
+      .hero {
+        padding: 22px;
+        border-radius: 17px;
+      }
+
+      .tab-bar {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      .toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .program {
+        padding: 11px;
+        gap: 10px;
+      }
+
+      .download {
+        padding: 8px 9px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <p class="eyebrow">Practical Lab &amp; Exam Portal</p>
+      <h1>DBMS Lab Programs (MySQL)</h1>
+      <p class="intro">Download SQL scripts for database practical experiments and exam questions. Covers DDL, DML, Joins, Subqueries, Constraints, Views, Triggers, Stored Procedures, and Normalization.</p>
+      <div class="actions">
+        <a class="btn primary" href="dbms.zip" download>Download All (ZIP · 23 KB)</a>
+        <a class="btn secondary" href="dbms/instructions.txt" download>LXTerminal Guide (TXT)</a>
+        <a class="btn secondary" href="index.html">Back to Labs</a>
+      </div>
+    </header>
+
+    <!-- LXTerminal Execution Card -->
+    <section class="terminal-card" aria-labelledby="terminal-heading">
+      <div class="terminal-header">
+        <div class="terminal-title" id="terminal-heading">
+          <span>🐧 Linux LXTerminal MySQL Execution Guide</span>
+          <span class="terminal-badge">MySQL / MariaDB</span>
+        </div>
+        <a class="terminal-link" href="dbms/instructions.txt" download>Download instructions.txt ↓</a>
+      </div>
+      <div class="terminal-code">
+<span class="comment"># Run script in LXTerminal via input redirection:</span>
+<span class="cmd">sudo mysql --verbose --table &lt; EX1_DDL.txt</span>
+
+<span class="comment"># Or run from inside interactive MySQL prompt:</span>
+<span class="cmd">sudo mysql -u root -p</span>
+<span class="cmd">mysql&gt; source EX1_DDL.txt;</span>
+      </div>
+      <div class="terminal-actions">
+        <span>Each experiment and question creates and runs in its own isolated database (e.g. <code>ex1_ddl</code>, <code>college_db</code>).</span>
+      </div>
+    </section>
+
+    <!-- Category Tabs: Lab Programs & Additional Questions -->
+    <div class="tab-bar" role="tablist" aria-label="Program categories">
+      <button class="tab-btn active" id="tab-lab" role="tab" aria-selected="true" data-filter="lab">
+        📘 Lab Programs <span class="tab-count">14</span>
+      </button>
+      <button class="tab-btn" id="tab-additional" role="tab" aria-selected="false" data-filter="additional">
+        ⚡ Additional Questions <span class="tab-count">20</span>
+      </button>
+      <button class="tab-btn" id="tab-all" role="tab" aria-selected="false" data-filter="all">
+        All Scripts <span class="tab-count">34</span>
+      </button>
+    </div>
+
+    <section aria-labelledby="program-heading">
+      <div class="toolbar">
+        <h2 id="program-heading">Available Scripts</h2>
+        <span class="count" id="count-display">Showing 14 Lab Programs</span>
+      </div>
+      <input class="search" id="search" type="search" placeholder="Search by topic, command, or keyword (e.g. ddl, join, trigger, procedure, view)..."
+        aria-label="Search programs">
+
+      <div class="list" id="program-list">
+
+        <!-- ==================== LAB PROGRAMS (14) ==================== -->
+        <article class="program" data-category="lab" data-name="ex1_ddl.txt experiment 1 ddl create alter drop truncate describe table ex1">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX1_DDL.txt</h2>
+            <p>Experiment 1: DDL Commands (CREATE, ALTER, DROP, TRUNCATE, DESCRIBE)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX1_DDL.txt" download aria-label="Download EX1_DDL.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex2_dml.txt experiment 2 dml insert update delete select data manipulation ex2">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX2_DML.txt</h2>
+            <p>Experiment 2: DML Commands (INSERT, UPDATE, DELETE, SELECT)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX2_DML.txt" download aria-label="Download EX2_DML.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex3a_where_clause.txt experiment 3a where clause filtering conditions and or not ex3a">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX3A_WHERE_CLAUSE.txt</h2>
+            <p>Experiment 3A: Queries with WHERE Clause Conditions</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX3A_WHERE_CLAUSE.txt" download aria-label="Download EX3A_WHERE_CLAUSE.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex3b_aggregate_functions.txt experiment 3b aggregate functions count sum avg min max group by having ex3b">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX3B_AGGREGATE_FUNCTIONS.txt</h2>
+            <p>Experiment 3B: Aggregate Functions (COUNT, SUM, AVG, MIN, MAX, GROUP BY)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX3B_AGGREGATE_FUNCTIONS.txt" download aria-label="Download EX3B_AGGREGATE_FUNCTIONS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex4_operators.txt experiment 4 sql operators arithmetic logical relational comparison ex4">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX4_OPERATORS.txt</h2>
+            <p>Experiment 4: SQL Operators (Arithmetic, Logical, and Relational)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX4_OPERATORS.txt" download aria-label="Download EX4_OPERATORS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex5_joins.txt experiment 5 types of joins inner left right full outer join ex5">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX5_JOINS.txt</h2>
+            <p>Experiment 5: Types of Joins (Inner, Left, Right, Full Outer Join)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX5_JOINS.txt" download aria-label="Download EX5_JOINS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex6_subqueries.txt experiment 6 subqueries nested correlated in exists ex6">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX6_SUBQUERIES.txt</h2>
+            <p>Experiment 6: Nested and Correlated Subqueries</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX6_SUBQUERIES.txt" download aria-label="Download EX6_SUBQUERIES.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex7_pattern_matching.txt experiment 7 pattern matching like wildcards string functions ex7">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX7_PATTERN_MATCHING.txt</h2>
+            <p>Experiment 7: Pattern Matching (LIKE, %, _, String Functions)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX7_PATTERN_MATCHING.txt" download aria-label="Download EX7_PATTERN_MATCHING.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex8_constraints.txt experiment 8 constraints primary key foreign key unique not null check ex8">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX8_CONSTRAINTS.txt</h2>
+            <p>Experiment 8: Integrity Constraints (Primary Key, Foreign Key, Check)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX8_CONSTRAINTS.txt" download aria-label="Download EX8_CONSTRAINTS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex9_user_defined_functions.txt experiment 9 user defined functions mysql scalar functions returns ex9">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX9_USER_DEFINED_FUNCTIONS.txt</h2>
+            <p>Experiment 9: User Defined Functions (MySQL Scalar Functions)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX9_USER_DEFINED_FUNCTIONS.txt" download aria-label="Download EX9_USER_DEFINED_FUNCTIONS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex10_stored_procedures.txt experiment 10 stored procedures in out inout parameters delimiter ex10">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX10_STORED_PROCEDURES.txt</h2>
+            <p>Experiment 10: Stored Procedures (IN, OUT, and INOUT Parameters)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX10_STORED_PROCEDURES.txt" download aria-label="Download EX10_STORED_PROCEDURES.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex11a_dcl_commands.txt experiment 11a dcl commands grant revoke user management ex11a">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX11A_DCL_COMMANDS.txt</h2>
+            <p>Experiment 11A: DCL Commands (GRANT and REVOKE Privileges)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX11A_DCL_COMMANDS.txt" download aria-label="Download EX11A_DCL_COMMANDS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex11b_tcl_commands.txt experiment 11b tcl commands commit rollback savepoint transaction control ex11b">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX11B_TCL_COMMANDS.txt</h2>
+            <p>Experiment 11B: TCL Commands (COMMIT, ROLLBACK, SAVEPOINT)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX11B_TCL_COMMANDS.txt" download aria-label="Download EX11B_TCL_COMMANDS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="lab" data-name="ex12_triggers.txt experiment 12 triggers before after insert update delete audit log ex12">
+          <div class="file-icon">SQL</div>
+          <div class="program-info">
+            <h2>EX12_TRIGGERS.txt</h2>
+            <p>Experiment 12: Database Triggers (BEFORE &amp; AFTER INSERT/UPDATE/DELETE)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_LAB_PROGRAMS/EX12_TRIGGERS.txt" download aria-label="Download EX12_TRIGGERS.txt">Download</a>
+        </article>
+
+
+        <!-- ==================== ADDITIONAL QUESTIONS (20) ==================== -->
+        <article class="program" data-category="additional" data-name="q01_college_ddl.txt 1 college database ddl operations create alter drop q01 q1" hidden>
+          <div class="file-icon exam">Q1</div>
+          <div class="program-info">
+            <h2>Q01_COLLEGE_DDL.txt</h2>
+            <p>Q1: College Database - DDL Operations and Schema Modifications</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q01_COLLEGE_DDL.txt" download aria-label="Download Q01_COLLEGE_DDL.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q02_joins.txt 2 related tables and different joins inner left right q02 q2">
+          <div class="file-icon exam">Q2</div>
+          <div class="program-info">
+            <h2>Q02_JOINS.txt</h2>
+            <p>Q2: Related Tables and Multi-table Joins (Inner, Left, Right)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q02_JOINS.txt" download aria-label="Download Q02_JOINS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q03_transaction_savepoint.txt 3 transaction using savepoint rollback and commit tcl q03 q3">
+          <div class="file-icon exam">Q3</div>
+          <div class="program-info">
+            <h2>Q03_TRANSACTION_SAVEPOINT.txt</h2>
+            <p>Q3: Transaction Control with SAVEPOINT, ROLLBACK &amp; COMMIT</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q03_TRANSACTION_SAVEPOINT.txt" download aria-label="Download Q03_TRANSACTION_SAVEPOINT.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q04_student_dml.txt 4 add modify delete and display student records dml q04 q4">
+          <div class="file-icon exam">Q4</div>
+          <div class="program-info">
+            <h2>Q04_STUDENT_DML.txt</h2>
+            <p>Q4: Student Records DML Operations (Insert, Modify, Delete, Display)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q04_STUDENT_DML.txt" download aria-label="Download Q04_STUDENT_DML.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q05_like_in_between_is_null.txt 5 like in between and is null operators pattern range null q05 q5">
+          <div class="file-icon exam">Q5</div>
+          <div class="program-info">
+            <h2>Q05_LIKE_IN_BETWEEN_IS_NULL.txt</h2>
+            <p>Q5: Advanced Filtering with LIKE, IN, BETWEEN, and IS NULL</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q05_LIKE_IN_BETWEEN_IS_NULL.txt" download aria-label="Download Q05_LIKE_IN_BETWEEN_IS_NULL.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q06_employee_operators.txt 6 comparison logical and range operators employee queries q06 q6">
+          <div class="file-icon exam">Q6</div>
+          <div class="program-info">
+            <h2>Q06_EMPLOYEE_OPERATORS.txt</h2>
+            <p>Q6: Employee Queries with Comparison, Logical &amp; Range Operators</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q06_EMPLOYEE_OPERATORS.txt" download aria-label="Download Q06_EMPLOYEE_OPERATORS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q07_department_salary_extremes.txt 7 highest lowest and average salary by department min max avg q07 q7">
+          <div class="file-icon exam">Q7</div>
+          <div class="program-info">
+            <h2>Q07_DEPARTMENT_SALARY_EXTREMES.txt</h2>
+            <p>Q7: Highest, Lowest, and Average Salary Aggregation by Department</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q07_DEPARTMENT_SALARY_EXTREMES.txt" download aria-label="Download Q07_DEPARTMENT_SALARY_EXTREMES.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q08_aggregate_group_by.txt 8 aggregate functions and group by salary report having q08 q8">
+          <div class="file-icon exam">Q8</div>
+          <div class="program-info">
+            <h2>Q08_AGGREGATE_GROUP_BY.txt</h2>
+            <p>Q8: Department Salary Summary Report with GROUP BY &amp; HAVING</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q08_AGGREGATE_GROUP_BY.txt" download aria-label="Download Q08_AGGREGATE_GROUP_BY.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q09_employee_audit_trigger.txt 9 audit trigger for employee record modifications update log q09 q9">
+          <div class="file-icon exam">Q9</div>
+          <div class="program-info">
+            <h2>Q09_EMPLOYEE_AUDIT_TRIGGER.txt</h2>
+            <p>Q9: Automated Audit Trigger for Employee Modifications &amp; Salary Logs</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q09_EMPLOYEE_AUDIT_TRIGGER.txt" download aria-label="Download Q09_EMPLOYEE_AUDIT_TRIGGER.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q10_function_procedure_parameters.txt 10 function and procedures with in out and inout plsql mysql q10">
+          <div class="file-icon exam">Q10</div>
+          <div class="program-info">
+            <h2>Q10_FUNCTION_PROCEDURE_PARAMETERS.txt</h2>
+            <p>Q10: Stored Functions &amp; Procedures with IN, OUT, and INOUT Parameters</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q10_FUNCTION_PROCEDURE_PARAMETERS.txt" download aria-label="Download Q10_FUNCTION_PROCEDURE_PARAMETERS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q11_above_average_subquery.txt 11 employees whose salary is above the average nested subquery q11">
+          <div class="file-icon exam">Q11</div>
+          <div class="program-info">
+            <h2>Q11_ABOVE_AVERAGE_SUBQUERY.txt</h2>
+            <p>Q11: Nested Subquery to Retrieve Employees with Above Average Salary</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q11_ABOVE_AVERAGE_SUBQUERY.txt" download aria-label="Download Q11_ABOVE_AVERAGE_SUBQUERY.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q12_course_registration_constraints.txt 12 course registration with integrity constraints primary foreign check unique q12">
+          <div class="file-icon exam">Q12</div>
+          <div class="program-info">
+            <h2>Q12_COURSE_REGISTRATION_CONSTRAINTS.txt</h2>
+            <p>Q12: Course Registration Schema with Comprehensive Integrity Constraints</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q12_COURSE_REGISTRATION_CONSTRAINTS.txt" download aria-label="Download Q12_COURSE_REGISTRATION_CONSTRAINTS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q13_student_index.txt 13 index on frequently searched student details performance query q13">
+          <div class="file-icon exam">Q13</div>
+          <div class="program-info">
+            <h2>Q13_STUDENT_INDEX.txt</h2>
+            <p>Q13: Database Index Creation &amp; Query Optimization for Student Records</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q13_STUDENT_INDEX.txt" download aria-label="Download Q13_STUDENT_INDEX.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q14_employee_procedure.txt 14 procedure to add and update employee details by id stored procedure q14">
+          <div class="file-icon exam">Q14</div>
+          <div class="program-info">
+            <h2>Q14_EMPLOYEE_PROCEDURE.txt</h2>
+            <p>Q14: Stored Procedure to Insert and Update Employee Details by ID</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q14_EMPLOYEE_PROCEDURE.txt" download aria-label="Download Q14_EMPLOYEE_PROCEDURE.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q15_sales_3nf.txt 15 sales database schema normalized to third normal form 3nf normalization 1nf 2nf q15">
+          <div class="file-icon exam">Q15</div>
+          <div class="program-info">
+            <h2>Q15_SALES_3NF.txt</h2>
+            <p>Q15: Sales Database Schema Normalized to Third Normal Form (3NF)</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q15_SALES_3NF.txt" download aria-label="Download Q15_SALES_3NF.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q16_stock_triggers.txt 16 update stock and record sales transactions with triggers inventory audit q16">
+          <div class="file-icon exam">Q16</div>
+          <div class="program-info">
+            <h2>Q16_STOCK_TRIGGERS.txt</h2>
+            <p>Q16: Inventory &amp; Stock Update Triggers for Sales Transactions</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q16_STOCK_TRIGGERS.txt" download aria-label="Download Q16_STOCK_TRIGGERS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q17_employee_view.txt 17 view showing employee and department without salary security view q17">
+          <div class="file-icon exam">Q17</div>
+          <div class="program-info">
+            <h2>Q17_EMPLOYEE_VIEW.txt</h2>
+            <p>Q17: Secure Database View for Employee &amp; Department Information</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q17_EMPLOYEE_VIEW.txt" download aria-label="Download Q17_EMPLOYEE_VIEW.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q18_bank_transfer_transaction.txt 18 bank transfer with transaction failure handling rollback acid commit q18">
+          <div class="file-icon exam">Q18</div>
+          <div class="program-info">
+            <h2>Q18_BANK_TRANSFER_TRANSACTION.txt</h2>
+            <p>Q18: Bank Account Fund Transfer with Exception Handling &amp; Rollback</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q18_BANK_TRANSFER_TRANSACTION.txt" download aria-label="Download Q18_BANK_TRANSFER_TRANSACTION.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q19_library_relationships.txt 19 library management tables and relationships schema foreign keys q19">
+          <div class="file-icon exam">Q19</div>
+          <div class="program-info">
+            <h2>Q19_LIBRARY_RELATIONSHIPS.txt</h2>
+            <p>Q19: Library Management Entity Relationships &amp; Relational Schema</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q19_LIBRARY_RELATIONSHIPS.txt" download aria-label="Download Q19_LIBRARY_RELATIONSHIPS.txt">Download</a>
+        </article>
+
+        <article class="program" data-category="additional" data-name="q20_explicit_cursor.txt 20 explicit cursor to display employees above a given salary loop cursor q20">
+          <div class="file-icon exam">Q20</div>
+          <div class="program-info">
+            <h2>Q20_EXPLICIT_CURSOR.txt</h2>
+            <p>Q20: Explicit Database Cursor to Process High-Salary Employees</p>
+          </div>
+          <a class="download" href="dbms/DBMS_ADDITIONAL_QUESTIONS/Q20_EXPLICIT_CURSOR.txt" download aria-label="Download Q20_EXPLICIT_CURSOR.txt">Download</a>
+        </article>
+
+      </div>
+      <div class="empty" id="empty">No matching scripts found.</div>
+    </section>
+
+    <footer>DBMS Lab Repository · Designed for rapid examination &amp; practical access</footer>
+  </main>
+
+  <script>
+    const search = document.getElementById('search');
+    const programs = [...document.querySelectorAll('.program')];
+    const empty = document.getElementById('empty');
+    const countDisplay = document.getElementById('count-display');
+    const tabBtns = [...document.querySelectorAll('.tab-btn')];
+
+    let currentFilter = 'lab'; // default filter
+
+    function updateView() {
+      const query = search.value.trim().toLowerCase();
+      let visible = 0;
+
+      for (const item of programs) {
+        const cat = item.dataset.category;
+        const matchesCategory = (currentFilter === 'all') || (cat === currentFilter);
+        const matchesSearch = item.dataset.name.toLowerCase().includes(query);
+
+        if (matchesCategory && matchesSearch) {
+          item.hidden = false;
+          visible++;
+        } else {
+          item.hidden = true;
+        }
+      }
+
+      empty.style.display = visible ? 'none' : 'block';
+
+      let label = 'Scripts';
+      if (currentFilter === 'lab') label = 'Lab Programs';
+      else if (currentFilter === 'additional') label = 'Additional Exam Questions';
+      else label = 'Total Scripts';
+
+      countDisplay.textContent = `Showing ${visible} ${label}`;
+    }
+
+    // Tab buttons event
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        currentFilter = btn.dataset.filter;
+        updateView();
+      });
+    });
+
+    // Search event
+    search.addEventListener('input', updateView);
+
+    // Initial render
+    updateView();
+  </script>
+</body>
+
+</html>

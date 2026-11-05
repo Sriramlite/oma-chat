@@ -1,0 +1,18 @@
+-- Q7: HIGHEST, LOWEST AND AVERAGE SALARY BY DEPARTMENT
+CREATE DATABASE IF NOT EXISTS q07_salary;
+USE q07_salary;
+DROP TABLE IF EXISTS employees;
+CREATE TABLE employees (
+ emp_id INT PRIMARY KEY, emp_name VARCHAR(50),
+ department VARCHAR(40), salary DECIMAL(10,2)
+);
+INSERT INTO employees VALUES
+(1,'Arun','IT',45000),(2,'Bala','HR',32000),
+(3,'Charan','IT',60000),(4,'Divya','Sales',38000),
+(5,'Esha','HR',52000),(6,'Farhan','Sales',42000);
+SELECT department,
+       MAX(salary) AS highest_salary,
+       MIN(salary) AS lowest_salary,
+       AVG(salary) AS average_salary
+FROM employees
+GROUP BY department;

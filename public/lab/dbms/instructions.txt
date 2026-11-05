@@ -1,0 +1,43 @@
+========================================================================
+       LINUX LXTERMINAL EXECUTION INSTRUCTIONS FOR DBMS (MYSQL)
+========================================================================
+
+------------------------------------------------------------------------
+1. RUNNING LAB EXPERIMENTS IN LINUX LXTERMINAL
+------------------------------------------------------------------------
+All DBMS scripts are written for MySQL / MariaDB on Linux.
+
+Method A: Run directly via input redirection (Recommended):
+    sudo mysql --verbose --table < EX1_DDL.txt
+
+    (Replace EX1_DDL.txt with any experiment script name, e.g. EX2_DML.txt)
+
+Method B: Run from the interactive MySQL shell:
+    sudo mysql -u root -p
+    mysql> source EX1_DDL.txt;
+    mysql> exit;
+
+------------------------------------------------------------------------
+2. RUNNING ADDITIONAL QUESTIONS IN LINUX LXTERMINAL
+------------------------------------------------------------------------
+Navigate to the directory containing the question files:
+    cd DBMS_ADDITIONAL_QUESTIONS
+
+Run the desired script:
+    sudo mysql --verbose --table < Q01_COLLEGE_DDL.txt
+    sudo mysql --verbose --table < Q02_JOINS.txt
+
+------------------------------------------------------------------------
+3. IMPORTANT NOTES & BEST PRACTICES
+------------------------------------------------------------------------
+- Isolated Databases: Each experiment and question creates and uses its own
+  database (e.g. ex1_ddl, college_db, q03..., etc.) so running one script
+  does not overwrite tables from another.
+- DCL Commands (EX11A): Creates a local test account 'labuser'. Run on your
+  lab/practice machine only.
+- Triggers (EX12, Q09, Q16): Uses separate audit/log tables to track changes
+  safely according to MySQL trigger constraints.
+- Procedures & Functions (EX9, EX10, Q10, Q14): Uses standard MySQL
+  DELIMITER statements ($$ and //) to register stored routines.
+
+========================================================================

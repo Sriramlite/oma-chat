@@ -1,0 +1,35 @@
+-- Q20: EXPLICIT CURSOR TO DISPLAY EMPLOYEES ABOVE A GIVEN SALARY
+-- MySQL stored-program cursor equivalent (not Oracle PL/SQL block syntax).
+CREATE DATABASE IF NOT EXISTS q20_cursor;
+USE q20_cursor;
+DROP PROCEDURE IF EXISTS ShowEmployeesAboveSalary;
+DROP TABLE IF EXISTS employees;
+CREATE TABLE employees (
+ emp_id INT PRIMARY KEY, emp_name VARCHAR(50),
+ department VARCHAR(40), salary DECIMAL(10,2)
+);
+INSERT INTO employees VALUES
+(1,'Arun','IT',45000),(2,'Bala','HR',32000),
+(3,'Charan','IT',60000),(4,'Divya','Sales',38000);
+DELIMITER //
+CREATE PROCEDURE ShowEmployeesAboveSalary(IN p_min_salary DECIMAL(10,2))
+BEGIN
+ DECLARE v_done INT DEFAULT 0;
+ DECLARE v_id INT;
+ DECLARE v_name VARCHAR(50);
+ DECLARE v_salary DECIMAL(10,2);
+ DECLARE emp_cursor CURSOR FOR
+  SELECT emp_id,emp_name,salary FROM employees WHERE salary>p_min_salary;
+ DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done=1;
+ OPEN emp_cursor;
+ read_loop: LOOP
+  FETCH emp_cursor INTO v_id,v_name,v_salary;
+  IF v_done=1 THEN
+   LEAVE read_loop;
+  END IF;
+  SELECT v_id AS employee_id,v_name AS employee_name,v_salary AS salary;
+ END LOOP;
+ CLOSE emp_cursor;
+END//
+DELIMITER ;
+CALL ShowEmployeesAboveSalary(40000);

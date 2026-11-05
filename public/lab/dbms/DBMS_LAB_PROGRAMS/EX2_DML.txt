@@ -1,0 +1,20 @@
+-- EXPERIMENT 2: DML COMMANDS
+CREATE DATABASE IF NOT EXISTS ex2_dml;
+USE ex2_dml;
+DROP TABLE IF EXISTS student;
+CREATE TABLE student (sn CHAR(20), regno INT, address VARCHAR(40));
+INSERT INTO student (sn,regno,address) VALUES
+('shalini',1001,'second street,chennai-73'),
+('vinosha',1002,'kurinji street,chennai-73'),
+('bharani',1003,'First street,chennai-73');
+SELECT * FROM student;
+ALTER TABLE student ADD COLUMN sid INT;
+UPDATE student SET sid=1 WHERE regno=1001;
+UPDATE student SET sid=2 WHERE regno=1002;
+UPDATE student SET sid=3 WHERE regno=1003;
+SELECT * FROM student;
+SELECT * FROM student WHERE regno=1001;
+SELECT * FROM student WHERE regno=1001 OR sid=2;
+SELECT * FROM student WHERE regno NOT IN (1001,1002);
+DELETE FROM student WHERE sid=1;
+SELECT * FROM student;

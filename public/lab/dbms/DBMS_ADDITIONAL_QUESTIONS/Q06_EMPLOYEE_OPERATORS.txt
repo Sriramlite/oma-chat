@@ -1,0 +1,21 @@
+-- Q6: COMPARISON, LOGICAL AND RANGE OPERATORS
+CREATE DATABASE IF NOT EXISTS q06_employee;
+USE q06_employee;
+DROP TABLE IF EXISTS employees;
+CREATE TABLE employees (
+ emp_id INT PRIMARY KEY, emp_name VARCHAR(50),
+ department VARCHAR(40), salary DECIMAL(10,2), age INT
+);
+INSERT INTO employees VALUES
+(1,'Arun','IT',45000,25),(2,'Bala','HR',32000,29),
+(3,'Charan','IT',60000,31),(4,'Divya','Sales',38000,24),
+(5,'Esha','HR',52000,35);
+-- Comparison operators
+SELECT * FROM employees WHERE salary>40000;
+SELECT * FROM employees WHERE salary<>45000;
+SELECT * FROM employees WHERE age>=30;
+-- Logical operators
+SELECT * FROM employees WHERE department='IT' AND salary>40000;
+SELECT * FROM employees WHERE department='HR' OR department='Sales';
+-- Range operator
+SELECT * FROM employees WHERE salary BETWEEN 35000 AND 55000;

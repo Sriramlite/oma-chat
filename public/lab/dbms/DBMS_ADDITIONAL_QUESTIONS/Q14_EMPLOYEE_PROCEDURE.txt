@@ -1,0 +1,27 @@
+-- Q14: PROCEDURE TO ADD AND UPDATE EMPLOYEE DETAILS BY ID
+-- MySQL stored procedure equivalent of the requested PL/SQL procedure.
+CREATE DATABASE IF NOT EXISTS q14_employee_procedure;
+USE q14_employee_procedure;
+DROP PROCEDURE IF EXISTS AddOrUpdateEmployee;
+DROP TABLE IF EXISTS employees;
+CREATE TABLE employees (
+ emp_id INT PRIMARY KEY, emp_name VARCHAR(50),
+ department VARCHAR(40), salary DECIMAL(10,2)
+);
+DELIMITER //
+CREATE PROCEDURE AddOrUpdateEmployee(
+ IN p_emp_id INT, IN p_emp_name VARCHAR(50),
+ IN p_department VARCHAR(40), IN p_salary DECIMAL(10,2)
+)
+BEGIN
+ INSERT INTO employees(emp_id,emp_name,department,salary)
+ VALUES(p_emp_id,p_emp_name,p_department,p_salary)
+ ON DUPLICATE KEY UPDATE
+ emp_name= p_emp_name,
+ department= p_department,
+ salary= p_salary;
+END//
+DELIMITER ;
+CALL AddOrUpdateEmployee(1,'Arun','IT',45000);
+CALL AddOrUpdateEmployee(1,'Arun Kumar','IT',50000);
+SELECT * FROM employees;

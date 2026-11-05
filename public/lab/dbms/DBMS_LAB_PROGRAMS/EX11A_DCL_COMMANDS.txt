@@ -1,0 +1,17 @@
+-- EXPERIMENT 11A: DCL COMMANDS (GRANT AND REVOKE)
+-- Run as administrator (sudo mysql). Creates a local test user.
+CREATE DATABASE IF NOT EXISTS company_db;
+USE company_db;
+CREATE TABLE IF NOT EXISTS employees (
+ id INT PRIMARY KEY,name VARCHAR(100),department VARCHAR(100)
+);
+DROP USER IF EXISTS 'labuser'@'localhost';
+CREATE USER 'labuser'@'localhost' IDENTIFIED BY 'LabPass_123';
+GRANT SELECT,INSERT ON company_db.employees TO 'labuser'@'localhost';
+SHOW GRANTS FOR 'labuser'@'localhost';
+INSERT INTO employees VALUES (1,'Alice','HR')
+ON DUPLICATE KEY UPDATE name=VALUES(name),department=VALUES(department);
+REVOKE INSERT ON company_db.employees FROM 'labuser'@'localhost';
+SHOW GRANTS FOR 'labuser'@'localhost';
+-- Test separately: mysql -u labuser -p company_db
+-- SELECT is allowed; INSERT should be denied after REVOKE.

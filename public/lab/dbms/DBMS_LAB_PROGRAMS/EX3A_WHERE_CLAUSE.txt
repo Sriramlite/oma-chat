@@ -1,0 +1,18 @@
+-- EXPERIMENT 3A: WHERE CLAUSE CONDITIONS
+CREATE DATABASE IF NOT EXISTS ex3a_where;
+USE ex3a_where;
+DROP TABLE IF EXISTS student;
+CREATE TABLE student (rollno INT, sname VARCHAR(20), marks INT);
+INSERT INTO student VALUES (1001,'yamini',95),(1002,'rose',84),(1003,'jennie',98);
+SELECT * FROM student;
+SELECT sname,marks FROM student WHERE rollno=1003;
+UPDATE student SET marks=100 WHERE sname='yamini';
+SELECT * FROM student;
+DELETE FROM student WHERE rollno=1003;
+SELECT * FROM student;
+SELECT * FROM student WHERE rollno=1001;
+SELECT * FROM student WHERE rollno=1001 OR marks>=90;
+SELECT * FROM student WHERE marks>=80 AND marks<=100;
+SELECT * FROM student WHERE marks BETWEEN 80 AND 90;
+SELECT * FROM student WHERE sname LIKE 'r%';
+SELECT * FROM student WHERE marks IN (84,100);

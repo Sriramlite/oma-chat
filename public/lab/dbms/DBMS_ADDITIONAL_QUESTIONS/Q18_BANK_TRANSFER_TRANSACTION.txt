@@ -1,0 +1,42 @@
+-- Q18: BANK TRANSFER WITH TRANSACTION FAILURE HANDLING
+-- MySQL stored procedure with transaction and SQL exception handler.
+CREATE DATABASE IF NOT EXISTS q18_bank;
+USE q18_bank;
+DROP PROCEDURE IF EXISTS TransferAmount;
+DROP TABLE IF EXISTS accounts;
+CREATE TABLE accounts (
+ account_id INT PRIMARY KEY, holder_name VARCHAR(50),
+ balance DECIMAL(12,2) NOT NULL CHECK(balance>=0)
+) ENGINE=InnoDB;
+INSERT INTO accounts VALUES (1,'Arun',10000),(2,'Bala',5000);
+DELIMITER //
+CREATE PROCEDURE TransferAmount(
+ IN p_from INT, IN p_to INT, IN p_amount DECIMAL(12,2)
+)
+BEGIN
+ DECLARE v_balance DECIMAL(12,2);
+ DECLARE EXIT HANDLER FOR SQLEXCEPTION
+ BEGIN
+  ROLLBACK;
+  RESIGNAL;
+ END;
+ START TRANSACTION;
+ IF p_amount<=0 THEN
+  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Transfer amount must be positive';
+ END IF;
+ SELECT balance INTO v_balance FROM accounts
+ WHERE account_id=p_from FOR UPDATE;
+ IF v_balance IS NULL OR v_balance<p_amount THEN
+  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Insufficient funds or source account missing';
+ END IF;
+ UPDATE accounts SET balance=balance-p_amount WHERE account_id=p_from;
+ UPDATE accounts SET balance=balance+p_amount WHERE account_id=p_to;
+ IF ROW_COUNT()=0 THEN
+  SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Destination account not found';
+ END IF;
+ COMMIT;
+END//
+DELIMITER ;
+CALL TransferAmount(1,2,1000);
+SELECT * FROM accounts;
+-- To test failure, try: CALL TransferAmount(1,99,500);

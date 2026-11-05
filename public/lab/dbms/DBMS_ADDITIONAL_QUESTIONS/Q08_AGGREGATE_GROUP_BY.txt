@@ -1,0 +1,21 @@
+-- Q8: AGGREGATE FUNCTIONS AND GROUP BY SALARY REPORT
+CREATE DATABASE IF NOT EXISTS q08_group_report;
+USE q08_group_report;
+DROP TABLE IF EXISTS employees;
+CREATE TABLE employees (
+ emp_id INT PRIMARY KEY, emp_name VARCHAR(50),
+ department VARCHAR(40), salary DECIMAL(10,2)
+);
+INSERT INTO employees VALUES
+(1,'Arun','IT',45000),(2,'Bala','HR',32000),
+(3,'Charan','IT',60000),(4,'Divya','Sales',38000),
+(5,'Esha','HR',52000),(6,'Farhan','Sales',42000);
+SELECT department,
+ COUNT(*) AS employee_count,
+ SUM(salary) AS total_salary,
+ AVG(salary) AS average_salary,
+ MIN(salary) AS minimum_salary,
+ MAX(salary) AS maximum_salary
+FROM employees
+GROUP BY department
+ORDER BY department;

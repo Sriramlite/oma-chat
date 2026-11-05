@@ -1,0 +1,37 @@
+-- Q10: FUNCTION AND PROCEDURES WITH IN, OUT AND INOUT
+-- MySQL stored routine syntax (not Oracle PL/SQL syntax).
+CREATE DATABASE IF NOT EXISTS q10_routines;
+USE q10_routines;
+DROP PROCEDURE IF EXISTS GetEmployeeInfo;
+DROP PROCEDURE IF EXISTS AddSalaryBonus;
+DROP FUNCTION IF EXISTS AnnualSalary;
+DROP TABLE IF EXISTS employees;
+CREATE TABLE employees (
+ emp_id INT PRIMARY KEY, emp_name VARCHAR(50), salary DECIMAL(10,2)
+);
+INSERT INTO employees VALUES (1,'Arun',30000),(2,'Bala',40000);
+DELIMITER //
+CREATE FUNCTION AnnualSalary(p_monthly_salary DECIMAL(10,2))
+RETURNS DECIMAL(12,2)
+DETERMINISTIC
+BEGIN
+ RETURN p_monthly_salary*12;
+END//
+CREATE PROCEDURE GetEmployeeInfo(IN p_emp_id INT, OUT p_emp_name VARCHAR(50), OUT p_salary DECIMAL(10,2))
+BEGIN
+ SELECT emp_name,salary INTO p_emp_name,p_salary
+ FROM employees WHERE emp_id=p_emp_id;
+END//
+CREATE PROCEDURE AddSalaryBonus(INOUT p_salary DECIMAL(10,2))
+BEGIN
+ SET p_salary=p_salary+1000;
+END//
+DELIMITER ;
+SELECT AnnualSalary(30000) AS annual_salary;
+SET @ename='';
+SET @sal=0;
+CALL GetEmployeeInfo(1,@ename,@sal);
+SELECT @ename AS employee_name,@sal AS monthly_salary;
+SET @amount=5000;
+CALL AddSalaryBonus(@amount);
+SELECT @amount AS updated_salary;

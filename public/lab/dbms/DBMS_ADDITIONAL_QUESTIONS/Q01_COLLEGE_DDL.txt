@@ -1,0 +1,27 @@
+-- Q1: COLLEGE DATABASE - DDL OPERATIONS
+CREATE DATABASE IF NOT EXISTS college_db;
+USE college_db;
+DROP TABLE IF EXISTS students;
+DROP TABLE IF EXISTS departments;
+CREATE TABLE departments (
+ dept_id INT PRIMARY KEY,
+ dept_name VARCHAR(50) NOT NULL
+);
+CREATE TABLE students (
+ student_id INT PRIMARY KEY,
+ student_name VARCHAR(60) NOT NULL,
+ dept_id INT,
+ email VARCHAR(100),
+ CONSTRAINT fk_student_dept FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+);
+INSERT INTO departments VALUES (1,'Computer Science'),(2,'Commerce');
+INSERT INTO students VALUES (101,'Arun',1,'arun@example.com');
+ALTER TABLE students ADD COLUMN phone VARCHAR(15);
+ALTER TABLE students MODIFY COLUMN student_name VARCHAR(80) NOT NULL;
+ALTER TABLE students ADD COLUMN city VARCHAR(40) DEFAULT 'Chennai';
+DESCRIBE students;
+SHOW TABLES;
+-- Optional destructive DDL demonstrations:
+-- ALTER TABLE students DROP COLUMN city;
+-- TRUNCATE TABLE students;
+-- DROP TABLE students;

@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Select a laboratory: FDS or Java">
-  <title>Lab Hub | FDS &amp; Java</title>
+  <meta name="description" content="Select a laboratory: FDS, Java, or DBMS">
+  <title>Lab Hub | FDS, Java &amp; DBMS</title>
   <style>
     :root {
       color-scheme: light;
@@ -34,7 +34,7 @@
     }
 
     .wrap {
-      width: min(680px, calc(100% - 32px));
+      width: min(900px, calc(100% - 32px));
       margin: 0 auto;
       padding: 40px 0;
     }
@@ -66,12 +66,12 @@
     .intro {
       margin: 12px auto 0;
       color: #dbeafe;
-      max-width: 480px;
+      max-width: 520px;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 16px;
       margin-top: 24px;
     }
@@ -81,7 +81,7 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
-      padding: 28px 20px;
+      padding: 28px 18px;
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 18px;
@@ -111,6 +111,11 @@
       margin-bottom: 14px;
     }
 
+    .badge-icon.dbms {
+      background: #f0f9ff;
+      color: #0284c7;
+    }
+
     .lab-card h2 {
       margin: 0;
       font-size: 20px;
@@ -123,6 +128,7 @@
       color: var(--muted);
       font-size: 13px;
       line-height: 1.4;
+      flex: 1;
     }
 
     .lab-btn {
@@ -145,6 +151,11 @@
       color: white;
     }
 
+    .lab-card.dbms-card:hover .lab-btn {
+      background: #0284c7;
+      color: white;
+    }
+
     footer {
       margin-top: 28px;
       color: var(--muted);
@@ -152,7 +163,7 @@
       text-align: center;
     }
 
-    @media (max-width: 520px) {
+    @media (max-width: 720px) {
       .wrap {
         padding: 24px 0;
       }
@@ -188,8 +199,15 @@
       <a class="lab-card" href="java.html" id="btn-java">
         <div class="badge-icon">JAVA</div>
         <h2>Java</h2>
-        <p>Object-Oriented Programming · 29 Programs (13 Lab + 16 Additional Exam) &amp; GUI exercises</p>
+        <p>Object-Oriented Programming · 29 Programs (13 Lab + 16 Additional Exam)</p>
         <span class="lab-btn">Open Java</span>
+      </a>
+
+      <a class="lab-card dbms-card" href="dbms.html" id="btn-dbms">
+        <div class="badge-icon dbms">SQL</div>
+        <h2>DBMS</h2>
+        <p>Database Management Systems · 34 MySQL scripts (14 Lab + 20 Exam)</p>
+        <span class="lab-btn" style="background:#f0f9ff; color:#0284c7;">Open DBMS</span>
       </a>
     </div>
 

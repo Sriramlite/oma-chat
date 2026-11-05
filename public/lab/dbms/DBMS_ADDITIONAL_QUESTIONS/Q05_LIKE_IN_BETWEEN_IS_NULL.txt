@@ -1,0 +1,21 @@
+-- Q5: LIKE, IN, BETWEEN AND IS NULL
+CREATE DATABASE IF NOT EXISTS q05_conditions;
+USE q05_conditions;
+DROP TABLE IF EXISTS students;
+CREATE TABLE students (
+ student_id INT PRIMARY KEY, student_name VARCHAR(50),
+ city VARCHAR(40), marks INT
+);
+INSERT INTO students VALUES
+(1,'Arun','Chennai',85),(2,'Bala','Madurai',72),
+(3,'Anitha',NULL,91),(4,'Charan','Chennai',65),(5,'Divya','Trichy',78);
+-- Names beginning with A
+SELECT * FROM students WHERE student_name LIKE 'A%';
+-- Students from selected cities
+SELECT * FROM students WHERE city IN ('Chennai','Madurai');
+-- Marks in the inclusive range 70 to 90
+SELECT * FROM students WHERE marks BETWEEN 70 AND 90;
+-- Missing city values
+SELECT * FROM students WHERE city IS NULL;
+-- Non-missing city values
+SELECT * FROM students WHERE city IS NOT NULL;

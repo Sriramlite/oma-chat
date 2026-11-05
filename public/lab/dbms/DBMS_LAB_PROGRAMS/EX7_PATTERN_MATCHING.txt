@@ -1,0 +1,13 @@
+-- EXPERIMENT 7: PATTERN MATCHING
+CREATE DATABASE IF NOT EXISTS ex7_pattern;
+USE ex7_pattern;
+DROP TABLE IF EXISTS products;
+CREATE TABLE products (product_id INT AUTO_INCREMENT PRIMARY KEY,product_name VARCHAR(100));
+INSERT INTO products (product_name) VALUES
+('Apple iPhone 12'),('Samsung Galaxy S20'),('Google Pixel 5'),
+('Huawei P40 Pro'),('OnePlus 8T');
+SELECT * FROM products;
+SELECT * FROM products WHERE product_name LIKE 'S%';
+SELECT * FROM products WHERE product_name REGEXP '[0-9]';
+SELECT * FROM products WHERE product_name LIKE 'A%e';
+SELECT * FROM products WHERE product_name LIKE 'P_x%';

@@ -1,0 +1,27 @@
+-- EXPERIMENT 9: USER DEFINED FUNCTIONS
+-- The manual's dbo/@parameter and table-valued function syntax is SQL Server-specific.
+-- MySQL supports stored scalar functions; this file demonstrates the MySQL equivalent.
+CREATE DATABASE IF NOT EXISTS ex9_functions;
+USE ex9_functions;
+DROP FUNCTION IF EXISTS SquareNumber;
+DROP FUNCTION IF EXISTS GetHighPaidCount;
+DROP TABLE IF EXISTS Employees;
+CREATE TABLE Employees (EmployeeID INT PRIMARY KEY,Name VARCHAR(50),Salary DECIMAL(10,2));
+INSERT INTO Employees VALUES (1,'John',50000),(2,'Jane',60000),(3,'Alice',70000);
+DELIMITER //
+CREATE FUNCTION SquareNumber(p_number INT)
+RETURNS INT DETERMINISTIC
+BEGIN
+ RETURN p_number*p_number;
+END//
+CREATE FUNCTION GetHighPaidCount(p_min_salary DECIMAL(10,2))
+RETURNS INT READS SQL DATA
+BEGIN
+ DECLARE emp_count INT;
+ SELECT COUNT(*) INTO emp_count FROM Employees WHERE Salary>p_min_salary;
+ RETURN emp_count;
+END//
+DELIMITER ;
+SELECT SquareNumber(5) AS Result;
+SELECT GetHighPaidCount(50000) AS EmployeesAboveMinimum;
+SELECT * FROM Employees WHERE Salary>50000;

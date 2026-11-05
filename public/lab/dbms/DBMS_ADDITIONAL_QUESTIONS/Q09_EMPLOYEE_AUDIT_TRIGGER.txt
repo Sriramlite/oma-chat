@@ -1,0 +1,33 @@
+-- Q9: AUDIT TRIGGER FOR EMPLOYEE RECORD MODIFICATIONS
+CREATE DATABASE IF NOT EXISTS q09_audit;
+USE q09_audit;
+DROP TRIGGER IF EXISTS trg_employee_audit_update;
+DROP TABLE IF EXISTS employee_audit;
+DROP TABLE IF EXISTS employees;
+CREATE TABLE employees (
+ emp_id INT PRIMARY KEY, emp_name VARCHAR(50),
+ department VARCHAR(40), salary DECIMAL(10,2)
+);
+CREATE TABLE employee_audit (
+ audit_id INT AUTO_INCREMENT PRIMARY KEY,
+ emp_id INT, old_name VARCHAR(50), new_name VARCHAR(50),
+ old_salary DECIMAL(10,2), new_salary DECIMAL(10,2),
+ action_type VARCHAR(20), changed_by VARCHAR(100),
+ changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+INSERT INTO employees VALUES (1,'Arun','IT',45000),(2,'Bala','HR',32000);
+DELIMITER //
+CREATE TRIGGER trg_employee_audit_update
+AFTER UPDATE ON employees
+FOR EACH ROW
+BEGIN
+ INSERT INTO employee_audit
+ (emp_id,old_name,new_name,old_salary,new_salary,action_type,changed_by)
+ VALUES
+ (OLD.emp_id,OLD.emp_name,NEW.emp_name,OLD.salary,NEW.salary,'UPDATE',USER());
+END//
+DELIMITER ;
+UPDATE employees SET salary=50000 WHERE emp_id=1;
+UPDATE employees SET emp_name='Bala Kumar' WHERE emp_id=2;
+SELECT * FROM employees;
+SELECT * FROM employee_audit;

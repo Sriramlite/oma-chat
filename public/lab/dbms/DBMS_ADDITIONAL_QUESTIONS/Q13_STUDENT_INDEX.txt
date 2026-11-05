@@ -1,0 +1,19 @@
+-- Q13: INDEX ON FREQUENTLY SEARCHED STUDENT DETAILS
+CREATE DATABASE IF NOT EXISTS q13_index;
+USE q13_index;
+DROP TABLE IF EXISTS students;
+CREATE TABLE students (
+ student_id INT PRIMARY KEY,
+ student_name VARCHAR(60),
+ department VARCHAR(40),
+ city VARCHAR(40)
+);
+INSERT INTO students VALUES
+(1,'Arun','CSE','Chennai'),(2,'Bala','ECE','Madurai'),
+(3,'Charan','CSE','Chennai'),(4,'Divya','IT','Trichy');
+CREATE INDEX idx_student_name ON students(student_name);
+CREATE INDEX idx_student_department ON students(department);
+-- Queries that can use these indexes
+SELECT * FROM students WHERE student_name='Arun';
+SELECT * FROM students WHERE department='CSE';
+EXPLAIN SELECT * FROM students WHERE student_name='Arun';

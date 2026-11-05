@@ -1,0 +1,52 @@
+-- EXPERIMENT 12: TRIGGERS (INSERT, UPDATE, DELETE)
+-- MySQL-correct audit triggers. A MySQL trigger cannot update the same table
+-- currently being changed by the triggering statement, so changes are logged
+-- in a separate audit table.
+CREATE DATABASE IF NOT EXISTS ex12_triggers;
+USE ex12_triggers;
+DROP TRIGGER IF EXISTS trg_employee_after_insert;
+DROP TRIGGER IF EXISTS trg_employee_after_update;
+DROP TRIGGER IF EXISTS trg_employee_after_delete;
+DROP TABLE IF EXISTS employee_log;
+DROP TABLE IF EXISTS employee;
+CREATE TABLE employee (
+ emp_id INT PRIMARY KEY,emp_name VARCHAR(20),city VARCHAR(20),
+ designation VARCHAR(30),salary INT,perks INT
+);
+CREATE TABLE employee_log (
+ log_id INT AUTO_INCREMENT PRIMARY KEY,user_id VARCHAR(100),
+ description VARCHAR(255),log_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+DELIMITER //
+CREATE TRIGGER trg_employee_after_insert AFTER INSERT ON employee
+FOR EACH ROW
+BEGIN
+ INSERT INTO employee_log(user_id,description)
+ VALUES(USER(),CONCAT('INSERT employee: ',NEW.emp_id,' ',NEW.emp_name));
+END//
+CREATE TRIGGER trg_employee_after_update AFTER UPDATE ON employee
+FOR EACH ROW
+BEGIN
+ INSERT INTO employee_log(user_id,description)
+ VALUES(USER(),CONCAT('UPDATE employee ',OLD.emp_id,': salary ',OLD.salary,' -> ',NEW.salary));
+END//
+CREATE TRIGGER trg_employee_after_delete AFTER DELETE ON employee
+FOR EACH ROW
+BEGIN
+ INSERT INTO employee_log(user_id,description)
+ VALUES(USER(),CONCAT('DELETE employee: ',OLD.emp_id,' ',OLD.emp_name));
+END//
+DELIMITER ;
+INSERT INTO employee VALUES
+(1,'david','delhi','manager',12000,855),
+(2,'shaha','mumbai','assistant manager',13000,853),
+(3,'sha','pune','sales manager',11000,850),
+(4,'jack','bangalore','designer',14000,854),
+(5,'james','mangalore','web designer',15000,1124);
+SELECT * FROM employee;
+SELECT * FROM employee_log;
+UPDATE employee SET salary=salary+500 WHERE emp_id=1;
+SELECT * FROM employee;
+SELECT * FROM employee_log;
+DELETE FROM employee WHERE emp_id=2;
+SELECT * FROM employee_log;

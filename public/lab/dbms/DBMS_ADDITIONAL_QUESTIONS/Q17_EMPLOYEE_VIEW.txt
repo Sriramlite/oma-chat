@@ -1,0 +1,21 @@
+-- Q17: VIEW SHOWING EMPLOYEE AND DEPARTMENT WITHOUT SALARY
+CREATE DATABASE IF NOT EXISTS q17_views;
+USE q17_views;
+DROP VIEW IF EXISTS employee_public_view;
+DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS departments;
+CREATE TABLE departments (
+ dept_id INT PRIMARY KEY, dept_name VARCHAR(50)
+);
+CREATE TABLE employees (
+ emp_id INT PRIMARY KEY, emp_name VARCHAR(50),
+ dept_id INT, salary DECIMAL(10,2),
+ FOREIGN KEY(dept_id) REFERENCES departments(dept_id)
+);
+INSERT INTO departments VALUES (1,'IT'),(2,'HR');
+INSERT INTO employees VALUES (101,'Arun',1,45000),(102,'Bala',2,32000);
+CREATE VIEW employee_public_view AS
+SELECT e.emp_id,e.emp_name,d.dept_name
+FROM employees e JOIN departments d ON d.dept_id=e.dept_id;
+SELECT * FROM employee_public_view;
+-- Salary is intentionally not included in the view.
