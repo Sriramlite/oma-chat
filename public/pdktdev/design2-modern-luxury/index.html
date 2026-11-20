@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA Grand Luxury Convention & Wedding Pavilion | Modern Luxury Hall</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            aura: {
+              black: '#090a0f',
+              slate: '#12151e',
+              card: '#1a1e2b',
+              border: '#2b3145',
+              champagne: '#e6c687',
+              champagneLight: '#f5e4be',
+              champagneDark: '#b59353',
+              silver: '#94a3b8',
+              accent: '#38bdf8'
+            }
+          },
+          fontFamily: {
+            syne: ['"Syne"', 'sans-serif'],
+            cormorant: ['"Cormorant Garamond"', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .glass-card {
+      background: rgba(26, 30, 43, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(230, 198, 135, 0.2);
+    }
+    .hero-glow {
+      background: radial-gradient(circle at 50% 30%, rgba(230, 198, 135, 0.15) 0%, rgba(9, 10, 15, 0) 70%);
+    }
+    .champagne-gradient-text {
+      background: linear-gradient(135deg, #ffffff 0%, #f5e4be 50%, #e6c687 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-aura-black text-gray-100 font-sans antialiased selection:bg-aura-champagne selection:text-aura-black pb-16 md:pb-0">
+
+  <!-- Navigation -->
+  <header class="sticky top-0 z-40 bg-aura-slate/90 backdrop-blur-lg border-b border-aura-border">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between">
+      <!-- Logo -->
+      <a href="#" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-aura-champagneDark to-aura-champagneLight flex items-center justify-center text-aura-black font-syne font-black text-xl shadow-lg">
+          A
+        </div>
+        <div>
+          <span class="font-syne text-lg sm:text-xl font-bold tracking-widest text-white block">AURA GRAND</span>
+          <span class="text-[9px] tracking-[0.3em] text-aura-champagne uppercase block">Convention & Event Pavilion</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden lg:flex items-center gap-8 text-sm font-medium text-gray-300">
+        <a href="#overview" class="hover:text-aura-champagne transition">Overview</a>
+        <a href="#spaces" class="hover:text-aura-champagne transition">Pavilions</a>
+        <a href="#specs" class="hover:text-aura-champagne transition">Specifications</a>
+        <a href="#gallery" class="hover:text-aura-champagne transition">Gallery</a>
+        <a href="#pricing" class="hover:text-aura-champagne transition">Packages</a>
+        <a href="#virtual-tour" class="hover:text-aura-champagne transition">Virtual Tour</a>
+      </nav>
+
+      <!-- CTA & Mobile Toggle -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a href="https://wa.me/919876543210?text=Inquiry%20for%20AURA%20Grand%20Hall" target="_blank" class="hidden sm:inline-flex p-2.5 rounded-lg border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 transition">
+          <i class="fa-brands fa-whatsapp text-lg"></i>
+        </a>
+        <a href="#reserve" class="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gradient-to-r from-aura-champagne to-aura-champagneLight text-aura-black font-syne font-bold text-xs uppercase tracking-wider hover:opacity-90 transition shadow-lg shadow-aura-champagne/10">
+          Reserve Dates
+        </a>
+        <button onclick="toggleModernNav()" class="lg:hidden p-2 rounded-lg text-aura-champagne hover:bg-aura-card transition" aria-label="Toggle menu">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Nav -->
+    <div id="modernMobileNav" class="hidden lg:hidden bg-aura-slate border-t border-aura-border px-6 py-4 space-y-3 font-syne text-xs uppercase tracking-wider">
+      <a href="#overview" onclick="toggleModernNav()" class="block py-1.5 text-gray-300 hover:text-aura-champagne">Overview</a>
+      <a href="#spaces" onclick="toggleModernNav()" class="block py-1.5 text-gray-300 hover:text-aura-champagne">Pavilions</a>
+      <a href="#specs" onclick="toggleModernNav()" class="block py-1.5 text-gray-300 hover:text-aura-champagne">Specifications</a>
+      <a href="#gallery" onclick="toggleModernNav()" class="block py-1.5 text-gray-300 hover:text-aura-champagne">Gallery</a>
+      <a href="#pricing" onclick="toggleModernNav()" class="block py-1.5 text-gray-300 hover:text-aura-champagne">Packages</a>
+      <a href="#virtual-tour" onclick="toggleModernNav()" class="block py-1.5 text-gray-300 hover:text-aura-champagne">Virtual Tour</a>
+    </div>
+  </header>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="relative min-h-[92vh] flex items-center hero-glow overflow-hidden">
+    <!-- Background Image with Overlay -->
+    <div class="absolute inset-0 z-0">
+      <img src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=2000&q=80" alt="Modern Luxury Ballroom" class="w-full h-full object-cover opacity-25">
+      <div class="absolute inset-0 bg-gradient-to-t from-aura-black via-aura-black/80 to-transparent"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-6 py-20 relative z-10 grid lg:grid-cols-12 gap-12 items-center">
+      <div class="lg:col-span-7 space-y-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-aura-champagne/30 bg-aura-card/60 backdrop-blur-md">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-xs uppercase tracking-widest text-aura-champagne font-semibold font-syne">Contemporary Architectural Splendor</span>
+        </div>
+
+        <h1 class="font-syne text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
+          Redefining <span class="champagne-gradient-text">Modern Luxury</span> For Monumental Celebrations
+        </h1>
+
+        <p class="text-base sm:text-lg text-gray-300 font-light leading-relaxed max-w-2xl">
+          An architectural icon featuring a pillar-less 35-foot glass atrium, synchronized intelligent dynamic lighting, Michelin-standard hospitality banqueting, and VIP green lounges.
+        </p>
+
+        <!-- Highlights Row -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 border-y border-aura-border">
+          <div>
+            <div class="font-syne text-3xl font-extrabold text-aura-champagne">2,000</div>
+            <div class="text-xs text-aura-silver uppercase tracking-wider mt-1">Floating Capacity</div>
+          </div>
+          <div>
+            <div class="font-syne text-3xl font-extrabold text-aura-champagne">35 FT</div>
+            <div class="text-xs text-aura-silver uppercase tracking-wider mt-1">Ceiling Height</div>
+          </div>
+          <div>
+            <div class="font-syne text-3xl font-extrabold text-aura-champagne">350+</div>
+            <div class="text-xs text-aura-silver uppercase tracking-wider mt-1">Valet Bays</div>
+          </div>
+          <div>
+            <div class="font-syne text-3xl font-extrabold text-aura-champagne">100%</div>
+            <div class="text-xs text-aura-silver uppercase tracking-wider mt-1">Climate Control</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 pt-2">
+          <a href="#reserve" class="px-8 py-4 rounded-lg bg-aura-champagne text-aura-black font-syne font-bold text-sm tracking-wider uppercase hover:bg-aura-champagneLight transition shadow-xl shadow-aura-champagne/20">
+            Check Hall Availability
+          </a>
+          <a href="#virtual-tour" class="px-7 py-4 rounded-lg border border-aura-champagne/40 text-aura-champagne hover:bg-aura-champagne/10 transition font-syne font-semibold text-sm flex items-center gap-2">
+            <i class="fa-solid fa-cube text-xs"></i> 360° Virtual Walkthrough
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Booking Card -->
+      <div class="lg:col-span-5" id="reserve">
+        <div class="glass-card rounded-2xl p-8 shadow-2xl relative">
+          <div class="flex items-center justify-between mb-6 pb-4 border-b border-aura-border">
+            <div>
+              <h3 class="font-syne text-xl font-bold text-white">Direct Availability Check</h3>
+              <p class="text-xs text-aura-silver">Instant VIP calendar callback</p>
+            </div>
+            <span class="px-2.5 py-1 rounded bg-aura-champagne/20 text-aura-champagne text-xs font-semibold">2025-2026</span>
+          </div>
+
+          <form onsubmit="event.preventDefault(); document.getElementById('modernSuccess').classList.remove('hidden');" class="space-y-4">
+            <div>
+              <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Host Name</label>
+              <input type="text" required placeholder="Full Name" class="w-full px-4 py-3 bg-aura-slate border border-aura-border rounded-lg text-sm text-white focus:outline-none focus:border-aura-champagne transition">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Phone</label>
+                <input type="tel" required placeholder="+91 90000 00000" class="w-full px-4 py-3 bg-aura-slate border border-aura-border rounded-lg text-sm text-white focus:outline-none focus:border-aura-champagne transition">
+              </div>
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Target Date</label>
+                <input type="date" required class="w-full px-4 py-3 bg-aura-slate border border-aura-border rounded-lg text-sm text-white focus:outline-none focus:border-aura-champagne transition">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Event Type</label>
+                <select class="w-full px-3 py-3 bg-aura-slate border border-aura-border rounded-lg text-sm text-white focus:outline-none focus:border-aura-champagne transition">
+                  <option>Contemporary Wedding</option>
+                  <option>Cocktail & Sangeet</option>
+                  <option>Grand Reception</option>
+                  <option>Corporate Annual Gala</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Guest Range</label>
+                <select class="w-full px-3 py-3 bg-aura-slate border border-aura-border rounded-lg text-sm text-white focus:outline-none focus:border-aura-champagne transition">
+                  <option>500 - 800</option>
+                  <option>800 - 1,200</option>
+                  <option>1,200 - 2,000+</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-4 rounded-lg bg-gradient-to-r from-aura-champagne to-aura-champagneLight text-aura-black font-syne font-bold text-xs uppercase tracking-wider hover:opacity-90 transition mt-2 shadow-lg shadow-aura-champagne/20">
+              Submit VIP Request
+            </button>
+          </form>
+
+          <div id="modernSuccess" class="hidden mt-4 p-4 rounded-lg bg-emerald-950/80 border border-emerald-500 text-emerald-300 text-xs text-center">
+            <i class="fa-solid fa-check-circle text-lg mb-1 block"></i>
+            Inquiry registered! Our Venue Director will share date slot availability and customized rate card via WhatsApp & Call within 30 minutes.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The Experience / Spaces -->
+  <section id="spaces" class="py-24 bg-aura-slate/50">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+        <div>
+          <span class="text-xs uppercase font-syne text-aura-champagne tracking-widest block mb-2">Designed for Grandeur</span>
+          <h2 class="font-syne text-3xl sm:text-4xl font-bold text-white">Three Distinctive Spaces</h2>
+        </div>
+        <p class="text-sm text-aura-silver max-w-md">
+          Engineered for fluid movement between ceremonies, cocktail mixers, high-energy entertainment, and gourmet sit-down banquets.
+        </p>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Space 1 -->
+        <div class="bg-aura-card border border-aura-border rounded-2xl overflow-hidden group hover:border-aura-champagne/60 transition duration-300">
+          <div class="h-64 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80" alt="Grand Atrium" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+            <div class="absolute bottom-4 left-4 bg-aura-black/80 backdrop-blur-md px-3 py-1 rounded text-xs font-syne font-bold text-aura-champagne">
+              Main Ballroom
+            </div>
+          </div>
+          <div class="p-6 space-y-4">
+            <h3 class="font-syne text-xl font-bold text-white">The Infinity Grand Ballroom</h3>
+            <p class="text-xs text-aura-silver leading-relaxed">
+              Pillar-free 22,000 sq.ft hall with motorized rigging truss for grand stage setups, line-array acoustics, and 4K LED backdrop walls.
+            </p>
+            <div class="pt-4 border-t border-aura-border flex items-center justify-between text-xs text-aura-champagne">
+              <span><i class="fa-solid fa-users mr-1"></i> Up to 1,800 guests</span>
+              <span><i class="fa-solid fa-arrows-up-down mr-1"></i> 35ft Clearance</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Space 2 -->
+        <div class="bg-aura-card border border-aura-border rounded-2xl overflow-hidden group hover:border-aura-champagne/60 transition duration-300">
+          <div class="h-64 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80" alt="Gourmet Dining Pavilion" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+            <div class="absolute bottom-4 left-4 bg-aura-black/80 backdrop-blur-md px-3 py-1 rounded text-xs font-syne font-bold text-aura-champagne">
+              Dining Pavilion
+            </div>
+          </div>
+          <div class="p-6 space-y-4">
+            <h3 class="font-syne text-xl font-bold text-white">The Crystal Dining Pavilion</h3>
+            <p class="text-xs text-aura-silver leading-relaxed">
+              Equipped with live induction culinary stations, anti-odor air exchange ventilation, marble-top buffet counters, and seated service zones.
+            </p>
+            <div class="pt-4 border-t border-aura-border flex items-center justify-between text-xs text-aura-champagne">
+              <span><i class="fa-solid fa-utensils mr-1"></i> 650 Seated Dining</span>
+              <span><i class="fa-solid fa-fire mr-1"></i> Live Kitchen</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Space 3 -->
+        <div class="bg-aura-card border border-aura-border rounded-2xl overflow-hidden group hover:border-aura-champagne/60 transition duration-300">
+          <div class="h-64 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&w=800&q=80" alt="Skyline Terrace" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+            <div class="absolute bottom-4 left-4 bg-aura-black/80 backdrop-blur-md px-3 py-1 rounded text-xs font-syne font-bold text-aura-champagne">
+              Terrace Deck
+            </div>
+          </div>
+          <div class="p-6 space-y-4">
+            <h3 class="font-syne text-xl font-bold text-white">The Skyline Terrace & Lawn</h3>
+            <p class="text-xs text-aura-silver leading-relaxed">
+              Open-air terrace garden with infinity water features, ambient architectural lighting, cocktail bar counters, and sunset photo backdrops.
+            </p>
+            <div class="pt-4 border-t border-aura-border flex items-center justify-between text-xs text-aura-champagne">
+              <span><i class="fa-solid fa-glass-cheers mr-1"></i> 700 Cocktail Guests</span>
+              <span><i class="fa-solid fa-cloud-moon mr-1"></i> Open Sky Deck</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technical Specs Table (High Tech Venue Appeal) -->
+  <section id="specs" class="py-20 bg-aura-black">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="text-xs uppercase font-syne text-aura-champagne tracking-widest block mb-2">Engineered For Perfection</span>
+        <h2 class="font-syne text-3xl font-bold text-white">Hall Technical Specifications</h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="p-6 rounded-xl bg-aura-slate border border-aura-border">
+          <i class="fa-solid fa-sliders text-aura-champagne text-2xl mb-4"></i>
+          <h4 class="font-syne text-base font-bold text-white mb-2">Intelligent AV Control</h4>
+          <p class="text-xs text-aura-silver leading-relaxed">Crestron automated touchpads controlling audio zones, lighting presets, and video distribution.</p>
+        </div>
+
+        <div class="p-6 rounded-xl bg-aura-slate border border-aura-border">
+          <i class="fa-solid fa-car-rear text-aura-champagne text-2xl mb-4"></i>
+          <h4 class="font-syne text-base font-bold text-white mb-2">Automated Multi-Level Parking</h4>
+          <p class="text-xs text-aura-silver leading-relaxed">350+ cars with electronic token RFID system, 8 EV charging stations, and dedicated valet pickup bay.</p>
+        </div>
+
+        <div class="p-6 rounded-xl bg-aura-slate border border-aura-border">
+          <i class="fa-solid fa-couch text-aura-champagne text-2xl mb-4"></i>
+          <h4 class="font-syne text-base font-bold text-white mb-2">Green Lounges & 4 Suites</h4>
+          <p class="text-xs text-aura-silver leading-relaxed">Keyless smart lock suites with Hollywood vanity stations, steam showers, and private elevator access.</p>
+        </div>
+
+        <div class="p-6 rounded-xl bg-aura-slate border border-aura-border">
+          <i class="fa-solid fa-leaf text-aura-champagne text-2xl mb-4"></i>
+          <h4 class="font-syne text-base font-bold text-white mb-2">Eco-Green IGBC Certified</h4>
+          <p class="text-xs text-aura-silver leading-relaxed">Solar-powered facility, 100% wastewater recycling, zero-single-use-plastic catering infrastructure.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive 360 Virtual Tour Mockup -->
+  <section id="virtual-tour" class="py-20 bg-aura-slate/30 border-y border-aura-border relative">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-gradient-to-r from-aura-card to-aura-slate p-8 sm:p-12 rounded-3xl border border-aura-champagne/30 relative overflow-hidden">
+        <div class="grid lg:grid-cols-2 gap-8 items-center">
+          <div class="space-y-4">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-aura-champagne/10 text-aura-champagne text-xs font-syne font-semibold">
+              <i class="fa-solid fa-vr-cardboard"></i> INTERACTIVE PREVIEW
+            </span>
+            <h3 class="font-syne text-3xl font-extrabold text-white">Experience Our 360° Virtual Venue Tour</h3>
+            <p class="text-sm text-aura-silver leading-relaxed">
+              Can't visit in person immediately? Walk through the main ballroom, bridal dressing suites, and dining areas from the comfort of your phone or laptop.
+            </p>
+            <div class="pt-2 flex flex-wrap gap-3">
+              <button onclick="alert('360 Virtual Tour Viewer would launch here with Matterport/Three.js interactive panoramic views.');" class="px-6 py-3 rounded-lg bg-white text-aura-black font-syne font-bold text-xs uppercase tracking-wider hover:bg-aura-champagne transition shadow-lg">
+                <i class="fa-solid fa-play mr-2 text-aura-champagneDark"></i> Start 3D Tour
+              </button>
+              <a href="#reserve" class="px-6 py-3 rounded-lg border border-white/20 text-white font-syne font-semibold text-xs uppercase tracking-wider hover:bg-white/10 transition">
+                Book Physical Visit
+              </a>
+            </div>
+          </div>
+
+          <div class="relative rounded-2xl overflow-hidden border border-aura-border group cursor-pointer" onclick="alert('360 Virtual Tour Viewer would launch here.');">
+            <img src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80" alt="Virtual Tour" class="w-full h-64 object-cover group-hover:scale-105 transition duration-500">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <div class="w-16 h-16 rounded-full bg-aura-champagne/90 text-aura-black flex items-center justify-center text-2xl shadow-2xl group-hover:scale-110 transition">
+                <i class="fa-solid fa-arrows-spin animate-spin"></i>
+              </div>
+            </div>
+            <div class="absolute bottom-3 left-3 bg-black/70 px-3 py-1 rounded text-[11px] text-white">
+              Drag to explore 360°
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modern Packages -->
+  <section id="pricing" class="py-24 bg-aura-black">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="text-xs uppercase font-syne text-aura-champagne tracking-widest block mb-2">Curated Experiences</span>
+        <h2 class="font-syne text-3xl font-bold text-white">Contemporary Packages</h2>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-aura-card border border-aura-border rounded-2xl p-8 flex flex-col justify-between">
+          <div>
+            <h4 class="font-syne text-lg font-bold text-white">Signature Evening</h4>
+            <div class="text-3xl font-syne font-extrabold text-aura-champagne mt-2 mb-6">₹ 2,75,000 <span class="text-xs font-normal text-aura-silver">/ slot</span></div>
+            <ul class="space-y-3 text-xs text-aura-silver">
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> Main Ballroom (8 Hours Access)</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> Crystal Dining Pavilion</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> 2 Executive Green Lounges</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> Intelligent Ambient Lighting Presets</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> 100% Generator Backup</li>
+            </ul>
+          </div>
+          <a href="#reserve" class="mt-8 w-full py-3 text-center rounded-lg border border-aura-champagne/50 text-aura-champagne font-syne text-xs uppercase tracking-wider hover:bg-aura-champagne hover:text-aura-black transition">
+            Select Signature
+          </a>
+        </div>
+
+        <div class="bg-aura-slate border-2 border-aura-champagne rounded-2xl p-8 flex flex-col justify-between relative shadow-2xl">
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-aura-champagne text-aura-black px-3 py-0.5 rounded text-[11px] font-syne font-extrabold uppercase tracking-wider">
+            Most Selected
+          </div>
+          <div>
+            <h4 class="font-syne text-lg font-bold text-white">Grand Celebration</h4>
+            <div class="text-3xl font-syne font-extrabold text-aura-champagne mt-2 mb-6">₹ 4,50,000 <span class="text-xs font-normal text-aura-silver">/ 24 hrs</span></div>
+            <ul class="space-y-3 text-xs text-gray-200">
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> Entire Facility (Ballroom + Terrace + Dining)</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> All 4 VIP Bridal Suites</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> Full 4K Video Wall & Concert Audio Rig</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> Dedicated Production & Floor Director</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> Valet Team (8 Attendants)</li>
+            </ul>
+          </div>
+          <a href="#reserve" class="mt-8 w-full py-3.5 text-center rounded-lg bg-aura-champagne text-aura-black font-syne font-bold text-xs uppercase tracking-wider hover:bg-aura-champagneLight transition shadow">
+            Book Grand Celebration
+          </a>
+        </div>
+
+        <div class="bg-aura-card border border-aura-border rounded-2xl p-8 flex flex-col justify-between">
+          <div>
+            <h4 class="font-syne text-lg font-bold text-white">Weekend Destination</h4>
+            <div class="text-3xl font-syne font-extrabold text-aura-champagne mt-2 mb-6">₹ 6,80,000 <span class="text-xs font-normal text-aura-silver">/ 48 hrs</span></div>
+            <ul class="space-y-3 text-xs text-aura-silver">
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> Full 2-Day Complete Buyout</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> Sangeet, Wedding & Reception Configurations</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> 10 Deluxe Guest Rooms Included</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> Unlimited Power & HVAC Runtime</li>
+              <li><i class="fa-solid fa-check text-aura-champagne mr-2"></i> VIP Concierge & Security Division</li>
+            </ul>
+          </div>
+          <a href="#reserve" class="mt-8 w-full py-3 text-center rounded-lg border border-aura-champagne/50 text-aura-champagne font-syne text-xs uppercase tracking-wider hover:bg-aura-champagne hover:text-aura-black transition">
+            Select Weekend Buyout
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modern Minimal Footer -->
+  <footer class="bg-black border-t border-aura-border py-12 text-aura-silver text-xs">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded bg-aura-champagne text-aura-black font-syne font-bold flex items-center justify-center">A</div>
+        <span class="text-white font-syne font-bold tracking-widest">AURA GRAND CONVENTION</span>
+      </div>
+      <div>
+        Plot 18, Financial District & Convention Corridor. +91 98765 43210
+      </div>
+      <div class="text-gray-500">
+        Design Option 2: Modern Luxury & Contemporary Chic
+      </div>
+    </div>
+  </footer>
+
+  <!-- STICKY MOBILE ACTION BAR (Only visible on mobile screens) -->
+  <div class="fixed bottom-0 left-0 right-0 bg-aura-slate border-t border-aura-border px-4 py-2.5 flex items-center justify-between gap-3 z-50 lg:hidden shadow-2xl">
+    <a href="tel:+919876543210" class="flex-1 py-2.5 px-3 rounded-lg bg-aura-card text-aura-champagne font-syne font-bold text-xs flex items-center justify-center gap-1.5 border border-aura-border">
+      <i class="fa-solid fa-phone"></i> Call
+    </a>
+    <a href="https://wa.me/919876543210?text=Hello%20AURA%20Grand,%20I%20am%20inquiring%20about%20event%20dates" target="_blank" class="flex-1 py-2.5 px-3 rounded-lg bg-emerald-600 text-white font-syne font-bold text-xs flex items-center justify-center gap-1.5">
+      <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
+    </a>
+    <a href="#reserve" class="py-2.5 px-4 rounded-lg bg-aura-champagne text-aura-black font-syne font-bold text-xs flex items-center justify-center shadow">
+      Reserve
+    </a>
+  </div>
+
+  <script>
+    function toggleModernNav() {
+      const menu = document.getElementById('modernMobileNav');
+      menu.classList.toggle('hidden');
+    }
+  </script>
+</body>
+</html>

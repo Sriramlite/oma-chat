@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sri Shanti Palace | Marriage & Convention Hall</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#0f172a',
+              amber: '#d97706',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Lora"', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-brand-600 selection:text-white pb-16 md:pb-0">
+
+  <!-- Simple Header & Navigation -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+      <!-- Logo -->
+      <a href="#" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-brand-900 text-white flex items-center justify-center font-bold text-lg shadow">
+          <i class="fa-solid fa-hotel text-brand-amber"></i>
+        </div>
+        <div>
+          <span class="text-lg sm:text-xl font-bold tracking-tight text-slate-900 block leading-tight">Sri Shanti Palace</span>
+          <span class="text-[11px] text-slate-500 block">Marriage & Banquet Hall</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+        <a href="#about" class="hover:text-brand-600 transition">About</a>
+        <a href="#spaces" class="hover:text-brand-600 transition">Halls & Capacity</a>
+        <a href="#amenities" class="hover:text-brand-600 transition">Amenities</a>
+        <a href="#gallery" class="hover:text-brand-600 transition">Photos</a>
+        <a href="#pricing" class="hover:text-brand-600 transition">Tariff</a>
+        <a href="#contact" class="hover:text-brand-600 transition">Contact</a>
+      </nav>
+
+      <!-- Desktop Contact CTA -->
+      <div class="hidden sm:flex items-center gap-3">
+        <a href="tel:+919876543210" class="text-xs font-semibold text-slate-700 flex items-center gap-1.5 hover:text-brand-600">
+          <i class="fa-solid fa-phone text-brand-600"></i> +91 98765 43210
+        </a>
+        <a href="#enquire" class="px-4 py-2 rounded-lg bg-brand-900 hover:bg-brand-800 text-white text-xs font-semibold tracking-wide transition shadow">
+          Book Hall
+        </a>
+      </div>
+
+      <!-- Mobile Hamburger Button -->
+      <button onclick="toggleMobileNav()" class="md:hidden p-2 rounded-lg text-slate-700 hover:bg-slate-100 focus:outline-none" aria-label="Toggle menu">
+        <i class="fa-solid fa-bars text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Mobile Dropdown Menu -->
+    <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-slate-200 px-4 py-3 space-y-2 text-sm font-medium text-slate-700 shadow-lg">
+      <a href="#about" onclick="toggleMobileNav()" class="block py-2 px-3 rounded hover:bg-slate-100">About Hall</a>
+      <a href="#spaces" onclick="toggleMobileNav()" class="block py-2 px-3 rounded hover:bg-slate-100">Halls & Capacity</a>
+      <a href="#amenities" onclick="toggleMobileNav()" class="block py-2 px-3 rounded hover:bg-slate-100">Amenities</a>
+      <a href="#gallery" onclick="toggleMobileNav()" class="block py-2 px-3 rounded hover:bg-slate-100">Photos</a>
+      <a href="#pricing" onclick="toggleMobileNav()" class="block py-2 px-3 rounded hover:bg-slate-100">Tariff Packages</a>
+      <a href="#contact" onclick="toggleMobileNav()" class="block py-2 px-3 rounded hover:bg-slate-100">Location & Contact</a>
+      <div class="pt-2 border-t border-slate-100 flex gap-2">
+        <a href="tel:+919876543210" class="flex-1 py-2 text-center text-xs font-semibold bg-slate-100 rounded text-slate-800">
+          <i class="fa-solid fa-phone mr-1"></i> Call
+        </a>
+        <a href="https://wa.me/919876543210" target="_blank" class="flex-1 py-2 text-center text-xs font-semibold bg-emerald-600 rounded text-white">
+          <i class="fa-brands fa-whatsapp mr-1"></i> WhatsApp
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Clean Hero Section -->
+  <section class="bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-20 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+      <!-- Left Content -->
+      <div class="lg:col-span-7 space-y-5 text-center lg:text-left">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-brand-600 text-xs font-semibold border border-blue-100">
+          <i class="fa-solid fa-star text-brand-amber"></i> Premium Air-Conditioned Marriage Hall
+        </div>
+
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight">
+          A Spacious & Elegant Venue For Your Special Day
+        </h1>
+
+        <p class="text-slate-600 text-base sm:text-lg leading-relaxed max-w-xl mx-auto lg:mx-0">
+          Conveniently located with 1,000+ guest seating, 400-seat AC dining hall, 8 deluxe rooms, ample car parking, and complete power backup.
+        </p>
+
+        <!-- Quick Spec Pills -->
+        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3 pt-2">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-medium">
+            <i class="fa-solid fa-users text-brand-600"></i> 1,000 Capacity
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-medium">
+            <i class="fa-solid fa-utensils text-brand-600"></i> 400 Seater Dining
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-medium">
+            <i class="fa-solid fa-square-parking text-brand-600"></i> 150+ Cars
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-800 text-xs font-medium">
+            <i class="fa-solid fa-snowflake text-brand-600"></i> Fully Central AC
+          </span>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-3">
+          <a href="#enquire" class="w-full sm:w-auto px-6 py-3 rounded-lg bg-brand-900 hover:bg-brand-800 text-white font-semibold text-sm text-center shadow transition">
+            Check Date Availability
+          </a>
+          <a href="https://wa.me/919876543210?text=Hello%20Sri%20Shanti%20Palace,%20I%20am%20looking%20for%20marriage%20hall%20booking" target="_blank" class="w-full sm:w-auto px-6 py-3 rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-semibold text-sm text-center flex items-center justify-center gap-2 transition">
+            <i class="fa-brands fa-whatsapp text-lg text-emerald-600"></i> WhatsApp Enquiry
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Hero Photo Card -->
+      <div class="lg:col-span-5">
+        <div class="rounded-2xl overflow-hidden shadow-xl border border-slate-200 bg-white relative">
+          <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80" alt="Marriage Hall Stage" class="w-full h-72 sm:h-80 object-cover">
+          <div class="p-5 bg-white">
+            <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+              <span>Main Auditorium Stage</span>
+              <span class="text-emerald-700 font-semibold"><i class="fa-solid fa-circle-check"></i> Available for 2025–2026</span>
+            </div>
+            <p class="text-sm font-bold text-slate-900">Sri Shanti Palace Main Mandap Auditorium</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hall Spaces & Capacities -->
+  <section id="spaces" class="py-14 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6">
+    <div class="text-center max-w-2xl mx-auto mb-12 space-y-2">
+      <span class="text-xs font-bold uppercase tracking-wider text-brand-600">Venue Spaces</span>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Designed for Smooth Celebrations</h2>
+      <p class="text-sm text-slate-600">All spaces are well planned on connected floors with elevator access for elders.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 sm:gap-8">
+      <!-- Space 1 -->
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition">
+        <img src="https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?auto=format&fit=crop&w=600&q=80" alt="Main Marriage Hall" class="w-full h-48 object-cover">
+        <div class="p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-lg text-slate-900">Main Marriage Hall</h3>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-brand-600">1st Floor</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Spacious air-conditioned hall with wide elevated stage, crystal chandeliers, sound system, and comfortable theater seating.
+          </p>
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span><i class="fa-solid fa-users text-brand-600 mr-1"></i> 800 Seated (1,000 Floating)</span>
+            <span><i class="fa-solid fa-snowflake text-brand-600 mr-1"></i> AC</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Space 2 -->
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition">
+        <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=600&q=80" alt="Dining Hall" class="w-full h-48 object-cover">
+        <div class="p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-lg text-slate-900">AC Dining Hall</h3>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-brand-600">Ground Floor</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Hygienic dining hall with stainless steel tables suitable for traditional leaf service or modern standing buffet layouts.
+          </p>
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span><i class="fa-solid fa-chair text-brand-600 mr-1"></i> 400 Seated / Batch</span>
+            <span><i class="fa-solid fa-faucet text-brand-600 mr-1"></i> RO Water</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Space 3 -->
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition">
+        <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=600&q=80" alt="Bridal Suites" class="w-full h-48 object-cover">
+        <div class="p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-lg text-slate-900">Bride & Groom Suites</h3>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-brand-600">Stage Adjacent</span>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Air-conditioned suites directly adjacent to the main stage with full makeup mirrors, hot water showers, and locker facilities.
+          </p>
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span><i class="fa-solid fa-bed text-brand-600 mr-1"></i> 2 Deluxe Suites + 6 Rooms</span>
+            <span><i class="fa-solid fa-key text-brand-600 mr-1"></i> Attached Bath</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Facilities Grid -->
+  <section id="amenities" class="py-14 sm:py-20 bg-white border-y border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-2xl mx-auto mb-12 space-y-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-brand-600">Amenities</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Everything You Need In One Place</h2>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+        <div class="p-4 sm:p-5 rounded-xl border border-slate-200 bg-slate-50 text-center">
+          <div class="w-10 h-10 rounded-lg bg-blue-100 text-brand-600 flex items-center justify-center mx-auto mb-3 text-lg">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <h4 class="font-bold text-sm text-slate-900 mb-1">100% Generator Backup</h4>
+          <p class="text-xs text-slate-500">Automatic dual diesel generators</p>
+        </div>
+
+        <div class="p-4 sm:p-5 rounded-xl border border-slate-200 bg-slate-50 text-center">
+          <div class="w-10 h-10 rounded-lg bg-blue-100 text-brand-600 flex items-center justify-center mx-auto mb-3 text-lg">
+            <i class="fa-solid fa-square-parking"></i>
+          </div>
+          <h4 class="font-bold text-sm text-slate-900 mb-1">150+ Car Parking</h4>
+          <p class="text-xs text-slate-500">Dedicated parking with valet</p>
+        </div>
+
+        <div class="p-4 sm:p-5 rounded-xl border border-slate-200 bg-slate-50 text-center">
+          <div class="w-10 h-10 rounded-lg bg-blue-100 text-brand-600 flex items-center justify-center mx-auto mb-3 text-lg">
+            <i class="fa-solid fa-elevator"></i>
+          </div>
+          <h4 class="font-bold text-sm text-slate-900 mb-1">Passenger Lift</h4>
+          <p class="text-xs text-slate-500">Senior citizen friendly access</p>
+        </div>
+
+        <div class="p-4 sm:p-5 rounded-xl border border-slate-200 bg-slate-50 text-center">
+          <div class="w-10 h-10 rounded-lg bg-blue-100 text-brand-600 flex items-center justify-center mx-auto mb-3 text-lg">
+            <i class="fa-solid fa-kitchen-set"></i>
+          </div>
+          <h4 class="font-bold text-sm text-slate-900 mb-1">Modern Steam Kitchen</h4>
+          <p class="text-xs text-slate-500">Steam vessels & gas pipeline</p>
+        </div>
+
+        <div class="p-4 sm:p-5 rounded-xl border border-slate-200 bg-slate-50 text-center">
+          <div class="w-10 h-10 rounded-lg bg-blue-100 text-brand-600 flex items-center justify-center mx-auto mb-3 text-lg">
+            <i class="fa-solid fa-camera"></i>
+          </div>
+          <h4 class="font-bold text-sm text-slate-900 mb-1">CCTV & 24/7 Security</h4>
+          <p class="text-xs text-slate-500">Continuous hall surveillance</p>
+        </div>
+
+        <div class="p-4 sm:p-5 rounded-xl border border-slate-200 bg-slate-50 text-center">
+          <div class="w-10 h-10 rounded-lg bg-blue-100 text-brand-600 flex items-center justify-center mx-auto mb-3 text-lg">
+            <i class="fa-solid fa-faucet-drip"></i>
+          </div>
+          <h4 class="font-bold text-sm text-slate-900 mb-1">RO Purified Water</h4>
+          <p class="text-xs text-slate-500">Unlimited treated water</p>
+        </div>
+
+        <div class="p-4 sm:p-5 rounded-xl border border-slate-200 bg-slate-50 text-center">
+          <div class="w-10 h-10 rounded-lg bg-blue-100 text-brand-600 flex items-center justify-center mx-auto mb-3 text-lg">
+            <i class="fa-solid fa-volume-high"></i>
+          </div>
+          <h4 class="font-bold text-sm text-slate-900 mb-1">Quality Sound System</h4>
+          <p class="text-xs text-slate-500">Wireless cordless microphones</p>
+        </div>
+
+        <div class="p-4 sm:p-5 rounded-xl border border-slate-200 bg-slate-50 text-center">
+          <div class="w-10 h-10 rounded-lg bg-blue-100 text-brand-600 flex items-center justify-center mx-auto mb-3 text-lg">
+            <i class="fa-solid fa-person-praying"></i>
+          </div>
+          <h4 class="font-bold text-sm text-slate-900 mb-1">Ganapathi Temple</h4>
+          <p class="text-xs text-slate-500">In-house puja sanctuary</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Photo Gallery -->
+  <section id="gallery" class="py-14 sm:py-20 max-w-7xl mx-auto px-4 sm:px-6">
+    <div class="text-center max-w-2xl mx-auto mb-10 space-y-2">
+      <span class="text-xs font-bold uppercase tracking-wider text-brand-600">Venue Gallery</span>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Hall Photos & Past Events</h2>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+      <div class="rounded-xl overflow-hidden shadow-sm h-44 sm:h-64">
+        <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=600&q=80" alt="Wedding Stage" class="w-full h-full object-cover hover:scale-105 transition duration-300">
+      </div>
+      <div class="rounded-xl overflow-hidden shadow-sm h-44 sm:h-64">
+        <img src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=600&q=80" alt="Mandap Floral Decor" class="w-full h-full object-cover hover:scale-105 transition duration-300">
+      </div>
+      <div class="rounded-xl overflow-hidden shadow-sm h-44 sm:h-64">
+        <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=600&q=80" alt="Dining Service" class="w-full h-full object-cover hover:scale-105 transition duration-300">
+      </div>
+      <div class="rounded-xl overflow-hidden shadow-sm h-44 sm:h-64">
+        <img src="https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?auto=format&fit=crop&w=600&q=80" alt="Auditorium Seating" class="w-full h-full object-cover hover:scale-105 transition duration-300">
+      </div>
+      <div class="rounded-xl overflow-hidden shadow-sm h-44 sm:h-64">
+        <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=600&q=80" alt="Bridal Room" class="w-full h-full object-cover hover:scale-105 transition duration-300">
+      </div>
+      <div class="rounded-xl overflow-hidden shadow-sm h-44 sm:h-64">
+        <img src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=600&q=80" alt="Entrance Arch" class="w-full h-full object-cover hover:scale-105 transition duration-300">
+      </div>
+    </div>
+  </section>
+
+  <!-- Transparent Tariff Packages -->
+  <section id="pricing" class="py-14 sm:py-20 bg-slate-100 border-y border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-2xl mx-auto mb-12 space-y-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-brand-600">Transparent Tariff</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Rental Packages</h2>
+        <p class="text-xs text-slate-500">No hidden charges. Cleaning and basic power included.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6 sm:gap-8">
+        <!-- 1 Day Package -->
+        <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 class="font-bold text-lg text-slate-900">1-Day Function</h3>
+            <p class="text-xs text-slate-500 mt-1">Muhurtham or Reception Only</p>
+            <div class="text-3xl font-extrabold text-slate-900 mt-4 mb-6">₹ 1,50,000 <span class="text-xs font-normal text-slate-500">/ 12 hrs</span></div>
+            <ul class="space-y-2.5 text-xs text-slate-600">
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> AC Main Hall & Stage</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> AC Dining Hall & Kitchen</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> 2 AC Bridal Rooms</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> Generator Backup</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> Parking with Security</li>
+            </ul>
+          </div>
+          <a href="#enquire" class="mt-8 w-full py-2.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-semibold text-center block transition">
+            Book 1-Day
+          </a>
+        </div>
+
+        <!-- 1.5 Days Package (Featured) -->
+        <div class="bg-white rounded-2xl p-6 sm:p-8 border-2 border-brand-600 shadow-lg relative flex flex-col justify-between">
+          <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white px-3 py-0.5 rounded-full text-[11px] font-bold uppercase">
+            Most Booked
+          </span>
+          <div>
+            <h3 class="font-bold text-lg text-slate-900">1.5 Days Wedding</h3>
+            <p class="text-xs text-slate-500 mt-1">Evening Reception + Morning Muhurtham</p>
+            <div class="text-3xl font-extrabold text-brand-600 mt-4 mb-6">₹ 2,40,000 <span class="text-xs font-normal text-slate-500">/ 30 hrs</span></div>
+            <ul class="space-y-2.5 text-xs text-slate-700">
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> Complete Hall Access (30 Hours)</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> All 8 Deluxe AC Guest Rooms</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> Sound System & Stage Lighting</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> Full Valet Parking Service</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> Housekeeping & Garbage Disposal</li>
+            </ul>
+          </div>
+          <a href="#enquire" class="mt-8 w-full py-3 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold uppercase tracking-wider text-center block shadow transition">
+            Book 1.5 Days
+          </a>
+        </div>
+
+        <!-- 2 Days Package -->
+        <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 class="font-bold text-lg text-slate-900">2-Day Grand Celebration</h3>
+            <p class="text-xs text-slate-500 mt-1">Mehendi, Sangeet & Traditional Wedding</p>
+            <div class="text-3xl font-extrabold text-slate-900 mt-4 mb-6">₹ 3,20,000 <span class="text-xs font-normal text-slate-500">/ 48 hrs</span></div>
+            <ul class="space-y-2.5 text-xs text-slate-600">
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> 48-Hour Full Venue Exclusivity</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> All 8 Deluxe AC Guest Rooms</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> Kitchen & Cooking Fuel Infrastructure</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> Hall Supervisor on Duty</li>
+              <li><i class="fa-solid fa-check text-emerald-600 mr-2"></i> Complimentary Pre-wedding Shoot</li>
+            </ul>
+          </div>
+          <a href="#enquire" class="mt-8 w-full py-2.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-semibold text-center block transition">
+            Book 2-Days
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Booking Enquiry Form -->
+  <section id="enquire" class="py-14 sm:py-20 max-w-4xl mx-auto px-4 sm:px-6">
+    <div class="bg-white rounded-2xl p-6 sm:p-10 border border-slate-200 shadow-md">
+      <div class="text-center mb-8">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Check Date Availability</h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">Fill this quick form and our manager will call you back within 30 minutes.</p>
+      </div>
+
+      <form onsubmit="event.preventDefault(); document.getElementById('simpleSuccess').classList.remove('hidden');" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Your Name *</label>
+          <input type="text" required placeholder="e.g. Ramesh Kumar" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-brand-600">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mobile / WhatsApp Number *</label>
+            <input type="tel" required placeholder="+91 98765 00000" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-brand-600">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Preferred Event Date *</label>
+            <input type="date" required class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-brand-600">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Event Type</label>
+            <select class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-brand-600">
+              <option>Wedding & Reception</option>
+              <option>Engagement Ceremony</option>
+              <option>Baby Shower / Seemantham</option>
+              <option>Birthday / Family Get-Together</option>
+              <option>Corporate Seminar</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Expected Guests</label>
+            <select class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-brand-600">
+              <option>300 - 500 Guests</option>
+              <option>500 - 800 Guests</option>
+              <option>800 - 1,200 Guests</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 rounded-lg bg-brand-900 hover:bg-brand-800 text-white font-bold text-sm tracking-wide shadow transition mt-2">
+          Submit Enquiry
+        </button>
+      </form>
+
+      <div id="simpleSuccess" class="hidden mt-4 p-4 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs text-center">
+        <i class="fa-solid fa-circle-check text-lg mb-1 block text-emerald-600"></i>
+        Enquiry submitted! We have received your request and will call you with date confirmation shortly.
+      </div>
+    </div>
+  </section>
+
+  <!-- Location & Footer -->
+  <footer id="contact" class="bg-slate-900 text-slate-300 text-xs py-12 border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div>
+        <h4 class="text-white font-bold text-base mb-2">Sri Shanti Palace</h4>
+        <p class="text-slate-400 leading-relaxed mb-3">
+          No. 12, Main Road, Near Old Bus Stand, Central Hub. Easily accessible with public transport and wide roads.
+        </p>
+        <p class="text-slate-400">Visiting Hours: 9:00 AM – 7:30 PM (Daily)</p>
+      </div>
+
+      <div>
+        <h4 class="text-white font-bold text-base mb-2">Contact Us</h4>
+        <p class="mb-2"><i class="fa-solid fa-phone text-brand-amber mr-2"></i> +91 98765 43210</p>
+        <p class="mb-2"><i class="fa-brands fa-whatsapp text-emerald-400 mr-2"></i> +91 98765 43211</p>
+        <p><i class="fa-solid fa-envelope text-brand-amber mr-2"></i> srishantipalace@example.com</p>
+      </div>
+
+      <div>
+        <h4 class="text-white font-bold text-base mb-2">Key Highlights</h4>
+        <ul class="space-y-1 text-slate-400">
+          <li>• 1,000 Guest Capacity</li>
+          <li>• 400 Seater AC Dining</li>
+          <li>• 150+ Car Parking</li>
+          <li>• 100% Diesel Generator Backup</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 mt-8 pt-6 border-t border-slate-800 text-center text-slate-500">
+      © 2025 Sri Shanti Palace. All rights reserved.
+    </div>
+  </footer>
+
+  <!-- STICKY MOBILE ACTION BAR (Only visible on mobile screens) -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-2.5 flex items-center justify-between gap-3 z-50 md:hidden shadow-lg">
+    <a href="tel:+919876543210" class="flex-1 py-2.5 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+      <i class="fa-solid fa-phone text-brand-600"></i> Call Venue
+    </a>
+    <a href="https://wa.me/919876543210?text=Hello%20Sri%20Shanti%20Palace,%20I%20am%20inquiring%20about%20hall%20availability" target="_blank" class="flex-1 py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+      <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
+    </a>
+    <a href="#enquire" class="py-2.5 px-3 rounded-lg bg-brand-900 hover:bg-brand-800 text-white font-semibold text-xs flex items-center justify-center transition">
+      Book
+    </a>
+  </div>
+
+  <script>
+    function toggleMobileNav() {
+      const menu = document.getElementById('mobileMenu');
+      menu.classList.toggle('hidden');
+    }
+  </script>
+</body>
+</html>

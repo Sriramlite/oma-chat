@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rajwada Palace & Convention Centre | Royal Heritage Marriage Hall</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            royal: {
+              maroon: '#4a0404',
+              deepRed: '#2b0202',
+              ruby: '#700918',
+              gold: '#c5a059',
+              goldLight: '#e4c988',
+              goldDark: '#997833',
+              ivory: '#fcfaf5',
+              cream: '#f5efe6',
+            }
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'serif'],
+            cinzel: ['"Cinzel"', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #f8e5b9 0%, #c5a059 50%, #997833 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .gold-border-gradient {
+      border-image: linear-gradient(to right, #c5a059, #f8e5b9, #c5a059) 1;
+    }
+    .hero-bg {
+      background: linear-gradient(rgba(43, 2, 2, 0.75), rgba(74, 4, 4, 0.85)), url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=2000&q=80') center/cover no-repeat fixed;
+    }
+    .mandap-bg {
+      background: linear-gradient(rgba(20, 2, 2, 0.8), rgba(43, 2, 2, 0.9)), url('https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=1800&q=80') center/cover no-repeat;
+    }
+    .gold-glow {
+      box-shadow: 0 0 25px rgba(197, 160, 89, 0.25);
+    }
+  </style>
+</head>
+<body class="bg-royal-deepRed text-royal-ivory font-sans antialiased selection:bg-royal-gold selection:text-royal-deepRed pb-16 md:pb-0">
+
+  <!-- Top Announcement Bar -->
+  <div class="bg-royal-maroon border-b border-royal-gold/30 text-xs py-2 px-4 sm:px-6">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div class="flex items-center gap-4 text-royal-goldLight">
+        <span><i class="fa-solid fa-location-dot mr-1.5 text-royal-gold"></i> Palace Road, Grand Royal Enclave</span>
+        <span class="hidden sm:inline">|</span>
+        <span><i class="fa-solid fa-phone mr-1.5 text-royal-gold"></i> +91 98765 43210</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="text-royal-goldLight/90"><i class="fa-regular fa-calendar-check mr-1 text-royal-gold"></i> Auspicious Dates 2025-2026 Open</span>
+        <a href="#enquire" class="underline hover:text-royal-gold text-royal-goldLight transition font-semibold">Book Tour</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navigation -->
+  <header class="bg-royal-deepRed/95 backdrop-blur-md border-b border-royal-gold/20 sticky top-0 z-40 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between">
+      <!-- Logo -->
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-royal-gold flex items-center justify-center bg-royal-maroon group-hover:scale-105 transition">
+          <i class="fa-solid fa-crown text-royal-gold text-lg sm:text-xl"></i>
+        </div>
+        <div>
+          <span class="font-cinzel text-lg sm:text-2xl font-bold tracking-widest text-royal-goldLight block leading-tight">RAJWADA PALACE</span>
+          <span class="text-[9px] sm:text-[10px] tracking-[0.25em] text-royal-gold uppercase block">Convention & Wedding Hall</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden lg:flex items-center gap-8 text-sm font-medium tracking-wide">
+        <a href="#about" class="text-royal-ivory hover:text-royal-gold transition">The Heritage</a>
+        <a href="#spaces" class="text-royal-ivory hover:text-royal-gold transition">Palace Halls</a>
+        <a href="#amenities" class="text-royal-ivory hover:text-royal-gold transition">Amenities</a>
+        <a href="#gallery" class="text-royal-ivory hover:text-royal-gold transition">Royal Gallery</a>
+        <a href="#packages" class="text-royal-ivory hover:text-royal-gold transition">Packages</a>
+        <a href="#calculator" class="text-royal-ivory hover:text-royal-gold transition">Cost Estimator</a>
+        <a href="#contact" class="text-royal-ivory hover:text-royal-gold transition">Contact</a>
+      </nav>
+
+      <!-- CTA Buttons & Mobile Hamburger -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a href="https://wa.me/919876543210?text=Hello%20Rajwada%20Palace,%20I%20would%20like%20to%20enquire%20about%20hall%20booking" target="_blank" class="hidden sm:inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded border border-emerald-500 text-emerald-400 hover:bg-emerald-500/10 transition">
+          <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
+        </a>
+        <a href="#enquire" class="hidden sm:inline-block px-4 py-2 text-xs md:text-sm font-cinzel font-bold uppercase tracking-wider rounded bg-gradient-to-r from-royal-gold via-royal-goldLight to-royal-gold text-royal-deepRed hover:brightness-110 transition shadow">
+          Enquire
+        </a>
+        <!-- Mobile Hamburger Toggle -->
+        <button onclick="toggleRoyalNav()" class="lg:hidden p-2 rounded text-royal-gold hover:bg-royal-maroon/60 transition" aria-label="Toggle Navigation">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Navigation -->
+    <div id="royalMobileNav" class="hidden lg:hidden bg-royal-maroon/95 border-t border-royal-gold/30 px-6 py-4 space-y-3 font-cinzel text-xs uppercase tracking-wider">
+      <a href="#about" onclick="toggleRoyalNav()" class="block py-1.5 text-royal-goldLight hover:text-white">The Heritage</a>
+      <a href="#spaces" onclick="toggleRoyalNav()" class="block py-1.5 text-royal-goldLight hover:text-white">Palace Halls</a>
+      <a href="#amenities" onclick="toggleRoyalNav()" class="block py-1.5 text-royal-goldLight hover:text-white">Amenities</a>
+      <a href="#gallery" onclick="toggleRoyalNav()" class="block py-1.5 text-royal-goldLight hover:text-white">Royal Gallery</a>
+      <a href="#packages" onclick="toggleRoyalNav()" class="block py-1.5 text-royal-goldLight hover:text-white">Packages</a>
+      <a href="#calculator" onclick="toggleRoyalNav()" class="block py-1.5 text-royal-goldLight hover:text-white">Cost Estimator</a>
+      <a href="#contact" onclick="toggleRoyalNav()" class="block py-1.5 text-royal-goldLight hover:text-white">Contact</a>
+    </div>
+  </header>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-bg min-h-[90vh] flex items-center relative overflow-hidden py-24">
+    <div class="absolute inset-0 bg-gradient-to-t from-royal-deepRed via-transparent to-black/40"></div>
+    
+    <div class="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-12 gap-12 items-center">
+      <!-- Left Content -->
+      <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-royal-gold/40 bg-royal-maroon/60 backdrop-blur-sm">
+          <i class="fa-solid fa-gem text-royal-gold text-xs"></i>
+          <span class="text-xs uppercase tracking-widest text-royal-goldLight font-medium">Grandeur • Splendour • Royalty</span>
+        </div>
+
+        <h1 class="font-cinzel text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
+          Where <span class="gold-gradient-text">Royal Weddings</span> Become Timeless Legends
+        </h1>
+
+        <p class="text-base sm:text-lg text-royal-ivory/80 font-serif leading-relaxed max-w-2xl mx-auto lg:mx-0">
+          Celebrate your grand beginnings in a palatial architectural marvel with 1,500+ guest capacity, regal mandap architecture, 500-seat royal dining hall, and 5-star royal hospitality.
+        </p>
+
+        <!-- Key Metrics Strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-y border-royal-gold/25 py-6">
+          <div class="text-center">
+            <span class="block font-cinzel text-2xl sm:text-3xl font-bold text-royal-gold">1,500+</span>
+            <span class="text-xs text-royal-ivory/70 uppercase tracking-wider">Guest Capacity</span>
+          </div>
+          <div class="text-center">
+            <span class="block font-cinzel text-2xl sm:text-3xl font-bold text-royal-gold">500</span>
+            <span class="text-xs text-royal-ivory/70 uppercase tracking-wider">AC Dining Seats</span>
+          </div>
+          <div class="text-center">
+            <span class="block font-cinzel text-2xl sm:text-3xl font-bold text-royal-gold">250+</span>
+            <span class="text-xs text-royal-ivory/70 uppercase tracking-wider">Car Parking</span>
+          </div>
+          <div class="text-center">
+            <span class="block font-cinzel text-2xl sm:text-3xl font-bold text-royal-gold">14</span>
+            <span class="text-xs text-royal-ivory/70 uppercase tracking-wider">AC Guest Rooms</span>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+          <a href="#enquire" class="px-8 py-3.5 rounded font-cinzel font-bold text-sm uppercase tracking-wider bg-gradient-to-r from-royal-gold to-royal-goldLight text-royal-deepRed hover:shadow-lg hover:shadow-royal-gold/30 hover:scale-[1.02] transition">
+            Book Venue Tour
+          </a>
+          <a href="#spaces" class="px-7 py-3.5 rounded font-cinzel text-sm uppercase tracking-wider border border-royal-gold/60 text-royal-goldLight hover:bg-royal-gold/10 transition flex items-center gap-2">
+            <i class="fa-solid fa-play text-xs text-royal-gold"></i> Explore Palace Halls
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Quick Enquiry Card -->
+      <div class="lg:col-span-5" id="enquire">
+        <div class="bg-royal-maroon/90 border-2 border-royal-gold/50 rounded-xl p-8 backdrop-blur-xl shadow-2xl relative gold-glow">
+          <div class="absolute -top-4 right-8 bg-royal-gold text-royal-deepRed px-3 py-1 rounded text-xs font-bold font-cinzel uppercase tracking-wider">
+            Fast Response
+          </div>
+
+          <h3 class="font-cinzel text-2xl font-bold text-royal-goldLight mb-1 text-center">Check Auspicious Dates</h3>
+          <p class="text-xs text-royal-ivory/70 text-center mb-6">Receive venue brochure, customized menu, and availability within 1 hour.</p>
+
+          <form id="royalEnquiryForm" onsubmit="event.preventDefault(); submitRoyalEnquiry();" class="space-y-4">
+            <div>
+              <label class="block text-xs uppercase tracking-wider text-royal-goldLight mb-1">Your Full Name *</label>
+              <div class="relative">
+                <i class="fa-regular fa-user absolute left-3 top-3.5 text-royal-gold/60 text-xs"></i>
+                <input type="text" required placeholder="e.g. Rajesh Sharma" class="w-full pl-9 pr-4 py-2.5 bg-royal-deepRed/80 border border-royal-gold/30 rounded text-sm text-white focus:outline-none focus:border-royal-gold">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-royal-goldLight mb-1">Phone Number *</label>
+                <div class="relative">
+                  <i class="fa-solid fa-phone absolute left-3 top-3.5 text-royal-gold/60 text-xs"></i>
+                  <input type="tel" required placeholder="+91 98765 00000" class="w-full pl-9 pr-4 py-2.5 bg-royal-deepRed/80 border border-royal-gold/30 rounded text-sm text-white focus:outline-none focus:border-royal-gold">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-royal-goldLight mb-1">Event Date *</label>
+                <div class="relative">
+                  <i class="fa-regular fa-calendar absolute left-3 top-3.5 text-royal-gold/60 text-xs"></i>
+                  <input type="date" required class="w-full pl-9 pr-4 py-2.5 bg-royal-deepRed/80 border border-royal-gold/30 rounded text-sm text-white focus:outline-none focus:border-royal-gold">
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-royal-goldLight mb-1">Occasion</label>
+                <select class="w-full px-3 py-2.5 bg-royal-deepRed/80 border border-royal-gold/30 rounded text-sm text-white focus:outline-none focus:border-royal-gold">
+                  <option>Grand Wedding & Reception</option>
+                  <option>Engagement / Ring Ceremony</option>
+                  <option>Sangeet & Mehendi</option>
+                  <option>Anniversary / Golden Jubilee</option>
+                  <option>Corporate Gala / Mega Event</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs uppercase tracking-wider text-royal-goldLight mb-1">Estimated Guests</label>
+                <select class="w-full px-3 py-2.5 bg-royal-deepRed/80 border border-royal-gold/30 rounded text-sm text-white focus:outline-none focus:border-royal-gold">
+                  <option>300 - 500 Guests</option>
+                  <option>500 - 800 Guests</option>
+                  <option>800 - 1,200 Guests</option>
+                  <option>1,200 - 2,000+ Guests</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-3.5 mt-2 rounded bg-gradient-to-r from-royal-gold via-royal-goldLight to-royal-gold text-royal-deepRed font-cinzel font-bold text-sm uppercase tracking-wider hover:brightness-110 shadow-lg shadow-royal-gold/25 transition">
+              <i class="fa-regular fa-paper-plane mr-2"></i> Request Date Availability & Pricing
+            </button>
+          </form>
+
+          <div id="enquirySuccessModal" class="hidden mt-4 p-4 bg-emerald-900/60 border border-emerald-500 rounded text-center text-sm text-emerald-200">
+            <i class="fa-solid fa-circle-check text-xl text-emerald-400 mb-1 block"></i>
+            Thank you! Your wedding date request has been received. Our Palace Event Director will call you shortly with availability and pricing brochure.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Palace Heritage -->
+  <section id="about" class="py-20 bg-royal-deepRed relative border-b border-royal-gold/20">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+        <span class="text-xs font-cinzel uppercase tracking-[0.25em] text-royal-gold block">Royal Heritage</span>
+        <h2 class="font-cinzel text-3xl sm:text-4xl font-bold">An Architectural Tribute to Grand Indian Traditions</h2>
+        <div class="w-24 h-0.5 bg-royal-gold mx-auto mt-4"></div>
+        <p class="text-royal-ivory/80 font-serif text-base pt-2">
+          Designed with soaring high-ceilings, carved arches, ornate jharokhas, and acoustic perfection, Rajwada Palace provides an unmatched majestic ambience for family celebrations.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="p-8 rounded-lg bg-royal-maroon/40 border border-royal-gold/20 hover:border-royal-gold/60 transition group hover:-translate-y-1">
+          <div class="w-14 h-14 rounded-full bg-royal-gold/10 border border-royal-gold flex items-center justify-center text-royal-gold text-2xl mb-6 group-hover:bg-royal-gold group-hover:text-royal-deepRed transition">
+            <i class="fa-solid fa-monument"></i>
+          </div>
+          <h3 class="font-cinzel text-xl font-bold text-royal-goldLight mb-3">Grand Main Mandap</h3>
+          <p class="text-sm text-royal-ivory/70 leading-relaxed font-serif">
+            A pillar-less central auditorium offering uninterrupted views of the holy sacred rituals for all 1,200 seated guests, fitted with crystal chandeliers and royal stage setups.
+          </p>
+        </div>
+
+        <div class="p-8 rounded-lg bg-royal-maroon/40 border border-royal-gold/20 hover:border-royal-gold/60 transition group hover:-translate-y-1">
+          <div class="w-14 h-14 rounded-full bg-royal-gold/10 border border-royal-gold flex items-center justify-center text-royal-gold text-2xl mb-6 group-hover:bg-royal-gold group-hover:text-royal-deepRed transition">
+            <i class="fa-solid fa-utensils"></i>
+          </div>
+          <h3 class="font-cinzel text-xl font-bold text-royal-goldLight mb-3">Annapoorna Dining Feast</h3>
+          <p class="text-sm text-royal-ivory/70 leading-relaxed font-serif">
+            Centrally air-conditioned 500-guest dining hall with separate state-of-the-art pure vegetarian and live counter preparation zones, hygienic steam cooking, and RO water plant.
+          </p>
+        </div>
+
+        <div class="p-8 rounded-lg bg-royal-maroon/40 border border-royal-gold/20 hover:border-royal-gold/60 transition group hover:-translate-y-1">
+          <div class="w-14 h-14 rounded-full bg-royal-gold/10 border border-royal-gold flex items-center justify-center text-royal-gold text-2xl mb-6 group-hover:bg-royal-gold group-hover:text-royal-deepRed transition">
+            <i class="fa-solid fa-spa"></i>
+          </div>
+          <h3 class="font-cinzel text-xl font-bold text-royal-goldLight mb-3">Royal Bridal Suites</h3>
+          <p class="text-sm text-royal-ivory/70 leading-relaxed font-serif">
+            Opulent 5-star standard suites for bride and groom with full-length vanity mirrors, makeup lighting, private dressing areas, luxury bathrooms, and 24/7 room service.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Palace Spaces & Halls Showcase -->
+  <section id="spaces" class="py-24 mandap-bg relative">
+    <div class="max-w-7xl mx-auto px-6 relative z-10">
+      <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+        <span class="text-xs font-cinzel uppercase tracking-[0.25em] text-royal-gold block">Our Venues</span>
+        <h2 class="font-cinzel text-3xl sm:text-4xl font-bold">Palace Event Spaces</h2>
+        <div class="w-24 h-0.5 bg-royal-gold mx-auto mt-4"></div>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Space 1 -->
+        <div class="bg-royal-deepRed/90 border border-royal-gold/30 rounded-lg overflow-hidden group shadow-xl">
+          <div class="h-64 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?auto=format&fit=crop&w=800&q=80" alt="Main Mandap Hall" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+            <div class="absolute top-4 right-4 bg-royal-deepRed/80 border border-royal-gold text-royal-gold px-3 py-1 rounded text-xs font-cinzel">
+              Capacity: 1,500
+            </div>
+          </div>
+          <div class="p-6 space-y-4">
+            <h3 class="font-cinzel text-xl font-bold text-royal-goldLight">Maharaja Main Hall</h3>
+            <p class="text-xs text-royal-ivory/70 font-serif leading-relaxed">
+              Grand high-ceiling central hall with royal red carpeting, 40-foot wide elevated stage, Bose sound system, and central air conditioning.
+            </p>
+            <div class="grid grid-cols-2 gap-2 text-xs border-t border-royal-gold/20 pt-4 text-royal-ivory/80">
+              <div><i class="fa-solid fa-users text-royal-gold mr-1.5"></i> 1,200 Seated</div>
+              <div><i class="fa-solid fa-snowflake text-royal-gold mr-1.5"></i> 100% Central AC</div>
+              <div><i class="fa-solid fa-vest text-royal-gold mr-1.5"></i> 40ft Stage Width</div>
+              <div><i class="fa-solid fa-bolt text-royal-gold mr-1.5"></i> 100% DG Backup</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Space 2 -->
+        <div class="bg-royal-deepRed/90 border border-royal-gold/30 rounded-lg overflow-hidden group shadow-xl">
+          <div class="h-64 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80" alt="Dining Hall" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+            <div class="absolute top-4 right-4 bg-royal-deepRed/80 border border-royal-gold text-royal-gold px-3 py-1 rounded text-xs font-cinzel">
+              Capacity: 500 Dining
+            </div>
+          </div>
+          <div class="p-6 space-y-4">
+            <h3 class="font-cinzel text-xl font-bold text-royal-goldLight">Annapoorna Royal Dining</h3>
+            <p class="text-xs text-royal-ivory/70 font-serif leading-relaxed">
+              Expansive dining hall equipped for both traditional banana leaf seating services and modern gourmet buffet arrangements with live food counters.
+            </p>
+            <div class="grid grid-cols-2 gap-2 text-xs border-t border-royal-gold/20 pt-4 text-royal-ivory/80">
+              <div><i class="fa-solid fa-chair text-royal-gold mr-1.5"></i> 500 Seats / Batch</div>
+              <div><i class="fa-solid fa-fire-burner text-royal-gold mr-1.5"></i> Mega Steam Kitchen</div>
+              <div><i class="fa-solid fa-faucet text-royal-gold mr-1.5"></i> Commercial RO Plant</div>
+              <div><i class="fa-solid fa-broom text-royal-gold mr-1.5"></i> Auto Dishwashers</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Space 3 -->
+        <div class="bg-royal-deepRed/90 border border-royal-gold/30 rounded-lg overflow-hidden group shadow-xl">
+          <div class="h-64 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=800&q=80" alt="Palace Courtyard" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+            <div class="absolute top-4 right-4 bg-royal-deepRed/80 border border-royal-gold text-royal-gold px-3 py-1 rounded text-xs font-cinzel">
+              Open Lawn: 800
+            </div>
+          </div>
+          <div class="p-6 space-y-4">
+            <h3 class="font-cinzel text-xl font-bold text-royal-goldLight">Royal Lawn & Courtyard</h3>
+            <p class="text-xs text-royal-ivory/70 font-serif leading-relaxed">
+              Lush green landscaped lawn under starlit skies for evening receptions, Sangeet performances, cocktail parties, and grand baraat welcoming ceremonies.
+            </p>
+            <div class="grid grid-cols-2 gap-2 text-xs border-t border-royal-gold/20 pt-4 text-royal-ivory/80">
+              <div><i class="fa-solid fa-tree text-royal-gold mr-1.5"></i> 18,000 sq.ft Lawn</div>
+              <div><i class="fa-solid fa-music text-royal-gold mr-1.5"></i> DJ & Stage Setup</div>
+              <div><i class="fa-solid fa-wand-magic-sparkles text-royal-gold mr-1.5"></i> Fairy Lighting</div>
+              <div><i class="fa-solid fa-car text-royal-gold mr-1.5"></i> Valet Parking Bay</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Palace Amenities Grid -->
+  <section id="amenities" class="py-20 bg-royal-maroon/20 border-b border-royal-gold/20">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+        <span class="text-xs font-cinzel uppercase tracking-[0.25em] text-royal-gold block">Comfort & Convenience</span>
+        <h2 class="font-cinzel text-3xl sm:text-4xl font-bold">Comprehensive Palace Amenities</h2>
+        <div class="w-24 h-0.5 bg-royal-gold mx-auto mt-4"></div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div class="p-5 rounded-lg bg-royal-deepRed/80 border border-royal-gold/20 text-center">
+          <i class="fa-solid fa-square-parking text-royal-gold text-3xl mb-3"></i>
+          <h4 class="font-cinzel text-base font-bold text-royal-goldLight mb-1">250+ Car Parking</h4>
+          <p class="text-xs text-royal-ivory/60">Dedicated valet parking with 24/7 security & CCTV monitoring.</p>
+        </div>
+
+        <div class="p-5 rounded-lg bg-royal-deepRed/80 border border-royal-gold/20 text-center">
+          <i class="fa-solid fa-bolt-lightning text-royal-gold text-3xl mb-3"></i>
+          <h4 class="font-cinzel text-base font-bold text-royal-goldLight mb-1">100% Power Backup</h4>
+          <p class="text-xs text-royal-ivory/60">Dual Cummins silent generators ensuring uninterrupted ceremonies.</p>
+        </div>
+
+        <div class="p-5 rounded-lg bg-royal-deepRed/80 border border-royal-gold/20 text-center">
+          <i class="fa-solid fa-bed text-royal-gold text-3xl mb-3"></i>
+          <h4 class="font-cinzel text-base font-bold text-royal-goldLight mb-1">14 AC Guest Rooms</h4>
+          <p class="text-xs text-royal-ivory/60">Deluxe rooms with attached baths for close relatives and VIP guests.</p>
+        </div>
+
+        <div class="p-5 rounded-lg bg-royal-deepRed/80 border border-royal-gold/20 text-center">
+          <i class="fa-solid fa-elevator text-royal-gold text-3xl mb-3"></i>
+          <h4 class="font-cinzel text-base font-bold text-royal-goldLight mb-1">Passenger Elevators</h4>
+          <p class="text-xs text-royal-ivory/60">2 high-capacity OTIS lifts with wheelchair accessibility for seniors.</p>
+        </div>
+
+        <div class="p-5 rounded-lg bg-royal-deepRed/80 border border-royal-gold/20 text-center">
+          <i class="fa-solid fa-shield-halved text-royal-gold text-3xl mb-3"></i>
+          <h4 class="font-cinzel text-base font-bold text-royal-goldLight mb-1">24x7 Security & CCTV</h4>
+          <p class="text-xs text-royal-ivory/60">64 HD cameras and uniformed palace guards throughout premises.</p>
+        </div>
+
+        <div class="p-5 rounded-lg bg-royal-deepRed/80 border border-royal-gold/20 text-center">
+          <i class="fa-solid fa-utensils text-royal-gold text-3xl mb-3"></i>
+          <h4 class="font-cinzel text-base font-bold text-royal-goldLight mb-1">Separate Kitchens</h4>
+          <p class="text-xs text-royal-ivory/60">Dedicated pure veg Brahmin kitchen & separate continental live bays.</p>
+        </div>
+
+        <div class="p-5 rounded-lg bg-royal-deepRed/80 border border-royal-gold/20 text-center">
+          <i class="fa-solid fa-volume-high text-royal-gold text-3xl mb-3"></i>
+          <h4 class="font-cinzel text-base font-bold text-royal-goldLight mb-1">Bose Acoustics</h4>
+          <p class="text-xs text-royal-ivory/60">Acoustically tuned hall with digital wireless mics & crystal clarity.</p>
+        </div>
+
+        <div class="p-5 rounded-lg bg-royal-deepRed/80 border border-royal-gold/20 text-center">
+          <i class="fa-solid fa-person-praying text-royal-gold text-3xl mb-3"></i>
+          <h4 class="font-cinzel text-base font-bold text-royal-goldLight mb-1">In-house Temple</h4>
+          <p class="text-xs text-royal-ivory/60">Sanctified Ganesha temple for auspicious wedding puja beginnings.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Budget & Cost Estimator -->
+  <section id="calculator" class="py-20 bg-royal-deepRed relative">
+    <div class="max-w-4xl mx-auto px-6">
+      <div class="bg-royal-maroon/60 border-2 border-royal-gold/40 rounded-2xl p-8 backdrop-blur-md shadow-2xl">
+        <div class="text-center mb-8">
+          <span class="text-xs font-cinzel uppercase tracking-[0.2em] text-royal-gold block">Transparent Pricing</span>
+          <h2 class="font-cinzel text-2xl sm:text-3xl font-bold mt-1">Wedding Budget Estimator</h2>
+          <p class="text-xs text-royal-ivory/70 mt-2">Get an immediate real-time estimate based on your guest count and required services.</p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-xs uppercase tracking-wider text-royal-goldLight mb-2">Number of Expected Guests: <span id="guestDisplay" class="text-royal-gold font-bold text-sm">800 Guests</span></label>
+            <input type="range" id="guestSlider" min="200" max="1800" step="50" value="800" oninput="calculateEstimate()" class="w-full accent-amber-500 cursor-pointer">
+            <div class="flex justify-between text-[11px] text-royal-ivory/60 mt-1">
+              <span>200</span>
+              <span>800</span>
+              <span>1800+</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs uppercase tracking-wider text-royal-goldLight mb-2">Duration / Days</label>
+            <select id="durationSelect" onchange="calculateEstimate()" class="w-full px-3 py-2 bg-royal-deepRed border border-royal-gold/30 rounded text-sm text-white focus:outline-none">
+              <option value="1">1 Day (Muhurtham / Reception)</option>
+              <option value="1.5">1.5 Days (Eve Reception + Morning Muhurtham)</option>
+              <option value="2">2 Days (Full Weekend Royal Wedding)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-6 border-t border-royal-gold/25 pt-6">
+          <span class="block text-xs uppercase tracking-wider text-royal-goldLight mb-3">Optional Add-ons:</span>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <label class="flex items-center gap-2 cursor-pointer bg-royal-deepRed/60 p-2.5 rounded border border-royal-gold/20">
+              <input type="checkbox" id="decorAddon" onchange="calculateEstimate()" class="accent-amber-500">
+              <span>Grand Royal Floral Decor</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer bg-royal-deepRed/60 p-2.5 rounded border border-royal-gold/20">
+              <input type="checkbox" id="roomsAddon" onchange="calculateEstimate()" class="accent-amber-500">
+              <span>All 14 AC Guest Rooms</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer bg-royal-deepRed/60 p-2.5 rounded border border-royal-gold/20">
+              <input type="checkbox" id="lightingAddon" onchange="calculateEstimate()" class="accent-amber-500">
+              <span>Palace LED Façade Illumination</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mt-8 p-6 bg-royal-deepRed rounded-xl border border-royal-gold/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <span class="text-xs uppercase tracking-widest text-royal-ivory/70 block">Estimated Venue Cost:</span>
+            <span id="estimatedCost" class="font-cinzel text-3xl font-bold text-royal-gold">₹ 2,75,000*</span>
+            <span class="text-[11px] text-royal-ivory/50 block">*Taxes & specific auspicious peak dates may vary.</span>
+          </div>
+          <a href="#enquire" class="px-6 py-3 rounded bg-royal-gold text-royal-deepRed font-cinzel font-bold text-xs uppercase tracking-wider hover:brightness-110 transition shadow">
+            Lock This Quote
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Photo Gallery with Filter -->
+  <section id="gallery" class="py-24 bg-royal-deepRed/95 border-b border-royal-gold/20">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-3xl mx-auto mb-12 space-y-3">
+        <span class="text-xs font-cinzel uppercase tracking-[0.25em] text-royal-gold block">Visual Showcase</span>
+        <h2 class="font-cinzel text-3xl sm:text-4xl font-bold">Royal Moments & Architecture</h2>
+        <div class="w-24 h-0.5 bg-royal-gold mx-auto mt-4"></div>
+      </div>
+
+      <!-- Gallery Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="group relative overflow-hidden rounded-lg border border-royal-gold/30 h-72">
+          <img src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80" alt="Mandap Decoration" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-royal-deepRed via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 p-6 flex flex-col justify-end">
+            <span class="text-xs text-royal-gold uppercase font-cinzel">Ceremony</span>
+            <h4 class="font-cinzel font-bold text-lg text-white">Traditional Sacred Mandap Setup</h4>
+          </div>
+        </div>
+
+        <div class="group relative overflow-hidden rounded-lg border border-royal-gold/30 h-72">
+          <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80" alt="Palace Stage" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-royal-deepRed via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 p-6 flex flex-col justify-end">
+            <span class="text-xs text-royal-gold uppercase font-cinzel">Stage</span>
+            <h4 class="font-cinzel font-bold text-lg text-white">Floral Backdrop & Chandelier Stage</h4>
+          </div>
+        </div>
+
+        <div class="group relative overflow-hidden rounded-lg border border-royal-gold/30 h-72">
+          <img src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80" alt="Bridal Suite" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-royal-deepRed via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 p-6 flex flex-col justify-end">
+            <span class="text-xs text-royal-gold uppercase font-cinzel">Suites</span>
+            <h4 class="font-cinzel font-bold text-lg text-white">Maharani Bridal Suite & Vanity</h4>
+          </div>
+        </div>
+
+        <div class="group relative overflow-hidden rounded-lg border border-royal-gold/30 h-72">
+          <img src="https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?auto=format&fit=crop&w=800&q=80" alt="Dining Experience" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-royal-deepRed via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 p-6 flex flex-col justify-end">
+            <span class="text-xs text-royal-gold uppercase font-cinzel">Dining</span>
+            <h4 class="font-cinzel font-bold text-lg text-white">Annapoorna Royal Banquet</h4>
+          </div>
+        </div>
+
+        <div class="group relative overflow-hidden rounded-lg border border-royal-gold/30 h-72">
+          <img src="https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=800&q=80" alt="Evening Façade" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-royal-deepRed via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 p-6 flex flex-col justify-end">
+            <span class="text-xs text-royal-gold uppercase font-cinzel">Exterior</span>
+            <h4 class="font-cinzel font-bold text-lg text-white">Illuminated Palace Night Façade</h4>
+          </div>
+        </div>
+
+        <div class="group relative overflow-hidden rounded-lg border border-royal-gold/30 h-72">
+          <img src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=800&q=80" alt="Welcoming Entrance" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+          <div class="absolute inset-0 bg-gradient-to-t from-royal-deepRed via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 p-6 flex flex-col justify-end">
+            <span class="text-xs text-royal-gold uppercase font-cinzel">Baraat</span>
+            <h4 class="font-cinzel font-bold text-lg text-white">Grand Entrance & Shehnai Courtyard</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Packages Section -->
+  <section id="packages" class="py-24 bg-royal-deepRed relative">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+        <span class="text-xs font-cinzel uppercase tracking-[0.25em] text-royal-gold block">Curated Offerings</span>
+        <h2 class="font-cinzel text-3xl sm:text-4xl font-bold">Wedding Packages</h2>
+        <div class="w-24 h-0.5 bg-royal-gold mx-auto mt-4"></div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- Package 1 -->
+        <div class="bg-royal-maroon/40 border border-royal-gold/30 rounded-xl p-8 flex flex-col justify-between hover:border-royal-gold transition">
+          <div>
+            <span class="text-xs uppercase font-cinzel text-royal-gold tracking-widest block mb-2">Essential Auspicious</span>
+            <h3 class="font-cinzel text-2xl font-bold text-white mb-2">Vedic Tradition</h3>
+            <div class="text-3xl font-cinzel font-bold text-royal-gold mb-6">₹ 2,25,000 <span class="text-xs text-royal-ivory/60 font-sans font-normal">/ day</span></div>
+            <ul class="space-y-3 text-xs text-royal-ivory/80 font-serif">
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Maharaja AC Main Mandap Hall</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Annapoorna 500-Seater Dining Hall</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> 2 Deluxe Air Conditioned Bridal Suites</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Full Generator Power Backup</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Standard Sound & Lighting Setup</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Valet Parking Assistance</li>
+            </ul>
+          </div>
+          <a href="#enquire" class="mt-8 w-full py-3 text-center border border-royal-gold text-royal-gold font-cinzel text-xs uppercase tracking-wider rounded hover:bg-royal-gold hover:text-royal-deepRed transition">
+            Choose Vedic
+          </a>
+        </div>
+
+        <!-- Package 2 (Featured) -->
+        <div class="bg-gradient-to-b from-royal-maroon to-royal-deepRed border-2 border-royal-gold rounded-xl p-8 flex flex-col justify-between relative shadow-2xl gold-glow scale-105">
+          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-royal-gold text-royal-deepRed px-4 py-1 rounded text-xs font-cinzel font-bold uppercase tracking-widest">
+            Most Popular
+          </div>
+          <div>
+            <span class="text-xs uppercase font-cinzel text-royal-gold tracking-widest block mb-2">Imperial Grandeur</span>
+            <h3 class="font-cinzel text-2xl font-bold text-white mb-2">Shahi Rajwada</h3>
+            <div class="text-3xl font-cinzel font-bold text-royal-gold mb-6">₹ 3,95,000 <span class="text-xs text-royal-ivory/60 font-sans font-normal">/ 1.5 days</span></div>
+            <ul class="space-y-3 text-xs text-royal-ivory/90 font-serif">
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Complete Main Hall + Outdoor Courtyard</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> 6 AC Guest Rooms for Family Stay</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Royal Mandap Traditional Fresh Floral Decor</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Exterior Palace Façade Architectural Lighting</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Dedicated Event Manager & Floor Captains</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Red Carpet & Shehnai Welcome Troupe</li>
+            </ul>
+          </div>
+          <a href="#enquire" class="mt-8 w-full py-3.5 text-center bg-royal-gold text-royal-deepRed font-cinzel font-bold text-xs uppercase tracking-wider rounded hover:brightness-110 transition shadow">
+            Book Shahi Rajwada
+          </a>
+        </div>
+
+        <!-- Package 3 -->
+        <div class="bg-royal-maroon/40 border border-royal-gold/30 rounded-xl p-8 flex flex-col justify-between hover:border-royal-gold transition">
+          <div>
+            <span class="text-xs uppercase font-cinzel text-royal-gold tracking-widest block mb-2">All-Inclusive Luxury</span>
+            <h3 class="font-cinzel text-2xl font-bold text-white mb-2">Royal Dynasty</h3>
+            <div class="text-3xl font-cinzel font-bold text-royal-gold mb-6">₹ 5,80,000 <span class="text-xs text-royal-ivory/60 font-sans font-normal">/ 2 days</span></div>
+            <ul class="space-y-3 text-xs text-royal-ivory/80 font-serif">
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Full Palace Exclusivity for 48 Hours</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> All 14 Air-Conditioned Deluxe Rooms</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Custom Designer Stage & Entrance Gate Decor</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> LED Video Walls & Live Telecast Setup</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Full Valet Drivers Team (10 drivers)</li>
+              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-royal-gold"></i> Complimentary Pre-wedding Shoot Venue Access</li>
+            </ul>
+          </div>
+          <a href="#enquire" class="mt-8 w-full py-3 text-center border border-royal-gold text-royal-gold font-cinzel text-xs uppercase tracking-wider rounded hover:bg-royal-gold hover:text-royal-deepRed transition">
+            Choose Dynasty
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="py-20 bg-royal-deepRed/90 border-t border-royal-gold/20">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center max-w-3xl mx-auto mb-14 space-y-3">
+        <span class="text-xs font-cinzel uppercase tracking-[0.25em] text-royal-gold block">Words of Blessing</span>
+        <h2 class="font-cinzel text-3xl font-bold">What Families Say About Rajwada</h2>
+        <div class="w-24 h-0.5 bg-royal-gold mx-auto mt-4"></div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="bg-royal-maroon/30 border border-royal-gold/20 p-8 rounded-lg relative">
+          <div class="flex text-royal-gold text-sm gap-1 mb-4">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+          </div>
+          <p class="font-serif italic text-royal-ivory/80 text-sm leading-relaxed mb-6">
+            "We hosted our daughter's wedding here with 1,200 guests. The mandap was mesmerizing and the dining management was seamless. Relatives are still praising the palace look and parking convenience!"
+          </p>
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-royal-gold/20 border border-royal-gold flex items-center justify-center font-cinzel font-bold text-royal-gold">
+              AK
+            </div>
+            <div>
+              <div class="font-cinzel font-bold text-royal-goldLight text-sm">Mr. Arvind Kulkarni</div>
+              <div class="text-[11px] text-royal-ivory/60">Daughter's Wedding, Dec 2024</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-royal-maroon/30 border border-royal-gold/20 p-8 rounded-lg relative">
+          <div class="flex text-royal-gold text-sm gap-1 mb-4">
+            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+          </div>
+          <p class="font-serif italic text-royal-ivory/80 text-sm leading-relaxed mb-6">
+            "The bridal rooms are pure luxury, which was huge relief for the bride during 3 days of events. The generator backup worked without a single second of blackout during heavy rains. Truly 5-star venue."
+          </p>
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-royal-gold/20 border border-royal-gold flex items-center justify-center font-cinzel font-bold text-royal-gold">
+              SM
+            </div>
+            <div>
+              <div class="font-cinzel font-bold text-royal-goldLight text-sm">Dr. Sneha & Rohan Mehta</div>
+              <div class="text-[11px] text-royal-ivory/60">Grand Reception, Jan 2025</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Location & Footer -->
+  <footer id="contact" class="bg-black text-royal-ivory/80 border-t border-royal-gold/30 pt-16 pb-12">
+    <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
+      <div class="space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full border border-royal-gold flex items-center justify-center bg-royal-maroon">
+            <i class="fa-solid fa-crown text-royal-gold"></i>
+          </div>
+          <span class="font-cinzel text-lg font-bold text-royal-goldLight">RAJWADA PALACE</span>
+        </div>
+        <p class="text-xs text-royal-ivory/60 leading-relaxed font-serif">
+          The premier destination for royal weddings, grand receptions, and cultural festivities designed to make memories eternal.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="font-cinzel text-royal-gold text-sm font-bold tracking-wider uppercase mb-4">Palace Location</h4>
+        <p class="text-xs text-royal-ivory/70 leading-relaxed mb-3">
+          <i class="fa-solid fa-location-dot text-royal-gold mr-2"></i> Survey No. 42, Palace Highway Road, Near Heritage Archway, Prime City Zone.
+        </p>
+        <p class="text-xs text-royal-ivory/70">
+          <i class="fa-solid fa-plane text-royal-gold mr-2"></i> 25 mins from International Airport
+        </p>
+      </div>
+
+      <div>
+        <h4 class="font-cinzel text-royal-gold text-sm font-bold tracking-wider uppercase mb-4">Direct Enquiry</h4>
+        <p class="text-xs text-royal-ivory/70 mb-2">
+          <i class="fa-solid fa-phone text-royal-gold mr-2"></i> +91 98765 43210
+        </p>
+        <p class="text-xs text-royal-ivory/70 mb-2">
+          <i class="fa-solid fa-phone text-royal-gold mr-2"></i> +91 98765 43211
+        </p>
+        <p class="text-xs text-royal-ivory/70">
+          <i class="fa-solid fa-envelope text-royal-gold mr-2"></i> reservations@rajwadapalace.com
+        </p>
+      </div>
+
+      <div>
+        <h4 class="font-cinzel text-royal-gold text-sm font-bold tracking-wider uppercase mb-4">Visiting Hours</h4>
+        <p class="text-xs text-royal-ivory/70 mb-1">Open 7 Days a Week for Venue Inspection:</p>
+        <p class="text-xs text-royal-goldLight font-semibold mb-4">9:00 AM – 8:00 PM</p>
+        <a href="#enquire" class="inline-block px-4 py-2 bg-royal-gold/20 border border-royal-gold text-royal-gold text-xs rounded hover:bg-royal-gold hover:text-royal-deepRed transition">
+          Schedule Venue Visit
+        </a>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-6 mt-12 pt-6 border-t border-gray-800 text-center text-xs text-royal-ivory/40 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div>© 2025 Rajwada Palace & Convention Centre. All rights reserved.</div>
+      <div class="text-[11px] text-royal-gold/60">Design Option 1: Royal Heritage Style for Client Review</div>
+    </div>
+  </footer>
+
+  <!-- STICKY MOBILE ACTION BAR (Only visible on mobile screens) -->
+  <div class="fixed bottom-0 left-0 right-0 bg-royal-deepRed border-t border-royal-gold/40 px-4 py-2.5 flex items-center justify-between gap-3 z-50 lg:hidden shadow-2xl">
+    <a href="tel:+919876543210" class="flex-1 py-2.5 px-3 rounded bg-royal-maroon text-royal-gold font-cinzel font-bold text-xs flex items-center justify-center gap-1.5 border border-royal-gold/40">
+      <i class="fa-solid fa-phone"></i> Call Palace
+    </a>
+    <a href="https://wa.me/919876543210?text=Hello%20Rajwada%20Palace,%20I%20am%20inquiring%20about%20hall%20availability" target="_blank" class="flex-1 py-2.5 px-3 rounded bg-emerald-700 text-white font-cinzel font-bold text-xs flex items-center justify-center gap-1.5 border border-emerald-500">
+      <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
+    </a>
+    <a href="#enquire" class="py-2.5 px-4 rounded bg-royal-gold text-royal-deepRed font-cinzel font-bold text-xs flex items-center justify-center shadow">
+      Book
+    </a>
+  </div>
+
+  <!-- Simple JavaScript for interactivity -->
+  <script>
+    function toggleRoyalNav() {
+      const menu = document.getElementById('royalMobileNav');
+      menu.classList.toggle('hidden');
+    }
+
+    function calculateEstimate() {
+      const guests = parseInt(document.getElementById('guestSlider').value);
+      const days = parseFloat(document.getElementById('durationSelect').value);
+      const decor = document.getElementById('decorAddon').checked ? 75000 : 0;
+      const rooms = document.getElementById('roomsAddon').checked ? 50000 : 0;
+      const lighting = document.getElementById('lightingAddon').checked ? 30000 : 0;
+
+      document.getElementById('guestDisplay').innerText = guests + " Guests";
+
+      // Base formula
+      let baseRent = 180000 * days;
+      if (guests > 1000) baseRent += 50000;
+      
+      const total = baseRent + decor + rooms + lighting;
+      document.getElementById('estimatedCost').innerText = "₹ " + total.toLocaleString('en-IN') + "*";
+    }
+
+    function submitRoyalEnquiry() {
+      document.getElementById('enquirySuccessModal').classList.remove('hidden');
+      setTimeout(() => {
+        document.getElementById('enquirySuccessModal').scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  </script>
+</body>
+</html>

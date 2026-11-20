@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vrindavan Botanical Greens & Glass Orangery | Garden Marriage Hall</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            botanical: {
+              forest: '#132a13',
+              deepGreen: '#1b4332',
+              sage: '#40916c',
+              lightSage: '#d8f3dc',
+              cream: '#faf7f2',
+              linen: '#f4ede2',
+              rose: '#f7d6d0',
+              gold: '#c99a45',
+              goldLight: '#eecf8e',
+            }
+          },
+          fontFamily: {
+            serif: ['"Cormorant Garamond"', 'serif'],
+            script: ['"Great Vibes"', 'cursive'],
+            sans: ['"Outfit"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .garden-hero {
+      background: linear-gradient(rgba(19, 42, 19, 0.72), rgba(27, 67, 50, 0.85)), url('https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=2000&q=80') center/cover no-repeat fixed;
+    }
+    .floral-pattern {
+      background-color: #faf7f2;
+      background-image: radial-gradient(#40916c 0.75px, transparent 0.75px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="bg-botanical-cream text-gray-800 font-sans antialiased selection:bg-botanical-sage selection:text-white pb-16 md:pb-0">
+
+  <!-- Garden Notice Banner -->
+  <div class="bg-botanical-deepGreen text-botanical-cream text-xs py-2 px-4 sm:px-6">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div class="flex items-center gap-3">
+        <span><i class="fa-solid fa-seedling text-botanical-gold mr-1.5"></i> 12 Acres of Lush Landscaped Gardens & Glasshouse Pavilion</span>
+      </div>
+      <div class="flex items-center gap-4 text-xs">
+        <span><i class="fa-solid fa-sun text-botanical-gold mr-1"></i> Sunset Pheras Specialist</span>
+        <span class="hidden sm:inline">|</span>
+        <a href="#booking" class="text-botanical-goldLight hover:underline font-semibold">Reserve Your Dream Lawn</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navigation -->
+  <header class="sticky top-0 z-40 bg-botanical-cream/95 backdrop-blur-md border-b border-botanical-sage/20 transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between">
+      <!-- Logo -->
+      <a href="#" class="flex items-center gap-3">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-botanical-forest text-botanical-gold flex items-center justify-center text-lg sm:text-xl shadow-md border border-botanical-gold/40">
+          <i class="fa-solid fa-feather-pointed"></i>
+        </div>
+        <div>
+          <span class="font-serif text-xl sm:text-2xl font-bold tracking-wide text-botanical-forest block leading-none">Vrindavan Greens</span>
+          <span class="text-[9px] sm:text-[10px] tracking-[0.25em] text-botanical-sage uppercase block mt-1">Garden Resort & Glass Orangery</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden lg:flex items-center gap-8 text-sm font-medium text-botanical-forest">
+        <a href="#about" class="hover:text-botanical-sage transition">The Estate</a>
+        <a href="#spaces" class="hover:text-botanical-sage transition">Garden Venues</a>
+        <a href="#features" class="hover:text-botanical-sage transition">Eco-Amenities</a>
+        <a href="#gallery" class="hover:text-botanical-sage transition">Floral Gallery</a>
+        <a href="#packages" class="hover:text-botanical-sage transition">Wedding Packages</a>
+        <a href="#faq" class="hover:text-botanical-sage transition">FAQ</a>
+      </nav>
+
+      <!-- CTA & Mobile Toggle -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a href="https://wa.me/919876543210?text=Inquiry%20for%20Vrindavan%20Greens%20Garden%20Wedding" target="_blank" class="hidden sm:inline-flex px-3.5 py-2 rounded-full border border-botanical-sage text-botanical-deepGreen hover:bg-botanical-sage/10 transition text-xs font-semibold items-center gap-1.5">
+          <i class="fa-brands fa-whatsapp text-emerald-600"></i> WhatsApp
+        </a>
+        <a href="#booking" class="px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-botanical-deepGreen text-white font-serif font-bold text-xs sm:text-sm tracking-wider uppercase hover:bg-botanical-forest transition shadow-lg">
+          Check Dates
+        </a>
+        <button onclick="toggleBotanicalNav()" class="lg:hidden p-2 rounded-full text-botanical-forest hover:bg-botanical-sage/10 transition" aria-label="Toggle menu">
+          <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Nav -->
+    <div id="botanicalMobileNav" class="hidden lg:hidden bg-white border-t border-botanical-sage/20 px-6 py-4 space-y-3 font-serif text-sm">
+      <a href="#about" onclick="toggleBotanicalNav()" class="block py-1 text-botanical-forest hover:text-botanical-sage">The Estate</a>
+      <a href="#spaces" onclick="toggleBotanicalNav()" class="block py-1 text-botanical-forest hover:text-botanical-sage">Garden Venues</a>
+      <a href="#features" onclick="toggleBotanicalNav()" class="block py-1 text-botanical-forest hover:text-botanical-sage">Eco-Amenities</a>
+      <a href="#gallery" onclick="toggleBotanicalNav()" class="block py-1 text-botanical-forest hover:text-botanical-sage">Floral Gallery</a>
+      <a href="#packages" onclick="toggleBotanicalNav()" class="block py-1 text-botanical-forest hover:text-botanical-sage">Wedding Packages</a>
+      <a href="#faq" onclick="toggleBotanicalNav()" class="block py-1 text-botanical-forest hover:text-botanical-sage">FAQ</a>
+    </div>
+  </header>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="garden-hero text-white min-h-[90vh] flex items-center relative py-20">
+    <div class="max-w-7xl mx-auto px-6 relative z-10 grid lg:grid-cols-12 gap-12 items-center">
+      <div class="lg:col-span-7 space-y-6">
+        <span class="font-script text-3xl sm:text-4xl text-botanical-rose block">Fairy Tale Weddings Amidst Nature</span>
+        
+        <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
+          Where Endless Love Blossoms Under <span class="italic text-botanical-goldLight">Starlit Canopies</span>
+        </h1>
+
+        <p class="text-base sm:text-lg text-botanical-lightSage font-light max-w-2xl leading-relaxed">
+          Escape sterile concrete halls. Celebrate your wedding across manicured lawns, romantic botanical pergolas, and an air-conditioned European glass orangery.
+        </p>
+
+        <!-- Garden Stats -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 border-y border-white/20">
+          <div>
+            <div class="font-serif text-3xl font-bold text-botanical-goldLight">12 Acres</div>
+            <div class="text-xs text-botanical-lightSage uppercase tracking-wider mt-1">Botanical Estate</div>
+          </div>
+          <div>
+            <div class="font-serif text-3xl font-bold text-botanical-goldLight">2,500</div>
+            <div class="text-xs text-botanical-lightSage uppercase tracking-wider mt-1">Open Lawn Guests</div>
+          </div>
+          <div>
+            <div class="font-serif text-3xl font-bold text-botanical-goldLight">600 Seats</div>
+            <div class="text-xs text-botanical-lightSage uppercase tracking-wider mt-1">Glass Orangery AC</div>
+          </div>
+          <div>
+            <div class="font-serif text-3xl font-bold text-botanical-goldLight">8 Villas</div>
+            <div class="text-xs text-botanical-lightSage uppercase tracking-wider mt-1">Garden Cottages</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 pt-2">
+          <a href="#booking" class="px-8 py-3.5 rounded-full bg-botanical-gold text-botanical-forest font-serif font-bold text-base hover:brightness-110 transition shadow-lg">
+            Schedule Estate Stroll
+          </a>
+          <a href="#spaces" class="px-7 py-3.5 rounded-full border border-white/40 text-white hover:bg-white/10 transition font-serif text-base flex items-center gap-2">
+            <i class="fa-solid fa-tree text-botanical-goldLight text-xs"></i> View Garden Spaces
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Reservation Form -->
+      <div class="lg:col-span-5" id="booking">
+        <div class="bg-white/95 text-gray-800 rounded-3xl p-8 shadow-2xl backdrop-blur-md border border-botanical-sage/30">
+          <div class="text-center mb-6">
+            <span class="font-script text-2xl text-botanical-sage block">Begin Your Love Story</span>
+            <h3 class="font-serif text-2xl font-bold text-botanical-forest">Check Date Availability</h3>
+            <p class="text-xs text-gray-500 mt-1">Rainproof glasshouse backup guaranteed for every booking.</p>
+          </div>
+
+          <form onsubmit="event.preventDefault(); document.getElementById('gardenSuccess').classList.remove('hidden');" class="space-y-4">
+            <div>
+              <label class="block text-xs uppercase tracking-wider font-semibold text-botanical-forest mb-1">Full Name</label>
+              <input type="text" required placeholder="e.g. Ananya & Siddharth" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-botanical-sage">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs uppercase tracking-wider font-semibold text-botanical-forest mb-1">Contact Phone</label>
+                <input type="tel" required placeholder="+91 98765 00000" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-botanical-sage">
+              </div>
+              <div>
+                <label class="block text-xs uppercase tracking-wider font-semibold text-botanical-forest mb-1">Preferred Date</label>
+                <input type="date" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-botanical-sage">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs uppercase tracking-wider font-semibold text-botanical-forest mb-1">Wedding Type</label>
+                <select class="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-botanical-sage">
+                  <option>Sunset Pheras & Lawn Party</option>
+                  <option>Glass Orangery Reception</option>
+                  <option>Mehendi / Sangeet Carnival</option>
+                  <option>2-Day Full Estate Buyout</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs uppercase tracking-wider font-semibold text-botanical-forest mb-1">Guest Estimate</label>
+                <select class="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-botanical-sage">
+                  <option>300 - 500 Guests</option>
+                  <option>500 - 1,000 Guests</option>
+                  <option>1,000 - 2,500 Guests</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full py-3.5 rounded-full bg-botanical-deepGreen text-white font-serif font-bold text-sm uppercase tracking-wider hover:bg-botanical-forest transition shadow-lg mt-2">
+              Request Brochure & Pricing
+            </button>
+          </form>
+
+          <div id="gardenSuccess" class="hidden mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-400 text-emerald-800 text-xs text-center">
+            <i class="fa-solid fa-circle-check text-lg mb-1 block text-emerald-600"></i>
+            Thank you! Our Wedding Specialist will connect with you via WhatsApp to share date availability and our botanical wedding lookbook.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Garden Venues -->
+  <section id="spaces" class="py-24 floral-pattern">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="font-script text-3xl text-botanical-sage block">Breathtaking Settings</span>
+        <h2 class="font-serif text-3xl sm:text-4xl font-bold text-botanical-forest">Our Botanical Venues</h2>
+        <div class="w-16 h-0.5 bg-botanical-gold mx-auto mt-3"></div>
+      </div>
+
+      <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Space 1 -->
+        <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-botanical-sage/20 group hover:-translate-y-1 transition duration-300">
+          <div class="h-64 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=800&q=80" alt="The Grand Meadow" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+            <span class="absolute top-4 left-4 bg-botanical-deepGreen text-white text-xs px-3 py-1 rounded-full font-serif">
+              Up to 2,500 Guests
+            </span>
+          </div>
+          <div class="p-8 space-y-4">
+            <h3 class="font-serif text-2xl font-bold text-botanical-forest">The Emerald Meadow Lawn</h3>
+            <p class="text-xs text-gray-600 leading-relaxed">
+              Expansive Bermuda grass lawn bordered by royal palms and floral arches, equipped with integrated underground cabling for fairy lights and stage sound.
+            </p>
+            <div class="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-botanical-sage font-semibold">
+              <span><i class="fa-solid fa-sun mr-1"></i> Sunset Pheras</span>
+              <span><i class="fa-solid fa-tree mr-1"></i> 35,000 sq.ft</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Space 2 -->
+        <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-botanical-sage/20 group hover:-translate-y-1 transition duration-300">
+          <div class="h-64 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80" alt="The Glass Orangery" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+            <span class="absolute top-4 left-4 bg-botanical-deepGreen text-white text-xs px-3 py-1 rounded-full font-serif">
+              Up to 600 Guests
+            </span>
+          </div>
+          <div class="p-8 space-y-4">
+            <h3 class="font-serif text-2xl font-bold text-botanical-forest">The Glass Orangery Pavilion</h3>
+            <p class="text-xs text-gray-600 leading-relaxed">
+              European glasshouse architecture with panoramic views of the gardens, full climate control, crystal chandeliers, and all-weather dining safety.
+            </p>
+            <div class="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-botanical-sage font-semibold">
+              <span><i class="fa-solid fa-snowflake mr-1"></i> 100% Central AC</span>
+              <span><i class="fa-solid fa-cloud-rain mr-1"></i> Rainproof Guarantee</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Space 3 -->
+        <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-botanical-sage/20 group hover:-translate-y-1 transition duration-300">
+          <div class="h-64 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?auto=format&fit=crop&w=800&q=80" alt="Courtyard Dining" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+            <span class="absolute top-4 left-4 bg-botanical-deepGreen text-white text-xs px-3 py-1 rounded-full font-serif">
+              Farm-To-Table Dining
+            </span>
+          </div>
+          <div class="p-8 space-y-4">
+            <h3 class="font-serif text-2xl font-bold text-botanical-forest">The Pergola Dining Orchard</h3>
+            <p class="text-xs text-gray-600 leading-relaxed">
+              Shaded dining pergolas intertwined with flowering bougainvillea and live cooking counters for organic wood-fired delights and authentic festive feasts.
+            </p>
+            <div class="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-botanical-sage font-semibold">
+              <span><i class="fa-solid fa-utensils mr-1"></i> 550 Dining Capacity</span>
+              <span><i class="fa-solid fa-carrot mr-1"></i> Live Organic Counters</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Eco Features & Comfort -->
+  <section id="features" class="py-20 bg-botanical-forest text-white">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="font-script text-3xl text-botanical-goldLight block">Thoughtful Hospitality</span>
+        <h2 class="font-serif text-3xl font-bold">Uncompromising Comfort Amidst Nature</h2>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10">
+          <i class="fa-solid fa-umbrella text-botanical-gold text-3xl mb-3"></i>
+          <h4 class="font-serif text-lg font-bold mb-1">Rain Guarantee</h4>
+          <p class="text-xs text-botanical-lightSage/70">Automatic seamless transition to indoor glass conservatory in case of sudden drizzle.</p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10">
+          <i class="fa-solid fa-house-chimney-window text-botanical-gold text-3xl mb-3"></i>
+          <h4 class="font-serif text-lg font-bold mb-1">8 Private Cottages</h4>
+          <p class="text-xs text-botanical-lightSage/70">Spacious botanical pool villas for the bridal party to rest, dress, and unwind.</p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10">
+          <i class="fa-solid fa-square-parking text-botanical-gold text-3xl mb-3"></i>
+          <h4 class="font-serif text-lg font-bold mb-1">400+ Car Lawn Parking</h4>
+          <p class="text-xs text-botanical-lightSage/70">Paved grass-grid parking avoiding mud and dust with battery golf cart shuttles.</p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-white/5 border border-white/10">
+          <i class="fa-solid fa-solar-panel text-botanical-gold text-3xl mb-3"></i>
+          <h4 class="font-serif text-lg font-bold mb-1">Eco-Zero Waste</h4>
+          <p class="text-xs text-botanical-lightSage/70">Composting of floral decor, solar backup power, and pristine natural serenity.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Packages -->
+  <section id="packages" class="py-24 bg-botanical-cream">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <span class="font-script text-3xl text-botanical-sage block">Curated Celebrations</span>
+        <h2 class="font-serif text-3xl font-bold text-botanical-forest">Wedding Lawn Packages</h2>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-white rounded-3xl p-8 border border-botanical-sage/20 flex flex-col justify-between shadow-md">
+          <div>
+            <h4 class="font-serif text-2xl font-bold text-botanical-forest">Garden Twilight</h4>
+            <div class="text-3xl font-serif font-bold text-botanical-gold mt-2 mb-6">₹ 2,40,000 <span class="text-xs font-sans text-gray-500 font-normal">/ day</span></div>
+            <ul class="space-y-3 text-xs text-gray-600">
+              <li><i class="fa-solid fa-check text-botanical-sage mr-2"></i> The Emerald Meadow Lawn (8 Hours)</li>
+              <li><i class="fa-solid fa-check text-botanical-sage mr-2"></i> Pergola Dining Orchard Setup</li>
+              <li><i class="fa-solid fa-check text-botanical-sage mr-2"></i> 2 Bridal Dressing Garden Cottages</li>
+              <li><i class="fa-solid fa-check text-botanical-sage mr-2"></i> Fairy Light Canopy Tree Illumination</li>
+              <li><i class="fa-solid fa-check text-botanical-sage mr-2"></i> Complete Generator Power Backup</li>
+            </ul>
+          </div>
+          <a href="#booking" class="mt-8 w-full py-3 text-center rounded-full border border-botanical-forest text-botanical-forest font-serif font-bold text-xs uppercase tracking-wider hover:bg-botanical-forest hover:text-white transition">
+            Choose Twilight
+          </a>
+        </div>
+
+        <div class="bg-botanical-deepGreen text-white rounded-3xl p-8 border-2 border-botanical-gold flex flex-col justify-between shadow-xl relative scale-105">
+          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-botanical-gold text-botanical-forest px-4 py-1 rounded-full text-xs font-serif font-bold uppercase tracking-wider">
+            Signature Favorite
+          </div>
+          <div>
+            <h4 class="font-serif text-2xl font-bold text-white">Glasshouse Romance</h4>
+            <div class="text-3xl font-serif font-bold text-botanical-goldLight mt-2 mb-6">₹ 4,10,000 <span class="text-xs font-sans text-botanical-lightSage font-normal">/ 1.5 days</span></div>
+            <ul class="space-y-3 text-xs text-botanical-lightSage">
+              <li><i class="fa-solid fa-check text-botanical-gold mr-2"></i> Complete Lawn & Glass Orangery AC Access</li>
+              <li><i class="fa-solid fa-check text-botanical-gold mr-2"></i> 4 Botanical Pool Villa Cottages (Overnight Stay)</li>
+              <li><i class="fa-solid fa-check text-botanical-gold mr-2"></i> Mandap Floral Pergola Setup with Fresh Exotic Blooms</li>
+              <li><i class="fa-solid fa-check text-botanical-gold mr-2"></i> Golf Carts for Senior Relatives Mobility</li>
+              <li><i class="fa-solid fa-check text-botanical-gold mr-2"></i> Valet Parking Team with Lawn Bay Drivers</li>
+            </ul>
+          </div>
+          <a href="#booking" class="mt-8 w-full py-3.5 text-center rounded-full bg-botanical-gold text-botanical-forest font-serif font-bold text-xs uppercase tracking-wider hover:brightness-110 transition shadow">
+            Book Glasshouse Romance
+          </a>
+        </div>
+
+        <div class="bg-white rounded-3xl p-8 border border-botanical-sage/20 flex flex-col justify-between shadow-md">
+          <div>
+            <h4 class="font-serif text-2xl font-bold text-botanical-forest">Estate Sanctuary</h4>
+            <div class="text-3xl font-serif font-bold text-botanical-gold mt-2 mb-6">₹ 6,20,000 <span class="text-xs font-sans text-gray-500 font-normal">/ 2 days</span></div>
+            <ul class="space-y-3 text-xs text-gray-600">
+              <li><i class="fa-solid fa-check text-botanical-sage mr-2"></i> Full 12-Acre Estate Exclusivity (48 Hours)</li>
+              <li><i class="fa-solid fa-check text-botanical-sage mr-2"></i> All 8 Luxury Botanical Guest Cottages</li>
+              <li><i class="fa-solid fa-check text-botanical-sage mr-2"></i> Haldi Lawn, Sangeet Stage, & Sunset Mandap</li>
+              <li><i class="fa-solid fa-check text-botanical-sage mr-2"></i> Acoustic DJ & Live Band Technical Setup</li>
+              <li><i class="fa-solid fa-check text-botanical-sage mr-2"></i> Unlimited Dedicated Staff & Estate Host</li>
+            </ul>
+          </div>
+          <a href="#booking" class="mt-8 w-full py-3 text-center rounded-full border border-botanical-forest text-botanical-forest font-serif font-bold text-xs uppercase tracking-wider hover:bg-botanical-forest hover:text-white transition">
+            Choose Estate Buyout
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Botanical Footer -->
+  <footer class="bg-botanical-forest text-botanical-lightSage text-xs py-12 border-t border-botanical-sage/30">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-botanical-gold text-botanical-forest flex items-center justify-center font-bold">V</div>
+        <span class="font-serif text-white text-base font-bold">VRINDAVAN BOTANICAL GREENS</span>
+      </div>
+      <div>
+        Green Valley Expressway, Countryside Retreat Zone. +91 98765 43210
+      </div>
+      <div class="text-emerald-300/60">
+        Design Option 3: Botanical Garden & Open Lawn Romance
+      </div>
+    </div>
+  </footer>
+
+  <!-- STICKY MOBILE ACTION BAR (Only visible on mobile screens) -->
+  <div class="fixed bottom-0 left-0 right-0 bg-botanical-forest border-t border-botanical-sage/30 px-4 py-2.5 flex items-center justify-between gap-3 z-50 lg:hidden shadow-2xl">
+    <a href="tel:+919876543210" class="flex-1 py-2.5 px-3 rounded-full bg-botanical-deepGreen text-botanical-gold font-serif font-bold text-xs flex items-center justify-center gap-1.5 border border-botanical-sage/40">
+      <i class="fa-solid fa-phone"></i> Call Estate
+    </a>
+    <a href="https://wa.me/919876543210?text=Hello%20Vrindavan%20Greens,%20I%20am%20inquiring%20about%20lawn%20availability" target="_blank" class="flex-1 py-2.5 px-3 rounded-full bg-emerald-700 text-white font-serif font-bold text-xs flex items-center justify-center gap-1.5">
+      <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
+    </a>
+    <a href="#booking" class="py-2.5 px-4 rounded-full bg-botanical-gold text-botanical-forest font-serif font-bold text-xs flex items-center justify-center shadow">
+      Book
+    </a>
+  </div>
+
+  <script>
+    function toggleBotanicalNav() {
+      const menu = document.getElementById('botanicalMobileNav');
+      menu.classList.toggle('hidden');
+    }
+  </script>
+</body>
+</html>
