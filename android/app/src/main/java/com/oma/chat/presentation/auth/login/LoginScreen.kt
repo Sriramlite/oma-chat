@@ -1,6 +1,8 @@
 package com.oma.chat.presentation.auth.login
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +40,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.painterResource
+import com.oma.chat.R
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -95,19 +99,22 @@ fun LoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Brand Header
+                // Brand Logo
                 Surface(
-                    modifier = Modifier.size(76.dp),
-                    shape = RoundedCornerShape(22.dp),
-                    color = EmeraldPrimary.copy(alpha = 0.15f)
+                    modifier = Modifier.size(80.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 2.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "OMA",
-                            color = EmeraldPrimary,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 22.sp,
-                            letterSpacing = 1.sp
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_app_logo),
+                            contentDescription = "OMA Logo",
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
