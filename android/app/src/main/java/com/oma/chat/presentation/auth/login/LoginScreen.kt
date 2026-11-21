@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import com.oma.chat.R
 import androidx.compose.runtime.collectAsState
@@ -104,19 +105,16 @@ fun LoginScreen(
                     modifier = Modifier.size(80.dp),
                     shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 2.dp,
+                    tonalElevation = 4.dp,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.padding(12.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_app_logo),
-                            contentDescription = "OMA Logo",
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_app_logo),
+                        contentDescription = "OMA Logo",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(20.dp))
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

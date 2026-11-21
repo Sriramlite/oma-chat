@@ -1,8 +1,12 @@
 package com.oma.chat.presentation.home
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -164,11 +168,6 @@ fun ConversationListScreen(
                                     name = currentUser?.name ?: "User",
                                     size = 36.dp,
                                     onClick = onNavigateToProfile
-                                )
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_app_logo),
-                                    contentDescription = "App Logo",
-                                    modifier = Modifier.size(28.dp)
                                 )
                                 Column {
                                     Text(
@@ -401,61 +400,67 @@ fun ConversationListScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            when (uiState.currentTab) {
-                MainTab.CHATS -> {
-                    ChatsTabContent(
-                        isBleMeshMode = isBleMeshMode,
-                        meshPeers = meshPeers,
-                        inlineFilterQuery = inlineFilterQuery,
-                        onQueryChange = { inlineFilterQuery = it },
-                        categories = categories,
-                        selectedCategory = selectedCategory,
-                        onCategorySelected = { selectedCategory = it },
-                        isRefreshing = uiState.isRefreshing,
-                        onRefresh = { viewModel.refresh() },
-                        conversations = filteredConversations,
-                        onToggleBleMeshMode = { viewModel.toggleBleMeshMode(it) },
-                        onOpenNewChat = { viewModel.openNewChatDialog() },
-                        onNavigateToChat = onNavigateToChat
-                    )
-                }
-                MainTab.CALLS -> {
-                    CallsTabContent(
-                        conversations = uiState.conversations,
-                        onStartCall = onStartCall,
-                        onBrowseContacts = {
-                            viewModel.selectTab(MainTab.OFFLINE_SOCIAL)
-                            viewModel.setSocialCategory(SocialCategory.CONTACTS)
-                        }
-                    )
-                }
-                MainTab.OFFLINE_SOCIAL -> {
-                    OfflineSocialTabContent(
-                        isBleMeshMode = isBleMeshMode,
-                        meshPeers = meshPeers,
-                        socialCategory = uiState.socialCategory,
-                        contacts = uiState.contacts,
-                        displayedContactsCount = uiState.displayedContactsCount,
-                        isLoadingContacts = uiState.isLoadingContacts,
-                        onlineUserIds = uiState.onlineUserIds,
-                        onSelectCategory = { viewModel.setSocialCategory(it) },
-                        onToggleBleMeshMode = { viewModel.toggleBleMeshMode(it) },
-                        onRestartMeshScan = { viewModel.restartMeshScan() },
-                        onLoadMoreContacts = { viewModel.loadMoreContacts() },
-                        onNavigateToChat = onNavigateToChat,
-                        onStartCall = onStartCall
-                    )
-                }
-                MainTab.PROFILE -> {
-                    ProfileTabContent(
-                        currentUser = currentUser,
-                        onNavigateToProfile = onNavigateToProfile,
-                        onNavigateToSettings = onNavigateToSettings,
-                        onLogout = {
-                            viewModel.logout()
-                            onLoggedOut()
-                        }
-                    )
+            AnimatedContent(
+                targetState = uiState.currentTab,
+                transitionSpec = {
+                    (fadeIn(animationSpec = tween(220)) + scaleIn(initialScale = 0.98f, animationSpec = tween(220)))
+                        .togetherWith(fadeOut(animationSpec = tween(160)))
+                },
+                label = "MainTabsAnimation"
+            ) { targetTab ->
+                when (targetTab) {
+                    MainTab.CHATS -> {
+                        ChatsTabContent(
+                            inlineFilterQuery = inlineFilterQuery,
+                            onQueryChange = { inlineFilterQuery = it },
+                            categories = categories,
+                            selectedCategory = selectedCategory,
+                            onCategorySelected = { selectedCategory = it },
+                            isRefreshing = uiState.isRefreshing,
+                            onRefresh = { viewModel.refresh() },
+                            conversations = filteredConversations,
+                            onOpenNewChat = { viewModel.openNewChatDialog() },
+                            onNavigateToChat = onNavigateToChat
+                        )
+                    }
+                    MainTab.CALLS -> {
+                        CallsTabContent(
+                            conversations = uiState.conversations,
+                            onStartCall = onStartCall,
+                            onBrowseContacts = {
+                                viewModel.selectTab(MainTab.OFFLINE_SOCIAL)
+                                viewModel.setSocialCategory(SocialCategory.CONTACTS)
+                            }
+                        )
+                    }
+                    MainTab.OFFLINE_SOCIAL -> {
+                        OfflineSocialTabContent(
+                            isBleMeshMode = isBleMeshMode,
+                            meshPeers = meshPeers,
+                            socialCategory = uiState.socialCategory,
+                            contacts = uiState.contacts,
+                            displayedContactsCount = uiState.displayedContactsCount,
+                            isLoadingContacts = uiState.isLoadingContacts,
+                            onlineUserIds = uiState.onlineUserIds,
+                            onSelectCategory = { viewModel.setSocialCategory(it) },
+                            onToggleBleMeshMode = { viewModel.toggleBleMeshMode(it) },
+                            onRestartMeshScan = { viewModel.restartMeshScan() },
+                            onLoadMoreContacts = { viewModel.loadMoreContacts() },
+                            onNavigateToChat = onNavigateToChat,
+                            onStartCall = onStartCall
+                        )
+                    }
+                    MainTab.PROFILE -> {
+                        ProfileTabContent(
+                            currentUser = currentUser,
+                            onNavigateToProfile = onNavigateToProfile,
+                            onNavigateToSettings = onNavigateToSettings,
+                            onLogout = {
+                                viewModel.logout()
+                                onLoggedOut()
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -488,8 +493,6 @@ fun ConversationListScreen(
 
 @Composable
 private fun ChatsTabContent(
-    isBleMeshMode: Boolean,
-    meshPeers: List<BlePeer>,
     inlineFilterQuery: String,
     onQueryChange: (String) -> Unit,
     categories: List<String>,
@@ -498,81 +501,10 @@ private fun ChatsTabContent(
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     conversations: List<Conversation>,
-    onToggleBleMeshMode: (Boolean) -> Unit,
     onOpenNewChat: () -> Unit,
     onNavigateToChat: (chatId: String, chatName: String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Mode Indicator & Quick-Switch Pill
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            shape = RoundedCornerShape(12.dp),
-            color = if (isBleMeshMode) EmeraldPrimary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-            border = BorderStroke(
-                width = 1.dp,
-                color = if (isBleMeshMode) EmeraldPrimary.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onToggleBleMeshMode(!isBleMeshMode) }
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = if (isBleMeshMode) EmeraldPrimary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.size(34.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = if (isBleMeshMode) Icons.Default.Bluetooth else Icons.Default.Cloud,
-                                contentDescription = null,
-                                tint = if (isBleMeshMode) EmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = if (isBleMeshMode) "Offline BLE Mesh Mode" else "Online Cloud Mode",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (isBleMeshMode) EmeraldPrimary else MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = if (isBleMeshMode) {
-                                if (meshPeers.isEmpty()) "Scanning & Relay active • 0 peers"
-                                else "Connected • ${meshPeers.size} peer(s) in mesh"
-                            } else "Connected via WebSocket & Firebase",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 11.sp
-                        )
-                    }
-                }
-
-                Switch(
-                    checked = isBleMeshMode,
-                    onCheckedChange = onToggleBleMeshMode,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Color.White,
-                        checkedTrackColor = EmeraldPrimary
-                    ),
-                    modifier = Modifier.scale(0.85f)
-                )
-            }
-        }
-
         // Modern Search Bar
         Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
             OmaSearchBar(
@@ -614,7 +546,8 @@ private fun ChatsTabContent(
                     ) { conversation ->
                         ModernConversationItem(
                             conversation = conversation,
-                            onClick = { onNavigateToChat(conversation.id, conversation.name) }
+                            onClick = { onNavigateToChat(conversation.id, conversation.name) },
+                            modifier = Modifier.animateItem()
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 78.dp, end = 16.dp),
@@ -805,26 +738,35 @@ private fun OfflineSocialTabContent(
             }
         }
 
-        when (socialCategory) {
-            SocialCategory.NEARBY -> {
-                NearbyCategoryContent(
-                    isBleMeshMode = isBleMeshMode,
-                    meshPeers = meshPeers,
-                    onToggleBleMeshMode = onToggleBleMeshMode,
-                    onRestartMeshScan = onRestartMeshScan,
-                    onNavigateToChat = onNavigateToChat
-                )
-            }
-            SocialCategory.CONTACTS -> {
-                ContactsCategoryContent(
-                    contacts = contacts,
-                    displayedCount = displayedContactsCount,
-                    isLoading = isLoadingContacts,
-                    onlineUserIds = onlineUserIds,
-                    onLoadMore = onLoadMoreContacts,
-                    onNavigateToChat = onNavigateToChat,
-                    onStartCall = onStartCall
-                )
+        AnimatedContent(
+            targetState = socialCategory,
+            transitionSpec = {
+                (fadeIn(animationSpec = tween(200)) + scaleIn(initialScale = 0.99f, animationSpec = tween(200)))
+                    .togetherWith(fadeOut(animationSpec = tween(150)))
+            },
+            label = "SocialCategoryAnimation"
+        ) { category ->
+            when (category) {
+                SocialCategory.NEARBY -> {
+                    NearbyCategoryContent(
+                        isBleMeshMode = isBleMeshMode,
+                        meshPeers = meshPeers,
+                        onToggleBleMeshMode = onToggleBleMeshMode,
+                        onRestartMeshScan = onRestartMeshScan,
+                        onNavigateToChat = onNavigateToChat
+                    )
+                }
+                SocialCategory.CONTACTS -> {
+                    ContactsCategoryContent(
+                        contacts = contacts,
+                        displayedCount = displayedContactsCount,
+                        isLoading = isLoadingContacts,
+                        onlineUserIds = onlineUserIds,
+                        onLoadMore = onLoadMoreContacts,
+                        onNavigateToChat = onNavigateToChat,
+                        onStartCall = onStartCall
+                    )
+                }
             }
         }
     }
@@ -1420,10 +1362,11 @@ private fun ProfileTabContent(
 @Composable
 private fun ModernConversationItem(
     conversation: Conversation,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
