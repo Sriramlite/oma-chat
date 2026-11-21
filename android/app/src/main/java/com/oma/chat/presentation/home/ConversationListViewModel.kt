@@ -3,6 +3,8 @@ package com.oma.chat.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.oma.chat.data.local.preferences.AuthPreferences
+import com.oma.chat.data.mesh.BleMeshManager
+import com.oma.chat.data.mesh.BlePeer
 import com.oma.chat.domain.model.Conversation
 import com.oma.chat.domain.model.User
 import com.oma.chat.domain.usecase.auth.GetCurrentUserUseCase
@@ -42,8 +44,17 @@ class ConversationListViewModel @Inject constructor(
     private val observePresenceUseCase: ObservePresenceUseCase,
     private val getMeUseCase: com.oma.chat.domain.usecase.user.GetMeUseCase,
     private val updatePushTokenUseCase: com.oma.chat.domain.usecase.user.UpdatePushTokenUseCase,
-    private val logoutUseCase: LogoutUseCase
+    private val logoutUseCase: LogoutUseCase,
+    private val bleMeshManager: BleMeshManager
 ) : ViewModel() {
+
+    val isBleMeshMode: StateFlow<Boolean> = authPreferences.bleMeshModeState
+    val meshPeers: StateFlow<List<BlePeer>> = bleMeshManager.peers
+
+    fun toggleBleMeshMode(enabled: Boolean? = null) {
+        val nextState = enabled ?: !isBleMeshMode.value
+        authPreferences.setBleMeshMode(nextState)
+    }
 
     private val ownerUserId: String = authPreferences.getUserId() ?: ""
 

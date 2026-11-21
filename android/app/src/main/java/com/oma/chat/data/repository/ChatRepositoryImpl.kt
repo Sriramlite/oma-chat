@@ -5,6 +5,8 @@ import com.oma.chat.data.local.dao.MessageDao
 import com.oma.chat.data.local.entity.ConversationEntity
 import com.oma.chat.data.local.entity.MessageEntity
 import com.oma.chat.data.local.preferences.AuthPreferences
+import com.oma.chat.data.mesh.BleMeshManager
+import com.oma.chat.data.mesh.MeshPacket
 import com.oma.chat.data.remote.api.ChatApi
 import com.oma.chat.data.remote.dto.ReadChatRequest
 import com.oma.chat.data.remote.dto.SendMessageRequest
@@ -35,6 +37,7 @@ class ChatRepositoryImpl @Inject constructor(
     private val messageDao: MessageDao,
     private val authPreferences: AuthPreferences,
     private val socketManager: SocketManager,
+    private val bleMeshManager: BleMeshManager,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ChatRepository {
 
@@ -79,15 +82,65 @@ class ChatRepositoryImpl @Inject constructor(
                     id = effectiveChatId,
                     name = existingConv?.name ?: domainMsg.senderName,
                     username = existingConv?.username,
-                    avatar = existingConv?.avatar ?: domainMsg.avatar,
+                    avatar = domainMsg.avatar.ifBlank { existingConv?.avatar ?: "" },
                     lastMsg = domainMsg.content,
                     timestamp = domainMsg.timestamp,
                     type = existingConv?.type ?: "user",
-                    unreadCount = if (domainMsg.senderId != ownerUserId) (existingConv?.unreadCount ?: 0) + 1 else 0,
-                    isOnline = existingConv?.isOnline ?: false,
-                    lastSeen = existingConv?.lastSeen ?: 0L
+                    unreadCount = (existingConv?.unreadCount ?: 0) + 1,
+                    isOnline = true,
+                    lastSeen = domainMsg.timestamp
                 )
                 conversationDao.insertConversation(convEntity)
+            }
+        }
+
+        // Listen for incoming BLE Mesh packets and persist to Room
+        repositoryScope.launch {
+            bleMeshManager.incomingPackets.collect { packet ->
+                val ownerUserId = authPreferences.getUserId() ?: return@collect
+                val effectiveChatId = if (packet.senderId == ownerUserId) packet.receiverId else packet.senderId
+
+                val entity = MessageEntity(
+                    ownerUserId = ownerUserId,
+                    id = packet.packetId,
+                    tempId = packet.packetId,
+                    chatId = effectiveChatId,
+                    senderId = packet.senderId,
+                    senderName = packet.senderName,
+                    avatar = "",
+                    content = packet.content,
+                    type = packet.type,
+                    timestamp = packet.timestamp,
+                    status = "delivered"
+                )
+                messageDao.insertMessage(entity)
+
+                val existingConv = conversationDao.getConversationById(ownerUserId, effectiveChatId)
+                val convEntity = ConversationEntity(
+                    ownerUserId = ownerUserId,
+                    id = effectiveChatId,
+                    name = existingConv?.name ?: packet.senderName,
+                    username = existingConv?.username,
+                    avatar = existingConv?.avatar ?: "",
+                    lastMsg = packet.content,
+                    timestamp = packet.timestamp,
+                    type = existingConv?.type ?: "user",
+                    unreadCount = (existingConv?.unreadCount ?: 0) + 1,
+                    isOnline = true,
+                    lastSeen = packet.timestamp
+                )
+                conversationDao.insertConversation(convEntity)
+            }
+        }
+
+        // Auto start/stop BLE Mesh when user switches modes
+        repositoryScope.launch {
+            authPreferences.bleMeshModeState.collect { enabled ->
+                if (enabled) {
+                    bleMeshManager.startMesh()
+                } else {
+                    bleMeshManager.stopMesh()
+                }
             }
         }
 
@@ -332,6 +385,39 @@ class ChatRepositoryImpl @Inject constructor(
             lastSeen = existingConv?.lastSeen ?: 0L
         )
         conversationDao.insertConversation(convEntity)
+
+        // Offline BLE Mesh Mode Dispatch
+        if (authPreferences.isBleMeshMode()) {
+            val packet = MeshPacket(
+                packetId = tempId,
+                senderId = ownerUserId,
+                senderName = currentUser?.name ?: "You",
+                receiverId = receiverId,
+                content = content,
+                timestamp = timestamp,
+                ttl = 4,
+                hopCount = 0,
+                type = type
+            )
+            val dispatched = bleMeshManager.sendPacket(packet)
+            val newStatus = if (dispatched) "sent" else "pending"
+            messageDao.updateMessageStatus(ownerUserId, tempId, newStatus)
+
+            val domainMsg = Message(
+                id = tempId,
+                tempId = tempId,
+                chatId = receiverId,
+                senderId = ownerUserId,
+                senderName = currentUser?.name ?: "You",
+                avatar = currentUser?.avatar ?: "",
+                content = content,
+                type = try { com.oma.chat.domain.model.MessageType.valueOf(type.uppercase()) } catch (e: Exception) { com.oma.chat.domain.model.MessageType.TEXT },
+                timestamp = timestamp,
+                status = MessageStatus.SENT,
+                replyToId = replyToId
+            )
+            return@withContext Result.success(domainMsg)
+        }
 
         try {
             // 2. Network Dispatch

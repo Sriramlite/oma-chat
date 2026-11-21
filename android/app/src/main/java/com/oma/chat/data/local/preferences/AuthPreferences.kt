@@ -103,6 +103,18 @@ class AuthPreferences @Inject constructor(
     private val _wallpaperState = MutableStateFlow(getWallpaper())
     val wallpaperState: StateFlow<String> = _wallpaperState.asStateFlow()
 
+    private val _bleMeshModeState = MutableStateFlow(isBleMeshMode())
+    val bleMeshModeState: StateFlow<Boolean> = _bleMeshModeState.asStateFlow()
+
+    fun isBleMeshMode(): Boolean {
+        return prefs.getBoolean(KEY_BLE_MESH_MODE, false)
+    }
+
+    fun setBleMeshMode(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_BLE_MESH_MODE, enabled).apply()
+        _bleMeshModeState.value = enabled
+    }
+
     fun getWallpaper(): String {
         return prefs.getString(KEY_WALLPAPER, "bookshelf") ?: "bookshelf"
     }
@@ -117,6 +129,7 @@ class AuthPreferences @Inject constructor(
         _isLoggedInState.value = false
         _currentUserState.value = null
         _wallpaperState.value = "bookshelf"
+        _bleMeshModeState.value = false
     }
 
     companion object {
@@ -125,5 +138,6 @@ class AuthPreferences @Inject constructor(
         private const val KEY_USER_DATA = "key_user_json"
         private const val KEY_USER_ID = "key_user_uuid"
         private const val KEY_WALLPAPER = "key_chat_wallpaper"
+        private const val KEY_BLE_MESH_MODE = "key_ble_mesh_mode"
     }
 }

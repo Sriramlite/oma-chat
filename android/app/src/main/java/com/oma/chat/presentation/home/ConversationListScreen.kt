@@ -3,6 +3,7 @@ package com.oma.chat.presentation.home
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,8 +26,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddComment
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.MoreVert
@@ -46,6 +49,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -60,6 +65,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -92,6 +98,8 @@ fun ConversationListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
+    val isBleMeshMode by viewModel.isBleMeshMode.collectAsState()
+    val meshPeers by viewModel.meshPeers.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showMenu by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf("All") }
@@ -231,6 +239,76 @@ fun ConversationListScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // Mode Indicator & Quick-Switch Pill
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = if (isBleMeshMode) EmeraldPrimary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = if (isBleMeshMode) EmeraldPrimary.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.toggleBleMeshMode() }
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = if (isBleMeshMode) EmeraldPrimary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.size(34.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = if (isBleMeshMode) Icons.Default.Bluetooth else Icons.Default.Cloud,
+                                    contentDescription = null,
+                                    tint = if (isBleMeshMode) EmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isBleMeshMode) "Offline BLE Mesh Mode" else "Online Cloud Mode",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isBleMeshMode) EmeraldPrimary else MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (isBleMeshMode) {
+                                    if (meshPeers.isEmpty()) "Scanning & Relay active • 0 peers"
+                                    else "Connected • ${meshPeers.size} peer(s) in mesh"
+                                } else "Connected via WebSocket & Firebase",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+
+                    Switch(
+                        checked = isBleMeshMode,
+                        onCheckedChange = { viewModel.toggleBleMeshMode(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = EmeraldPrimary
+                        ),
+                        modifier = Modifier.scale(0.85f)
+                    )
+                }
+            }
+
             // Modern Search Bar
             Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 OmaSearchBar(

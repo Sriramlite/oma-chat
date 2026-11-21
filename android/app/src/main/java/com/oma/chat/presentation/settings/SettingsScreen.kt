@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.DataUsage
 import androidx.compose.material.icons.filled.Info
@@ -50,6 +51,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -93,6 +96,8 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isBleMeshMode by viewModel.isBleMeshMode.collectAsState()
+    val meshPeers by viewModel.meshPeers.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
@@ -288,6 +293,43 @@ fun SettingsScreen(
                             title = "Storage and data",
                             subtitle = "Cache & local isolated storage",
                             onClick = { viewModel.setShowClearChatsDialog(true) }
+                        )
+                    }
+                }
+            }
+
+            // Offline BLE Mesh Network Card
+            item {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                        OmaSectionHeader(title = "Offline Network")
+
+                        OmaSettingsRow(
+                            icon = Icons.Default.Bluetooth,
+                            title = "Offline BLE Mesh Mode",
+                            subtitle = if (isBleMeshMode) {
+                                if (meshPeers.isEmpty()) "Active • Advertising & Scanning (0 peers nearby)"
+                                else "Active • ${meshPeers.size} peer(s) connected/relaying"
+                            } else {
+                                "Send and relay messages without internet using Bluetooth Low Energy."
+                            },
+                            showChevron = false,
+                            trailingContent = {
+                                Switch(
+                                    checked = isBleMeshMode,
+                                    onCheckedChange = { viewModel.toggleBleMeshMode(it) },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = EmeraldPrimary
+                                    )
+                                )
+                            },
+                            onClick = { viewModel.toggleBleMeshMode(!isBleMeshMode) }
                         )
                     }
                 }

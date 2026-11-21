@@ -67,8 +67,16 @@ class SettingsViewModel @Inject constructor(
     private val changePasswordUseCase: ChangePasswordUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase,
     private val reportUserUseCase: ReportUserUseCase,
-    private val authPreferences: AuthPreferences
+    private val authPreferences: AuthPreferences,
+    private val bleMeshManager: com.oma.chat.data.mesh.BleMeshManager
 ) : ViewModel() {
+
+    val isBleMeshMode: StateFlow<Boolean> = authPreferences.bleMeshModeState
+    val meshPeers: StateFlow<List<com.oma.chat.data.mesh.BlePeer>> = bleMeshManager.peers
+
+    fun toggleBleMeshMode(enabled: Boolean) {
+        authPreferences.setBleMeshMode(enabled)
+    }
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
