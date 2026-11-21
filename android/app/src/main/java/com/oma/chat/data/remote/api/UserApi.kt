@@ -53,6 +53,9 @@ interface UserApi {
         @Query("q") query: String
     ): Response<List<UserDto>>
 
+    @GET("user/list")
+    suspend fun getUsersList(): Response<List<UserDto>>
+
     @POST("users/batch")
     suspend fun batchGetUsers(
         @Body request: BatchUsersRequest

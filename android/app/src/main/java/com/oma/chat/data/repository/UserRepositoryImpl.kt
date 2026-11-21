@@ -82,6 +82,56 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUsersList(): Result<List<User>> = withContext(ioDispatcher) {
+        val currentUserId = authPreferences.getUserId() ?: ""
+        try {
+            val response = userApi.getUsersList()
+            if (response.isSuccessful && response.body() != null) {
+                val users = response.body()!!.map { it.toDomain() }
+                // Cache to Room database
+                userDao.insertUsers(users.map { u ->
+                    UserEntity(
+                        id = u.id,
+                        username = u.username,
+                        name = u.name,
+                        avatar = u.avatar,
+                        bio = u.bio,
+                        lastSeen = u.lastSeen
+                    )
+                })
+                val filtered = users.filter { it.id != currentUserId }
+                Result.success(filtered)
+            } else {
+                // Fallback to local Room cached users
+                val cached = userDao.getAllUsers(currentUserId)
+                val mapped = cached.map { entity ->
+                    User(
+                        id = entity.id,
+                        username = entity.username,
+                        name = entity.name,
+                        avatar = entity.avatar,
+                        bio = entity.bio,
+                        lastSeen = entity.lastSeen
+                    )
+                }
+                Result.success(mapped)
+            }
+        } catch (e: Exception) {
+            val cached = userDao.getAllUsers(currentUserId)
+            val mapped = cached.map { entity ->
+                User(
+                    id = entity.id,
+                    username = entity.username,
+                    name = entity.name,
+                    avatar = entity.avatar,
+                    bio = entity.bio,
+                    lastSeen = entity.lastSeen
+                )
+            }
+            Result.success(mapped)
+        }
+    }
+
     override suspend fun updateProfile(
         name: String?,
         bio: String?,

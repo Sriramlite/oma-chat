@@ -155,6 +155,14 @@ class BleMeshManager @Inject constructor(
     }
 
     /**
+     * Restarts the BLE Mesh subsystem.
+     */
+    fun restartMesh() {
+        stopMesh()
+        startMesh()
+    }
+
+    /**
      * Dispatches a message packet into the mesh.
      */
     fun sendPacket(packet: MeshPacket): Boolean {

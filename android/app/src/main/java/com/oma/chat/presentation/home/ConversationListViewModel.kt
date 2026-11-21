@@ -13,6 +13,7 @@ import com.oma.chat.domain.usecase.chat.GetRecentConversationsUseCase
 import com.oma.chat.domain.usecase.chat.ObservePresenceUseCase
 import com.oma.chat.domain.usecase.chat.RefreshRecentConversationsUseCase
 import com.oma.chat.domain.usecase.chat.SearchUsersUseCase
+import com.oma.chat.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,6 +25,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class MainTab {
+    CHATS, CALLS, OFFLINE_SOCIAL, PROFILE
+}
+
+enum class SocialCategory {
+    NEARBY, CONTACTS
+}
+
 data class ConversationListUiState(
     val conversations: List<Conversation> = emptyList(),
     val onlineUserIds: Set<String> = emptySet(),
@@ -32,7 +41,12 @@ data class ConversationListUiState(
     val searchResults: List<User> = emptyList(),
     val isSearching: Boolean = false,
     val showNewChatDialog: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val currentTab: MainTab = MainTab.CHATS,
+    val socialCategory: SocialCategory = SocialCategory.NEARBY,
+    val contacts: List<User> = emptyList(),
+    val displayedContactsCount: Int = 10,
+    val isLoadingContacts: Boolean = false
 )
 
 @HiltViewModel
@@ -45,7 +59,8 @@ class ConversationListViewModel @Inject constructor(
     private val getMeUseCase: com.oma.chat.domain.usecase.user.GetMeUseCase,
     private val updatePushTokenUseCase: com.oma.chat.domain.usecase.user.UpdatePushTokenUseCase,
     private val logoutUseCase: LogoutUseCase,
-    private val bleMeshManager: BleMeshManager
+    private val bleMeshManager: BleMeshManager,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     val isBleMeshMode: StateFlow<Boolean> = authPreferences.bleMeshModeState
@@ -54,6 +69,56 @@ class ConversationListViewModel @Inject constructor(
     fun toggleBleMeshMode(enabled: Boolean? = null) {
         val nextState = enabled ?: !isBleMeshMode.value
         authPreferences.setBleMeshMode(nextState)
+    }
+
+    fun restartMeshScan() {
+        bleMeshManager.restartMesh()
+    }
+
+    fun selectTab(tab: MainTab) {
+        _uiState.update { it.copy(currentTab = tab) }
+        if (tab == MainTab.OFFLINE_SOCIAL && _uiState.value.contacts.isEmpty()) {
+            fetchContacts()
+        }
+    }
+
+    fun setSocialCategory(category: SocialCategory) {
+        _uiState.update { it.copy(socialCategory = category) }
+        if (category == SocialCategory.CONTACTS && _uiState.value.contacts.isEmpty()) {
+            fetchContacts()
+        }
+    }
+
+    fun loadMoreContacts() {
+        val total = _uiState.value.contacts.size
+        val current = _uiState.value.displayedContactsCount
+        if (current < total) {
+            _uiState.update {
+                it.copy(displayedContactsCount = minOf(current + 10, total))
+            }
+        }
+    }
+
+    fun fetchContacts() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingContacts = true) }
+            val result = userRepository.getUsersList()
+            result.fold(
+                onSuccess = { users ->
+                    val filtered = users.filter { it.id != ownerUserId }
+                    _uiState.update {
+                        it.copy(
+                            contacts = filtered,
+                            displayedContactsCount = 10,
+                            isLoadingContacts = false
+                        )
+                    }
+                },
+                onFailure = {
+                    _uiState.update { it.copy(isLoadingContacts = false) }
+                }
+            )
+        }
     }
 
     private val ownerUserId: String = authPreferences.getUserId() ?: ""
@@ -107,6 +172,7 @@ class ConversationListViewModel @Inject constructor(
 
         // Fetch authoritative recent chats from backend
         refresh()
+        fetchContacts()
     }
 
     fun refresh() {

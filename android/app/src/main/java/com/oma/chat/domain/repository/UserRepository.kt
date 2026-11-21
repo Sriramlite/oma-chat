@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 interface UserRepository {
     fun getCurrentUser(): Flow<User?>
     suspend fun fetchMe(): Result<User>
+    suspend fun getUsersList(): Result<List<User>>
     suspend fun updateProfile(name: String?, bio: String?, avatar: String?, phone: String? = null): Result<User>
     suspend fun updatePrivacySettings(settings: com.oma.chat.domain.model.UserPrivacySettings): Result<User>
     suspend fun updateBattery(batteryLevel: Int, isCharging: Boolean = false): Result<Unit>

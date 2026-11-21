@@ -19,6 +19,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE id IN (:userIds)")
     suspend fun getUsersByIds(userIds: List<String>): List<UserEntity>
 
+    @Query("SELECT * FROM users WHERE id != :currentUserId ORDER BY lastSeen DESC")
+    suspend fun getAllUsers(currentUserId: String): List<UserEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUser(user: UserEntity)
 

@@ -128,6 +128,10 @@ fun NavGraph(
                     onNavigateToSettings = {
                         navController.navigate(Screen.Settings.route)
                     },
+                    onStartCall = { targetId, targetName, targetAvatar, callType ->
+                        callViewModel.startCall(targetId, targetName, targetAvatar, callType)
+                        navController.navigate(Screen.Call.route)
+                    },
                     onLoggedOut = {
                         navController.navigate(Screen.Login.route) {
                             popUpTo(Screen.Home.route) { inclusive = true }
