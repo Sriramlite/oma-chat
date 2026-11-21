@@ -26,12 +26,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddComment
+import androidx.compose.material.icons.filled.AddIcCall
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.ChatBubbleOutline
@@ -60,6 +63,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
@@ -78,6 +82,14 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -131,6 +143,27 @@ fun ConversationListScreen(
     var showMenu by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf("All") }
     var inlineFilterQuery by remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
+    val pagerState = rememberPagerState(
+        initialPage = uiState.currentTab.ordinal,
+        pageCount = { 4 }
+    )
+
+    // Synchronize pager swipe to ViewModel
+    LaunchedEffect(pagerState.currentPage) {
+        val tab = MainTab.entries.getOrElse(pagerState.currentPage) { MainTab.CHATS }
+        if (uiState.currentTab != tab) {
+            viewModel.selectTab(tab)
+        }
+    }
+    // Synchronize ViewModel tab changes to pager
+    LaunchedEffect(uiState.currentTab) {
+        if (pagerState.currentPage != uiState.currentTab.ordinal) {
+            pagerState.scrollToPage(uiState.currentTab.ordinal)
+        }
+    }
+
+    val activeTab = MainTab.entries.getOrElse(pagerState.currentPage) { MainTab.CHATS }
 
     val categories = listOf("All", "Unread", "Groups")
 
@@ -157,7 +190,7 @@ fun ConversationListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    when (uiState.currentTab) {
+                    when (activeTab) {
                         MainTab.CHATS -> {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -177,6 +210,12 @@ fun ConversationListScreen(
                                         color = EmeraldPrimary,
                                         letterSpacing = 0.5.sp
                                     )
+                                    Text(
+                                        text = if (isBleMeshMode) "BLE Mesh (${meshPeers.size} peers)" else "Online",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (isBleMeshMode) EmeraldPrimary else StatusOnline,
+                                        fontSize = 11.sp
+                                    )
                                 }
                             }
                         }
@@ -190,7 +229,7 @@ fun ConversationListScreen(
                         }
                         MainTab.OFFLINE_SOCIAL -> {
                             Text(
-                                text = "Social / Offline",
+                                text = "Social & Offline",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -207,7 +246,7 @@ fun ConversationListScreen(
                     }
                 },
                 actions = {
-                    if (uiState.currentTab == MainTab.CHATS) {
+                    if (activeTab == MainTab.CHATS) {
                         IconButton(onClick = onNavigateToCreateGroup) {
                             Icon(
                                 imageVector = Icons.Default.GroupAdd,
@@ -215,7 +254,7 @@ fun ConversationListScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    } else if (uiState.currentTab == MainTab.OFFLINE_SOCIAL) {
+                    } else if (activeTab == MainTab.OFFLINE_SOCIAL) {
                         IconButton(onClick = { viewModel.restartMeshScan() }) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
@@ -284,7 +323,7 @@ fun ConversationListScreen(
             )
         },
         floatingActionButton = {
-            if (uiState.currentTab == MainTab.CHATS) {
+            if (activeTab == MainTab.CHATS) {
                 FloatingActionButton(
                     onClick = { viewModel.openNewChatDialog() },
                     containerColor = EmeraldPrimary,
@@ -305,8 +344,11 @@ fun ConversationListScreen(
             ) {
                 // Tab 1: Recent chats
                 NavigationBarItem(
-                    selected = uiState.currentTab == MainTab.CHATS,
-                    onClick = { viewModel.selectTab(MainTab.CHATS) },
+                    selected = pagerState.currentPage == 0,
+                    onClick = {
+                        coroutineScope.launch { pagerState.scrollToPage(0) }
+                        viewModel.selectTab(MainTab.CHATS)
+                    },
                     icon = {
                         BadgedBox(
                             badge = {
@@ -328,10 +370,13 @@ fun ConversationListScreen(
                     )
                 )
 
-                // Tab 2: Calls
+                // Tab 2: Calls - INSTANT SWITCH with zero delay
                 NavigationBarItem(
-                    selected = uiState.currentTab == MainTab.CALLS,
-                    onClick = { viewModel.selectTab(MainTab.CALLS) },
+                    selected = pagerState.currentPage == 1,
+                    onClick = {
+                        coroutineScope.launch { pagerState.scrollToPage(1) }
+                        viewModel.selectTab(MainTab.CALLS)
+                    },
                     icon = {
                         Icon(
                             imageVector = Icons.Default.Call,
@@ -348,8 +393,11 @@ fun ConversationListScreen(
 
                 // Tab 3: Social / Offline
                 NavigationBarItem(
-                    selected = uiState.currentTab == MainTab.OFFLINE_SOCIAL,
-                    onClick = { viewModel.selectTab(MainTab.OFFLINE_SOCIAL) },
+                    selected = pagerState.currentPage == 2,
+                    onClick = {
+                        coroutineScope.launch { pagerState.scrollToPage(2) }
+                        viewModel.selectTab(MainTab.OFFLINE_SOCIAL)
+                    },
                     icon = {
                         BadgedBox(
                             badge = {
@@ -376,8 +424,11 @@ fun ConversationListScreen(
 
                 // Tab 4: User Profile
                 NavigationBarItem(
-                    selected = uiState.currentTab == MainTab.PROFILE,
-                    onClick = { viewModel.selectTab(MainTab.PROFILE) },
+                    selected = pagerState.currentPage == 3,
+                    onClick = {
+                        coroutineScope.launch { pagerState.scrollToPage(3) }
+                        viewModel.selectTab(MainTab.PROFILE)
+                    },
                     icon = {
                         Icon(
                             imageVector = Icons.Default.Person,
@@ -395,72 +446,67 @@ fun ConversationListScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        Box(
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            AnimatedContent(
-                targetState = uiState.currentTab,
-                transitionSpec = {
-                    (fadeIn(animationSpec = tween(220)) + scaleIn(initialScale = 0.98f, animationSpec = tween(220)))
-                        .togetherWith(fadeOut(animationSpec = tween(160)))
-                },
-                label = "MainTabsAnimation"
-            ) { targetTab ->
-                when (targetTab) {
-                    MainTab.CHATS -> {
-                        ChatsTabContent(
-                            inlineFilterQuery = inlineFilterQuery,
-                            onQueryChange = { inlineFilterQuery = it },
-                            categories = categories,
-                            selectedCategory = selectedCategory,
-                            onCategorySelected = { selectedCategory = it },
-                            isRefreshing = uiState.isRefreshing,
-                            onRefresh = { viewModel.refresh() },
-                            conversations = filteredConversations,
-                            onOpenNewChat = { viewModel.openNewChatDialog() },
-                            onNavigateToChat = onNavigateToChat
-                        )
-                    }
-                    MainTab.CALLS -> {
-                        CallsTabContent(
-                            conversations = uiState.conversations,
-                            onStartCall = onStartCall,
-                            onBrowseContacts = {
-                                viewModel.selectTab(MainTab.OFFLINE_SOCIAL)
-                                viewModel.setSocialCategory(SocialCategory.CONTACTS)
-                            }
-                        )
-                    }
-                    MainTab.OFFLINE_SOCIAL -> {
-                        OfflineSocialTabContent(
-                            isBleMeshMode = isBleMeshMode,
-                            meshPeers = meshPeers,
-                            socialCategory = uiState.socialCategory,
-                            contacts = uiState.contacts,
-                            displayedContactsCount = uiState.displayedContactsCount,
-                            isLoadingContacts = uiState.isLoadingContacts,
-                            onlineUserIds = uiState.onlineUserIds,
-                            onSelectCategory = { viewModel.setSocialCategory(it) },
-                            onToggleBleMeshMode = { viewModel.toggleBleMeshMode(it) },
-                            onRestartMeshScan = { viewModel.restartMeshScan() },
-                            onLoadMoreContacts = { viewModel.loadMoreContacts() },
-                            onNavigateToChat = onNavigateToChat,
-                            onStartCall = onStartCall
-                        )
-                    }
-                    MainTab.PROFILE -> {
-                        ProfileTabContent(
-                            currentUser = currentUser,
-                            onNavigateToProfile = onNavigateToProfile,
-                            onNavigateToSettings = onNavigateToSettings,
-                            onLogout = {
-                                viewModel.logout()
-                                onLoggedOut()
-                            }
-                        )
-                    }
+                .padding(innerPadding),
+            beyondViewportPageCount = 1
+        ) { page ->
+            when (page) {
+                0 -> {
+                    ChatsTabContent(
+                        inlineFilterQuery = inlineFilterQuery,
+                        onQueryChange = { inlineFilterQuery = it },
+                        categories = categories,
+                        selectedCategory = selectedCategory,
+                        onCategorySelected = { selectedCategory = it },
+                        isRefreshing = uiState.isRefreshing,
+                        onRefresh = { viewModel.refresh() },
+                        conversations = filteredConversations,
+                        onOpenNewChat = { viewModel.openNewChatDialog() },
+                        onNavigateToChat = onNavigateToChat
+                    )
+                }
+                1 -> {
+                    CallsTabContent(
+                        conversations = uiState.conversations,
+                        onStartCall = onStartCall,
+                        onBrowseContacts = {
+                            coroutineScope.launch { pagerState.scrollToPage(2) }
+                            viewModel.selectTab(MainTab.OFFLINE_SOCIAL)
+                            viewModel.setSocialCategory(SocialCategory.CONTACTS)
+                        },
+                        onNavigateToCreateGroup = onNavigateToCreateGroup
+                    )
+                }
+                2 -> {
+                    OfflineSocialTabContent(
+                        isBleMeshMode = isBleMeshMode,
+                        meshPeers = meshPeers,
+                        socialCategory = uiState.socialCategory,
+                        contacts = uiState.contacts,
+                        displayedContactsCount = uiState.displayedContactsCount,
+                        isLoadingContacts = uiState.isLoadingContacts,
+                        onlineUserIds = uiState.onlineUserIds,
+                        onSelectCategory = { viewModel.setSocialCategory(it) },
+                        onToggleBleMeshMode = { viewModel.toggleBleMeshMode(it) },
+                        onRestartMeshScan = { viewModel.restartMeshScan() },
+                        onLoadMoreContacts = { viewModel.loadMoreContacts() },
+                        onNavigateToChat = onNavigateToChat,
+                        onStartCall = onStartCall
+                    )
+                }
+                3 -> {
+                    ProfileTabContent(
+                        currentUser = currentUser,
+                        onNavigateToProfile = onNavigateToProfile,
+                        onNavigateToSettings = onNavigateToSettings,
+                        onLogout = {
+                            viewModel.logout()
+                            onLoggedOut()
+                        }
+                    )
                 }
             }
         }
@@ -561,27 +607,54 @@ private fun ChatsTabContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CallsTabContent(
     conversations: List<Conversation>,
     onStartCall: (targetId: String, targetName: String, targetAvatar: String, callType: CallType) -> Unit,
-    onBrowseContacts: () -> Unit
+    onBrowseContacts: () -> Unit,
+    onNavigateToCreateGroup: () -> Unit = {}
 ) {
-    val callContacts = conversations.filter { it.type != "group" }
+    val callContacts = remember(conversations) { conversations.filter { it.type != "group" } }
+    val groupChats = remember(conversations) { conversations.filter { it.type == "group" } }
+    var isCallsLoading by remember { mutableStateOf(true) }
+    var showGroupCallSheet by remember { mutableStateOf(false) }
+    val groupCallSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    LaunchedEffect(Unit) {
+        delay(250)
+        isCallsLoading = false
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        // Small sleek loading indicator on tab entry
+        AnimatedVisibility(
+            visible = isCallsLoading,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(2.5.dp),
+                color = EmeraldPrimary,
+                trackColor = EmeraldPrimary.copy(alpha = 0.12f)
+            )
+        }
+
+        // Encrypted WebRTC audio & video banner
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 6.dp),
             shape = RoundedCornerShape(12.dp),
-            color = EmeraldPrimary.copy(alpha = 0.1f),
-            border = BorderStroke(1.dp, EmeraldPrimary.copy(alpha = 0.3f))
+            color = EmeraldPrimary.copy(alpha = 0.08f),
+            border = BorderStroke(1.dp, EmeraldPrimary.copy(alpha = 0.25f))
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
+                    .padding(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -589,7 +662,7 @@ private fun CallsTabContent(
                     imageVector = Icons.Default.Call,
                     contentDescription = null,
                     tint = EmeraldPrimary,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Column {
                     Text(
@@ -604,6 +677,69 @@ private fun CallsTabContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 11.sp
                     )
+                }
+            }
+        }
+
+        // Dedicated Group Call Action Button
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showGroupCallSheet = true }
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = EmeraldPrimary,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.GroupAdd,
+                                contentDescription = "Group Call",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Group Call",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (groupChats.isNotEmpty()) "${groupChats.size} group(s) available • Instant conference" else "Start call with groups or multiple contacts",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = { showGroupCallSheet = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text("Call Group", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -679,6 +815,122 @@ private fun CallsTabContent(
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
+                }
+            }
+        }
+    }
+
+    // Group Call Selection Sheet
+    if (showGroupCallSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showGroupCallSheet = false },
+            sheetState = groupCallSheetState,
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Start Group Call",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    TextButton(onClick = {
+                        showGroupCallSheet = false
+                        onNavigateToCreateGroup()
+                    }) {
+                        Icon(Icons.Default.GroupAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("New Group", color = EmeraldPrimary)
+                    }
+                }
+
+                Text(
+                    text = "Select a group to start an audio or video call with all members",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                if (groupChats.isEmpty()) {
+                    OmaEmptyState(
+                        icon = Icons.Default.GroupAdd,
+                        title = "No group chats yet",
+                        subtitle = "Create a group first to start conference calls with your friends or team.",
+                        actionButtonText = "Create New Group",
+                        onActionClick = {
+                            showGroupCallSheet = false
+                            onNavigateToCreateGroup()
+                        }
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 24.dp)
+                    ) {
+                        items(groupChats, key = { it.id }) { group ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OmaAvatar(
+                                    avatarUrl = group.avatar,
+                                    name = group.name,
+                                    size = 46.dp
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = group.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = "Group • Tap call button",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                IconButton(onClick = {
+                                    showGroupCallSheet = false
+                                    onStartCall(group.id, group.name, group.avatar, CallType.VOICE)
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Call,
+                                        contentDescription = "Group Voice Call",
+                                        tint = EmeraldPrimary
+                                    )
+                                }
+                                IconButton(onClick = {
+                                    showGroupCallSheet = false
+                                    onStartCall(group.id, group.name, group.avatar, CallType.VIDEO)
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Videocam,
+                                        contentDescription = "Group Video Call",
+                                        tint = EmeraldPrimary
+                                    )
+                                }
+                            }
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = 58.dp),
+                                thickness = 0.5.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant
+                            )
+                        }
+                    }
                 }
             }
         }

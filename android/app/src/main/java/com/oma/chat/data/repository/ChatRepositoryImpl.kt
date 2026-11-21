@@ -386,7 +386,8 @@ class ChatRepositoryImpl @Inject constructor(
         )
         conversationDao.insertConversation(convEntity)
 
-        // Offline BLE Mesh Mode Dispatch
+        // 1. Dual-Mode BLE Mesh Broadcast (runs concurrently with Internet)
+        var bleDispatched = false
         if (authPreferences.isBleMeshMode()) {
             val packet = MeshPacket(
                 packetId = tempId,
@@ -399,28 +400,28 @@ class ChatRepositoryImpl @Inject constructor(
                 hopCount = 0,
                 type = type
             )
-            val dispatched = bleMeshManager.sendPacket(packet)
-            val newStatus = if (dispatched) "sent" else "pending"
-            messageDao.updateMessageStatus(ownerUserId, tempId, newStatus)
-
-            val domainMsg = Message(
-                id = tempId,
-                tempId = tempId,
-                chatId = receiverId,
-                senderId = ownerUserId,
-                senderName = currentUser?.name ?: "You",
-                avatar = currentUser?.avatar ?: "",
-                content = content,
-                type = try { com.oma.chat.domain.model.MessageType.valueOf(type.uppercase()) } catch (e: Exception) { com.oma.chat.domain.model.MessageType.TEXT },
-                timestamp = timestamp,
-                status = MessageStatus.SENT,
-                replyToId = replyToId
-            )
-            return@withContext Result.success(domainMsg)
+            bleDispatched = bleMeshManager.sendPacket(packet)
+            if (bleDispatched) {
+                messageDao.updateMessageStatus(ownerUserId, tempId, "sent")
+            }
         }
 
+        val domainFallbackMsg = Message(
+            id = tempId,
+            tempId = tempId,
+            chatId = receiverId,
+            senderId = ownerUserId,
+            senderName = currentUser?.name ?: "You",
+            avatar = currentUser?.avatar ?: "",
+            content = content,
+            type = try { com.oma.chat.domain.model.MessageType.valueOf(type.uppercase()) } catch (e: Exception) { com.oma.chat.domain.model.MessageType.TEXT },
+            timestamp = timestamp,
+            status = MessageStatus.SENT,
+            replyToId = replyToId
+        )
+
         try {
-            // 2. Network Dispatch
+            // 2. Network Dispatch (Internet backend)
             val request = SendMessageRequest(
                 content = content,
                 type = type,
@@ -452,12 +453,21 @@ class ChatRepositoryImpl @Inject constructor(
                 messageDao.reconcileServerMessage(ownerUserId, confirmedEntity)
                 Result.success(serverMsg)
             } else {
-                messageDao.updateMessageStatus(ownerUserId, tempId, "failed")
-                Result.failure(Exception("Send message failed with code: ${response.code()}"))
+                if (bleDispatched) {
+                    Result.success(domainFallbackMsg)
+                } else {
+                    messageDao.updateMessageStatus(ownerUserId, tempId, "failed")
+                    Result.failure(Exception("Send message failed with code: ${response.code()}"))
+                }
             }
         } catch (e: Exception) {
-            messageDao.updateMessageStatus(ownerUserId, tempId, "failed")
-            Result.failure(e)
+            // If offline / no internet connection, but BLE sent it, consider it sent successfully!
+            if (bleDispatched) {
+                Result.success(domainFallbackMsg)
+            } else {
+                messageDao.updateMessageStatus(ownerUserId, tempId, "failed")
+                Result.failure(e)
+            }
         }
     }
 
